@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:html/dom.dart' as dom;
+import 'dart:math';
 
 import '../utils/pi_utils.dart';
 
@@ -83,6 +84,7 @@ class _ChatMessageDomElementState extends State<ChatMessageDomElement> {
   }
 
   static buildImg(item, chat, isSelf) {
+    int random = Random().nextInt(1000);
     return GestureDetector(
       onTap: () {
         Navigator.push(
@@ -91,14 +93,14 @@ class _ChatMessageDomElementState extends State<ChatMessageDomElement> {
             builder: (context) => PiHero(
               arguments: {
                 "imageUrl": item.attributes['src']!,
-                "oId": chat.oId,
+                "oId": "${chat.oId}_$random",
               },
             ),
           ),
         );
       },
       child: Hero(
-        tag: "${chat.oId}",
+        tag: "${chat.oId}_$random",
         child: Container(
           width: 120.w,
           height: 70.h,

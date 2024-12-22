@@ -147,13 +147,13 @@ class ChatLogic extends GetxController {
 
   void clickSend() async {
     if (isGroup.value) {
-      imController.fishpi.chatroom.send(content.value);
+      await imController.fishpi.chatroom.send(content.value);
     } else {
-      imController.fishpi.chat.send(userName.value, content.value);
+      await imController.fishpi.chat.send(userName.value, content.value);
     }
     content.value = '';
     chatRoomControllerText.text = '';
-    scrollToBottom();
+    scrollToBottom(delay: 300);
   }
 
   void loadEmojis() async {
@@ -165,7 +165,7 @@ class ChatLogic extends GetxController {
   void onClose() {
     isClose.value = true;
     chatRoomController.dispose();
-    if (!isGroup.value) {
+    if (!isGroup.value){
       imController.fishpi.chat.removeListener();
     }
     print('聊天页面关闭');

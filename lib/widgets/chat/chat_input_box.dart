@@ -38,11 +38,12 @@ class ChatInputBoxState extends State<ChatInputBox> {
   bool isShowEmoji = false;
   bool isShowTools = false;
   bool isShowVoice = false;
+  String content = "";
 
   @override
   void initState() {
-    widget.focusNode.addListener((){
-      if(widget.focusNode.hasFocus){
+    widget.focusNode.addListener(() {
+      if (widget.focusNode.hasFocus) {
         setState(() {
           isShowVoice = false;
           isShowTools = false;
@@ -131,7 +132,12 @@ class ChatInputBoxState extends State<ChatInputBox> {
                                     : TextAlign.left,
                                 hintText: '说点什么...',
                                 focusNode: widget.focusNode,
-                                onInputChanged: widget.onInput,
+                                onInputChanged: (t) {
+                                  setState(() {
+                                    content = t;
+                                    widget.onInput(t);
+                                  });
+                                },
                                 onEditingComplete: widget.clickSend,
                               ),
                             )),
@@ -151,7 +157,7 @@ class ChatInputBoxState extends State<ChatInputBox> {
                   ),
                   GestureDetector(
                     onTap: () {
-                      if (widget.content == '') {
+                      if (content == '') {
                         toggleTools();
                       } else {
                         widget.clickSend();
@@ -162,7 +168,7 @@ class ChatInputBoxState extends State<ChatInputBox> {
                       height: 28.w,
                       alignment: Alignment.center,
                       child: Image.asset(
-                        widget.content == ''
+                        content == ''
                             ? 'assets/images/more_feature.png'
                             : 'assets/images/send.png',
                         width: 28.w,
@@ -178,12 +184,15 @@ class ChatInputBoxState extends State<ChatInputBox> {
               child: FadeIn(
                 duration: const Duration(milliseconds: 200),
                 child: EmojiBox(
-                  emojiList: widget.emojiList,
+                    emojiList: widget.emojiList,
                     diyEmojiList: widget.diyEmojiList,
                     onTap: (String t) {
-
-                    }
-                ),
+                      setState(() {
+                        widget.controller.text = widget.controller.text + t;
+                        content = widget.controller.text;
+                        widget.onInput(widget.controller.text);
+                      });
+                    }),
               ),
             ),
             Visibility(

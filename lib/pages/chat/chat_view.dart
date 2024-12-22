@@ -31,7 +31,6 @@ class ChatPage extends StatelessWidget {
                   ? Container()
                   : GestureDetector(
                       onTap: (){
-                        //logic.closeAllTools
                         FocusScope.of(Get.context!).requestFocus(FocusNode());
                       },
                       child: Container(
@@ -40,19 +39,12 @@ class ChatPage extends StatelessWidget {
                         padding: EdgeInsets.symmetric(
                           horizontal: 16.w,
                         ),
-                        child: logic.isGroup.value
-                            ? ListView.builder(
-                                controller: logic.chatRoomController,
-                                padding: EdgeInsets.symmetric(vertical: 20.h),
-                                itemBuilder: _buildChatItem,
-                                itemCount: logic.messageList.length,
-                              )
-                            : ListView.builder(
-                                controller: logic.chatRoomController,
-                                padding: EdgeInsets.symmetric(vertical: 20.h),
-                                itemBuilder: _buildChatItem,
-                                itemCount: logic.messageList.length,
-                              ),
+                        child: ListView.builder(
+                          controller: logic.chatRoomController,
+                          padding: EdgeInsets.symmetric(vertical: 20.h),
+                          itemBuilder: _buildChatItem,
+                          itemCount: logic.messageList.length,
+                        ),
                       ),
                     ),
             ),
