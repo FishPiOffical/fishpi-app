@@ -20,6 +20,8 @@ class PiAvatar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
+      width: width ?? 48.w,
+      height: height ?? 48.w,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(100),
         border: Border.all(

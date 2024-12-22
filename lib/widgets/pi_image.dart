@@ -1,5 +1,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:lottie/lottie.dart';
 
@@ -48,12 +49,8 @@ class PiImage extends StatelessWidget {
       width: width,
       height: height,
       alignment: Alignment.center,
-      child: Image.network(
-        'https://pwl.stackoverflow.wiki/2021/11/32ceecb7798ea1fa-82bd6ec7.jpg',
-        width: width,
-        height: height,
-        fit: BoxFit.cover,
-      ),
+      color: Colors.grey,
+      child: const Icon(Icons.error_outline),
     );
   }
 }

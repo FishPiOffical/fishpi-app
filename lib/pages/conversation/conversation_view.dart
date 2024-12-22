@@ -19,25 +19,16 @@ class ConversationPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Obx(
       () => Scaffold(
-        body: Column(
-          children: [
-            _buildItem(),
-            Expanded(
-              child: ListView.builder(
-                itemCount: logic.chatList.length,
-                itemBuilder: (_, index) => _buildItem(chat: logic.chatList[index]),
-              ),
-            ),
-          ],
+        body: ListView.builder(
+          itemCount: logic.chatList.length + 1,
+          itemBuilder: _buildItem,
         ),
       ),
     );
   }
 
-  Widget _buildItem({
-    BuildContext? context,
-    ChatData? chat,
-  }) {
+  Widget _buildItem(BuildContext context, int index) {
+    ChatData? chat = index == 0 ? null : logic.chatList[index - 1];
     return GestureDetector(
       behavior: HitTestBehavior.translucent,
       onTap: () {
@@ -98,7 +89,9 @@ class ConversationPage extends StatelessWidget {
                           ),
                           Text(
                             PiUtils.getChatTime(
-                              chat != null ? chat.time : '${logic.messageList.lastOrNull?.time}',
+                              chat != null
+                                  ? chat.time
+                                  : logic.chatRoomLastMsg.value.time,
                             ),
                             style: TextStyle(
                               fontSize: 10.sp,
@@ -111,7 +104,7 @@ class ConversationPage extends StatelessWidget {
                       Text(
                         chat != null
                             ? chat.preview
-                            : '${logic.messageList.lastOrNull?.userName}:${PiUtils.getConversationPreview(logic.messageList.lastOrNull?.content ?? '')}',
+                            : '${logic.chatRoomLastMsg.value.allName}:${PiUtils.getConversationPreview(logic.chatRoomLastMsg.value.content)}',
                         style: TextStyle(
                           fontSize: 12.sp,
                           color: Styles.secondaryTextColor,
