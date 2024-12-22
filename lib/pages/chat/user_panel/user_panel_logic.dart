@@ -1,5 +1,6 @@
 import 'package:fishpi/fishpi.dart';
 import 'package:fishpi_app/core/controller/im.dart';
+import 'package:fishpi_app/core/sql/black_list.dart';
 import 'package:fishpi_app/widgets/pi_editer.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -23,6 +24,7 @@ class UserPanelLogic extends GetxController {
     var args = Get.arguments;
     userName.value = args['userName'] ?? '';
     getUserInfo();
+    BlackList.init();
     super.onInit();
   }
 
@@ -99,6 +101,23 @@ class UserPanelLogic extends GetxController {
     );
   }
 
+  void toggleBlackList() async {
+    var user = await BlackList.getOneUser(userInfo.value.oId);
+    if (user == null) {
+      // 添加黑名单
+      BlackList.addUser(BlackUser(
+        oId: userInfo.value.oId,
+        userName: userInfo.value.userName,
+        avatarURL: userInfo.value.avatarURL,
+      ));
+      ToastManager.showToast('已添加到黑名单');
+    } else {
+      // 移除黑名单
+      BlackList.removeUser(userInfo.value.oId);
+      ToastManager.showToast('已从黑名单移除');
+    }
+  }
+
   void toChat() {}
 
   void toSetLabel() {
@@ -124,5 +143,11 @@ class UserPanelLogic extends GetxController {
 
   void changeTab(int idx) {
     tabIndex.value = idx;
+  }
+
+  @override
+  void dispose() {
+    BlackList.dispose();
+    super.dispose();
   }
 }

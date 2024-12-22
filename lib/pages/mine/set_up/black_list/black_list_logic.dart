@@ -12,11 +12,13 @@ class BlackListLogic extends GetxController {
 
   getList() async {
     await BlackList.init();
-    blackList.value = await BlackList.blackList;
+    blackList.value = await BlackList.getAllUser();
+    blackList.refresh();
+    print(blackList.length);
   }
 
-  removeUser(int index) async {
-    BlackList.removeUser(index);
+  removeUser(String oId) async {
+    BlackList.removeUser(oId);
   }
 
   @override

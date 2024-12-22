@@ -399,11 +399,23 @@ class UserPanelPage extends StatelessWidget {
                             onTap: logic.toSetLabel,
                           ),
                           PiMenuItem(
+                            title: '拉黑',
+                            image: Icon(
+                              Icons.list_alt_outlined,
+                              size: 24.w,
+                            ),
+                            isShowArrow: false,
+                            onTap: logic.toggleBlackList,
+                          ),
+                          PiMenuItem(
                             title: '在线时长',
-                            image: Image.asset(
-                              'assets/images/logo.png',
-                              width: 24.w,
-                              height: 24.w,
+                            image: ClipRRect(
+                              borderRadius: BorderRadius.circular(50.r),
+                              child: Image.asset(
+                                'assets/images/logo.png',
+                                width: 24.w,
+                                height: 24.w,
+                              ),
                             ),
                             isShowArrow: false,
                             rightText:
