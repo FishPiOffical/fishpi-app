@@ -1,25 +1,14 @@
-buildscript {
-    ext.kotlin_version = '1.9.22'
+allprojects {
     repositories {
-        maven { url 'https://maven.aliyun.com/repository/google' }
-        maven { url 'https://maven.aliyun.com/repository/public' }
-        maven { url 'https://maven.aliyun.com/repository/gradle-plugin' }
+        jcenter()
         google()
         mavenCentral()
-    }
-
-    dependencies {
-        classpath 'com.android.tools.build:gradle:8.2.2'
-        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
     }
 }
 
-allprojects {
-    repositories {
-        maven { url 'https://maven.aliyun.com/repository/google' }
-        maven { url 'https://maven.aliyun.com/repository/public' }
-        google()
-        mavenCentral()
+configurations.all {
+    resolutionStrategy {
+        force 'androidx.core:core-ktx:1.6.0'
     }
 }
 
@@ -31,14 +20,11 @@ subprojects {
             Integer pluginCompileSdk = project.android.compileSdk
             if (pluginCompileSdk != null && pluginCompileSdk < 34) {
                 project.logger.error(
-                        "Warning: Overriding compileSdk version in Flutter plugin: "
+                        "Warning: "
                                 + project.name
-                                + " from "
+                                + " compileSdk is "
                                 + pluginCompileSdk
-                                + " to 34 (to work around https://issuetracker.google.com/issues/199180389)."
-                                + "\nIf there is not a new version of " + project.name + ", consider filing an issue against "
-                                + project.name
-                                + " to increase their compileSdk to the latest (otherwise try updating to the latest version)."
+                                + " and change to 34 (to work around https://issuetracker.google.com/issues/199180389)."
                 )
                 project.android {
                     compileSdk 34
@@ -46,18 +32,11 @@ subprojects {
             }
         }
     }
-
+    
     project.buildDir = "${rootProject.buildDir}/${project.name}"
+    project.evaluationDependsOn(":app")
 }
-
-// 移除 project.evaluationDependsOn(":app") 因为这可能导致循环依赖
 
 tasks.register("clean", Delete) {
     delete rootProject.buildDir
-}
-
-configurations.all {
-    resolutionStrategy {
-        force 'androidx.core:core-ktx:1.6.0'
-    }
 }

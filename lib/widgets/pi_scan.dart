@@ -10,7 +10,7 @@ import 'package:fishpi_app/widgets/pi_title_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
-import 'package:images_picker/images_picker.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:scan/scan.dart';
 
 import '../core/controller/im.dart';
@@ -76,11 +76,10 @@ class PiScan extends StatelessWidget {
                     color: Styles.primaryColor,
                   ),
                   onPressed: () async {
-                    List<Media>? res =
-                        await ImagesPicker.pick(count: 1, maxSize: 1024);
-                    if (res != null) {
+                    List<XFile>? res = await ImagePicker().pickMultiImage();
+                    if (res.isNotEmpty) {
                       controller.pause();
-                      Media image = res.first;
+                      XFile image = res.first;
                       String? result = await Scan.parse(image.path);
                       if (result != null) {
                         getResult(result, context);

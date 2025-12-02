@@ -1,0 +1,17 @@
+-dontwarn com.huawei.android.os.BuildEx$VERSION
+-dontwarn com.huawei.android.telephony.ServiceStateEx
+-dontwarn com.huawei.hms.framework.network.restclient.hianalytics.RCEventListener
+-dontwarn com.huawei.hms.framework.network.restclient.hwhttp.Interceptor$Chain
+-dontwarn com.huawei.hms.framework.network.restclient.hwhttp.RealInterceptorChain
+-dontwarn com.huawei.hms.framework.network.restclient.hwhttp.Request$Builder
+-dontwarn com.huawei.hms.framework.network.restclient.hwhttp.Request
+-dontwarn com.huawei.hms.framework.network.restclient.hwhttp.Response
+-dontwarn com.huawei.hms.framework.network.restclient.hwhttp.plugin.BasePlugin
+-dontwarn com.huawei.hms.framework.network.restclient.hwhttp.plugin.PluginInterceptor
+-dontwarn com.huawei.hms.framework.network.restclient.hwhttp.url.HttpUrl
+-dontwarn com.huawei.libcore.io.ExternalStorageFile
+-dontwarn com.huawei.libcore.io.ExternalStorageFileInputStream
+-dontwarn com.huawei.libcore.io.ExternalStorageFileOutputStream
+-dontwarn com.huawei.libcore.io.ExternalStorageRandomAccessFile
+-dontwarn com.huawei.secure.android.common.util.SafeBase64
+-dontwarn com.huawei.secure.android.common.util.SafeString

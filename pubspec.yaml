@@ -55,8 +55,9 @@ dependencies:
   animate_do: ^3.3.4
   permission_handler: ^11.3.1
   dio: ^5.7.0
-  scan: ^1.6.0
-  images_picker: ^1.2.11
+  scan:
+    path: ./scan-1.6.0
+  image_picker: ^1.2.1
   web_socket_channel: ^2.4.0
   hive: 2.2.3
   hive_flutter: 1.1.0
