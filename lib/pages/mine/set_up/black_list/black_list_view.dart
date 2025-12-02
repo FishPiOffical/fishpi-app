@@ -1,4 +1,6 @@
 import 'package:fishpi_app/core/sql/black_list.dart';
+import 'package:fishpi_app/res/styles.dart';
+import 'package:fishpi_app/widgets/pi_avatar.dart';
 import 'package:fishpi_app/widgets/pi_title_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -30,21 +32,58 @@ class BlackListPage extends StatelessWidget {
     BlackUser user = logic.blackList[index];
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 10.h),
+      decoration: BoxDecoration(
+        border: Border(
+          bottom: BorderSide(
+            color: Colors.grey.shade300,
+            width: 1.w,
+          ),
+        ),
+      ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(user.userName ?? "-"),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              PiAvatar(
+                avatarURL: user.avatarURL,
+                width: 30.w,
+                height: 30.w,
+              ),
+              SizedBox(
+                width: 10.w,
+              ),
+              SizedBox(
+                width: 200.w,
+                child: Text(
+                  '${user.userName}',
+                  style: TextStyle(fontSize: 20.sp),
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
+                ),
+              )
+            ],
+          ),
           GestureDetector(
-            onTap: (){
+            onTap: () {
               logic.removeUser(user.oId!);
             },
             child: Container(
-              width: 40.w,
-              height: 30.w,
+              width: 72.w,
+              height: 32.w,
+              decoration: BoxDecoration(
+                color: Styles.primaryColor,
+                borderRadius: BorderRadius.circular(10.r),
+                border: Border.all(
+                  color: Colors.black,
+                  width: 1.w,
+                ),
+              ),
               alignment: Alignment.center,
-              child:const Icon(
-                Icons.delete_forever_outlined,
-                color: Colors.black,
+              child: Text(
+                "移出",
+                style: TextStyle(fontSize: 16.sp,fontWeight: FontWeight.bold),
               ),
             ),
           )
