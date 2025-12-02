@@ -136,6 +136,8 @@ class PiScan extends StatelessWidget {
       await Future.delayed(const Duration(milliseconds: 300));
       LoginIM.close();
       Get.back();
+    }else{
+      AppNavigator.toScanResult(result);
     }
   }
 }
