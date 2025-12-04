@@ -1,3 +1,5 @@
+import 'dart:ffi';
+
 import 'package:fishpi/types/types.dart';
 import 'package:fishpi_app/core/controller/im.dart';
 import 'package:fishpi_app/core/manager/toast.dart';
@@ -31,7 +33,9 @@ class ForumDetailLogic extends GetxController {
   }
 
   void toReward() async {
-    ResponseResult res = await imController.fishpi.article.reward(article.value.oId);
+    ResponseResult res =
+        await imController.fishpi.article.reward(article.value.oId);
+    print(res.msg);
     if (res.success) {
       initArticleInfo();
     } else {
@@ -74,5 +78,21 @@ class ForumDetailLogic extends GetxController {
         ),
       ),
     );
+  }
+
+  toGoodComment(ArticleComment comment, int index) async {
+    if (comment.rewarded) {
+      comment.goodCnt--;
+      comment.rewarded = false;
+    } else {
+      comment.goodCnt++;
+      comment.rewarded = true;
+    }
+    article.value.comments[index] = comment;
+    article.refresh();
+    bool res = await imController.fishpi.comment.vote(comment.oId);
+    if (!res) {
+      ToastManager.showToast('操作失败');
+    }
   }
 }

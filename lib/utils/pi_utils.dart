@@ -156,7 +156,12 @@ class PiUtils {
   /// 处理聊天室预览数据
   /// [content] 消息内容
   static Widget getChatPreview(chat, {bool? isSelf = false}) {
-    String content = chat.content;
+    String content = "";
+    if (chat is String) {
+      content = chat;
+    } else {
+      content = chat.content;
+    }
     dom.Document document = parse(content);
     List<Widget> list = [];
     //不用管它是什么，只管加一个ChatMessageDomElement widget，绘制由ChatMessageDomElement内部自己管理

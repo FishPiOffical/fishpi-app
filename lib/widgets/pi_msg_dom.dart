@@ -1,3 +1,4 @@
+import 'package:fishpi_app/res/styles.dart';
 import 'package:fishpi_app/widgets/pi_detail_msg.dart';
 import 'package:fishpi_app/widgets/pi_hero.dart';
 import 'package:fishpi_app/widgets/pi_image.dart';
@@ -5,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:html/dom.dart' as dom;
+import 'package:url_launcher/url_launcher.dart';
 import 'dart:math';
 
 import '../utils/pi_utils.dart';
@@ -56,7 +58,6 @@ class _ChatMessageDomElementState extends State<ChatMessageDomElement> {
     switch (widget.content.localName) {
       case "p":
         return Text(widget.content.text);
-        break;
       case "img":
         return buildImg(widget.content, widget.chat, widget.isSelf);
       case "details":
@@ -77,6 +78,19 @@ class _ChatMessageDomElementState extends State<ChatMessageDomElement> {
         return Text(
           widget.content.text,
           style: const TextStyle(decoration: TextDecoration.lineThrough),
+        );
+      case "a":
+        return GestureDetector(
+          onTap: () {
+            launchUrl(Uri.parse(widget.content.attributes['href']!));
+          },
+          child: Text(
+            widget.content.text,
+            style: const TextStyle(
+              color: Styles.secondaryTextColor,
+              decoration: TextDecoration.underline,
+            ),
+          ),
         );
       default:
         return Container();
