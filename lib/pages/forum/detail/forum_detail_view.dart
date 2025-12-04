@@ -244,7 +244,9 @@ class ForumDetailPage extends StatelessWidget {
                               mainAxisSize: MainAxisSize.min,
                               children: [
                                 GestureDetector(
-                                  onTap: () {},
+                                  onTap: () {
+                                    logic.toGoodArticle();
+                                  },
                                   child: Row(
                                     children: [
                                       logic.article.value.vote ==
@@ -272,7 +274,9 @@ class ForumDetailPage extends StatelessWidget {
                                 ),
                                 10.horizontalSpace,
                                 GestureDetector(
-                                  onTap: () {},
+                                  onTap: () {
+                                    logic.toThankArticle();
+                                  },
                                   child: Row(
                                     children: [
                                       !logic.article.value.thanked

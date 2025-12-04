@@ -95,4 +95,37 @@ class ForumDetailLogic extends GetxController {
       ToastManager.showToast('操作失败');
     }
   }
+
+  toGoodArticle() async {
+    if (article.value.vote == VoteStatus.normal) {
+      article.value.vote = VoteStatus.up;
+      article.value.goodCnt++;
+    } else {
+      article.value.vote = VoteStatus.normal;
+      article.value.goodCnt--;
+    }
+    article.refresh();
+    bool res = await imController.fishpi.article.vote(article.value.oId);
+    if (!res) {
+      ToastManager.showToast('操作失败');
+    }
+  }
+
+  toThankArticle() async {
+    if (article.value.thanked) {
+      article.value.thanked = false;
+      article.value.goodCnt--;
+    } else {
+      article.value.thanked = true;
+      article.value.goodCnt++;
+    }
+    article.refresh();
+    ResponseResult res =
+        await imController.fishpi.article.thank(article.value.oId);
+    if (res.success) {
+      initArticleInfo();
+    } else {
+      ToastManager.showToast(res.msg);
+    }
+  }
 }
