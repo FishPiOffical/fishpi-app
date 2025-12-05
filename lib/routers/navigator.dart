@@ -37,6 +37,9 @@ class AppNavigator {
       );
 
   /// 设置页面
+  static void toForumCreate() => Get.toNamed(AppRoutes.forumCreate);
+
+  /// 设置页面
   static void toSetting() => Get.toNamed(AppRoutes.setUp);
 
   /// 关于

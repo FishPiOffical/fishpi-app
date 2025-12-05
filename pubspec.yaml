@@ -62,6 +62,7 @@ dependencies:
   hive: 2.2.3
   hive_flutter: 1.1.0
   url_launcher: ^6.3.1
+  fleather: ^1.26.0
 
 dev_dependencies:
   flutter_test:

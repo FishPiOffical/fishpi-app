@@ -10,6 +10,7 @@ abstract class AppRoutes {
   static const userPanel = '/user_panel';
   static const forum = '/forum';
   static const forumDetail = '/forum_detail';
+  static const forumCreate = '/forum_create';
   static const breezemoons = '/breezemoons';
   static const mine = '/mine';
   static const editInfo = '/edit_info';

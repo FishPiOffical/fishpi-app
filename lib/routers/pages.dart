@@ -10,6 +10,8 @@ import 'package:fishpi_app/pages/forum/detail/forum_detail_binding.dart';
 import 'package:fishpi_app/pages/forum/detail/forum_detail_view.dart';
 import 'package:fishpi_app/pages/forum/forum_binding.dart';
 import 'package:fishpi_app/pages/forum/forum_view.dart';
+import 'package:fishpi_app/pages/forum/post/post_binding.dart';
+import 'package:fishpi_app/pages/forum/post/post_view.dart';
 import 'package:fishpi_app/pages/home/home_binding.dart';
 import 'package:fishpi_app/pages/home/home_view.dart';
 import 'package:fishpi_app/pages/login/login_binding.dart';
@@ -149,6 +151,11 @@ class AppPages {
       name: AppRoutes.collection,
       page: () => CollectionListPage(),
       binding: CollectionListBinding(),
+    ),
+    _pageBuilder(
+      name: AppRoutes.forumCreate,
+      page: () => PostPage(),
+      binding: PostBinding(),
     ),
   ];
 }

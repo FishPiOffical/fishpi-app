@@ -16,7 +16,13 @@ class PiTitleBar extends StatelessWidget implements PreferredSizeWidget {
   final bool showUnderline;
 
   const PiTitleBar(
-      {this.left, this.center, this.right, this.height, this.backgroundColor, this.showUnderline = false, super.key});
+      {this.left,
+      this.center,
+      this.right,
+      this.height,
+      this.backgroundColor,
+      this.showUnderline = false,
+      super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -81,15 +87,23 @@ class PiTitleBar extends StatelessWidget implements PreferredSizeWidget {
           ),
         ),
         right = GestureDetector(
-          onTap: () {},
+          onTap: () {
+            AppNavigator.toForumCreate();
+          },
           child: SizedBox(
             width: 24.w,
             height: 24.w,
-            child: Image.asset(
-              'assets/images/notice.png',
-              width: 24.w,
-              height: 24.w,
-            ),
+            child: title == "帖子"
+                ? Image.asset(
+                    'assets/images/more_feature.png',
+                    width: 24.w,
+                    height: 24.w,
+                  )
+                : Image.asset(
+                    'assets/images/notice.png',
+                    width: 24.w,
+                    height: 24.w,
+                  ),
           ),
         ),
         backgroundColor = null;
