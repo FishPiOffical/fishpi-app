@@ -29,6 +29,7 @@ void main() async {
         title: '摸鱼派',
         initialBinding: InitBinding(),
         theme: ThemeData(
+          scaffoldBackgroundColor: Colors.white,
           textSelectionTheme: const TextSelectionThemeData(
             selectionHandleColor: Colors.orange,
             selectionColor: Colors.orange,
