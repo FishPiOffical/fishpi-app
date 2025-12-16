@@ -27,6 +27,9 @@ class PostLogic extends GetxController {
       content: md,
       tags: tag,
       showInList: 1,
+      commentable: true,
+      notifyFollowers: false,
+      anonymous: false,
     );
     var res = await imController.fishpi.article.post(articlePost);
     if (res != "") {
