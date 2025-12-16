@@ -16,7 +16,7 @@ class PostPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: PiTitleBar.back(
-        title: '发帖',
+        title: '发帖(简易版)',
       ),
       body: SafeArea(
         child: Container(
