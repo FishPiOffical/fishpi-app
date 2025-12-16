@@ -219,30 +219,35 @@ class ForumDetailPage extends StatelessWidget {
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  PiAvatar(
-                                    avatarURL:
-                                        logic.article.value.author.avatarURL,
-                                    width: 26.w,
-                                    height: 26.w,
-                                  ),
-                                  10.horizontalSpace,
-                                  SizedBox(
-                                    width: 100.w,
-                                    child: Text(
-                                      logic.article.value.authorName,
-                                      style: TextStyle(
-                                        fontSize: 16.sp,
-                                        color: Styles.secondaryTextColor,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
+                              GestureDetector(
+                                onTap: (){
+                                  AppNavigator.toUserPanel(userName: logic.article.value.authorName);
+                                },
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    PiAvatar(
+                                      avatarURL:
+                                      logic.article.value.author.avatarURL,
+                                      width: 26.w,
+                                      height: 26.w,
                                     ),
-                                  )
-                                ],
+                                    10.horizontalSpace,
+                                    SizedBox(
+                                      width: 100.w,
+                                      child: Text(
+                                        logic.article.value.authorName,
+                                        style: TextStyle(
+                                          fontSize: 16.sp,
+                                          color: Styles.secondaryTextColor,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    )
+                                  ],
+                                ),
                               ),
                               Row(
                                 mainAxisSize: MainAxisSize.min,

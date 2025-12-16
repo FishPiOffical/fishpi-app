@@ -20,10 +20,14 @@ class BlackListPage extends StatelessWidget {
         appBar: PiTitleBar.back(
           title: '黑名单',
         ),
-        body: ListView.builder(
-          itemBuilder: _buildBlackItem,
-          itemCount: logic.blackList.length,
-        ),
+        body: logic.blackList.isEmpty
+            ? const Center(
+              child: Text('暂无数据'),
+            )
+            : ListView.builder(
+                itemBuilder: _buildBlackItem,
+                itemCount: logic.blackList.length,
+              ),
       ),
     );
   }
@@ -83,7 +87,7 @@ class BlackListPage extends StatelessWidget {
               alignment: Alignment.center,
               child: Text(
                 "移出",
-                style: TextStyle(fontSize: 16.sp,fontWeight: FontWeight.bold),
+                style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.bold),
               ),
             ),
           )
