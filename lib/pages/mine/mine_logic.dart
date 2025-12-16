@@ -18,15 +18,16 @@ class MineLogic extends GetxController {
     print(userInfo.value.toJson());
   }
 
-  void toAccountPage(){
+  void toAccountPage() {
     AppNavigator.toAccount();
   }
-  
-  void toCollectionPage(){
-    AppNavigator.toCollection();
+
+  void toCollectionPage() {
+    List<Metal> metals = userInfo.value.sysMetal;
+    AppNavigator.toCollection(metals);
   }
 
-  void toSetUpPage(){
+  void toSetUpPage() {
     AppNavigator.toSetting();
   }
 }

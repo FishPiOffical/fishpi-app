@@ -1,3 +1,4 @@
+import 'package:fishpi/types/user.dart';
 import 'package:fishpi_app/widgets/pi_scan.dart';
 import 'package:fishpi_app/widgets/pi_scan_result.dart';
 import 'package:get/get.dart';
@@ -55,7 +56,8 @@ class AppNavigator {
   static void toComplaint() => Get.toNamed(AppRoutes.complaint);
 
   /// 典藏馆
-  static void toCollection() => Get.toNamed(AppRoutes.collection);
+  static void toCollection(List<Metal> metals) =>
+      Get.toNamed(AppRoutes.collection, arguments: {"metals": metals});
 
   /// 账号与安全
   static void toAccount() => Get.toNamed(AppRoutes.account);
