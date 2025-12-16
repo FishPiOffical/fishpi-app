@@ -235,4 +235,40 @@ class PiUtils {
 
     return '$prefix$suffix';
   }
+
+  static Widget roleWidget(String role) {
+    String src = '';
+    switch (role) {
+      case '管理员':
+        src = 'assets/images/role_admin.png';
+        break;
+      case 'OP':
+        src = 'assets/images/role_op.png';
+        break;
+      case '纪律委员':
+        src = 'assets/images/role_manage.png';
+        break;
+      case '超级会员':
+        src = 'assets/images/role_svip.png';
+        break;
+      case '成员':
+        src = 'assets/images/role_user.png';
+        break;
+      case '新手':
+        src = 'assets/images/role_new_user.png';
+        break;
+      default:
+        src = 'assets/images/role_new_user.png';
+        break;
+    }
+    return SizedBox(
+      height: 24.h,
+      child: Image.asset(
+        src,
+        height: 24.h,
+        fit: BoxFit.contain,
+        alignment: Alignment.centerLeft,
+      ),
+    );
+  }
 }

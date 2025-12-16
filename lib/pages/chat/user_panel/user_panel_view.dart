@@ -9,6 +9,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
+import '../../../utils/pi_utils.dart';
 import '../../../widgets/pi_menu_item.dart';
 import 'user_panel_logic.dart';
 
@@ -55,7 +56,9 @@ class UserPanelPage extends StatelessWidget {
                               bottomRight: Radius.circular(12.r),
                             ),
                             child: PiImage(
-                              imgUrl: logic.userInfo.value.cardBg,
+                              imgUrl: logic.userInfo.value.cardBg == ""
+                                  ? "https://file.fishpi.cn/2021/11/32ceecb7798ea1fa-82bd6ec7.jpg"
+                                  : logic.userInfo.value.cardBg,
                               width: 1.sw,
                               height: 250.h,
                               fit: BoxFit.cover,
@@ -148,49 +151,55 @@ class UserPanelPage extends StatelessWidget {
                                   overflow: TextOverflow.ellipsis,
                                 ),
                                 Row(
-                                  mainAxisAlignment: MainAxisAlignment.start,
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                   children: [
                                     Row(
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
-                                        Image.asset(
-                                          'assets/images/location.png',
-                                          width: 24.w,
-                                          height: 24.w,
+                                        Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Image.asset(
+                                              'assets/images/location.png',
+                                              width: 24.w,
+                                              height: 24.w,
+                                            ),
+                                            2.horizontalSpace,
+                                            Text(
+                                              logic.userInfo.value.city == ''
+                                                  ? '未知'
+                                                  : logic.userInfo.value.city,
+                                              style: TextStyle(
+                                                color: Styles.primaryTextColor,
+                                                fontSize: 16.sp,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
+                                          ],
                                         ),
-                                        2.horizontalSpace,
-                                        Text(
-                                          logic.userInfo.value.city == ''
-                                              ? '未知'
-                                              : logic.userInfo.value.city,
-                                          style: TextStyle(
-                                            color: Styles.primaryTextColor,
-                                            fontSize: 16.sp,
-                                            fontWeight: FontWeight.bold,
-                                          ),
+                                        10.horizontalSpace,
+                                        Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Image.asset(
+                                              'assets/images/coin_line.png',
+                                              width: 24.w,
+                                              height: 24.w,
+                                            ),
+                                            2.horizontalSpace,
+                                            Text(
+                                              logic.userInfo.value.point.toString(),
+                                              style: TextStyle(
+                                                color: Styles.primaryTextColor,
+                                                fontSize: 16.sp,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
+                                          ],
                                         ),
                                       ],
                                     ),
-                                    10.horizontalSpace,
-                                    Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Image.asset(
-                                          'assets/images/coin_line.png',
-                                          width: 24.w,
-                                          height: 24.w,
-                                        ),
-                                        2.horizontalSpace,
-                                        Text(
-                                          logic.userInfo.value.point.toString(),
-                                          style: TextStyle(
-                                            color: Styles.primaryTextColor,
-                                            fontSize: 16.sp,
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
+                                    PiUtils.roleWidget(logic.userInfo.value.role),
                                   ],
                                 ),
                               ],
@@ -332,7 +341,7 @@ class UserPanelPage extends StatelessWidget {
                       ],
                     ),
                   ),
-                  if (logic.tabIndex.value == 0)
+                  [
                     ListView.builder(
                       shrinkWrap: true,
                       physics: const NeverScrollableScrollPhysics(),
@@ -343,7 +352,6 @@ class UserPanelPage extends StatelessWidget {
                       itemBuilder: _buildArticleItem,
                       itemCount: logic.userArticles.length,
                     ),
-                  if (logic.tabIndex.value == 1)
                     ListView.builder(
                       shrinkWrap: true,
                       physics: const NeverScrollableScrollPhysics(),
@@ -354,7 +362,6 @@ class UserPanelPage extends StatelessWidget {
                       itemBuilder: _buildBreezemoonItem,
                       itemCount: logic.userBreezemoons.length,
                     ),
-                  if (logic.tabIndex.value == 2)
                     Container(
                       width: 1.sw - 32.w,
                       padding: EdgeInsets.all(10.w),
@@ -425,6 +432,7 @@ class UserPanelPage extends StatelessWidget {
                         ],
                       ),
                     )
+                  ][logic.tabIndex.value]
                 ],
               ),
       ),

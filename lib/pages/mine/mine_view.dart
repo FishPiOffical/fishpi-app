@@ -1,4 +1,5 @@
 import 'package:fishpi_app/res/styles.dart';
+import 'package:fishpi_app/utils/pi_utils.dart';
 import 'package:fishpi_app/widgets/pi_avatar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -73,7 +74,7 @@ class MinePage extends StatelessWidget {
                                     ),
                                   ),
                                   10.horizontalSpace,
-                                  _buildRoleWidget(logic.userInfo.value.role),
+                                  PiUtils.roleWidget(logic.userInfo.value.role),
                                   // Row(
                                   //   mainAxisSize: MainAxisSize.min,
                                   //   children: [
@@ -190,44 +191,6 @@ class MinePage extends StatelessWidget {
             ],
           ),
         ),
-      ),
-    );
-  }
-
-  Widget _buildRoleWidget(String role) {
-    String src = '';
-    switch (role) {
-      case '管理员':
-        src = 'assets/images/role_admin.png';
-        break;
-      case 'OP':
-        src = 'assets/images/role_op.png';
-        break;
-      case '纪律委员':
-        src = 'assets/images/role_manage.png';
-        break;
-      case '超级会员':
-        src = 'assets/images/role_svip.png';
-        break;
-      case '成员':
-        src = 'assets/images/role_user.png';
-        break;
-      case '新手':
-        src = 'assets/images/role_new_user.png';
-        break;
-      default:
-        src = 'assets/images/role_new_user.png';
-        break;
-    }
-    return SizedBox(
-      width: 80.w,
-      height: 24.h,
-      child: Image.asset(
-        src,
-        width: 80.w,
-        height: 24.h,
-        fit: BoxFit.contain,
-        alignment: Alignment.centerLeft,
       ),
     );
   }

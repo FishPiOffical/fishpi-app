@@ -1,6 +1,7 @@
 import 'package:fishpi/fishpi.dart';
 import 'package:fishpi_app/core/controller/im.dart';
 import 'package:fishpi_app/core/sql/black_list.dart';
+import 'package:fishpi_app/routers/navigator.dart';
 import 'package:fishpi_app/widgets/pi_editer.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -118,7 +119,13 @@ class UserPanelLogic extends GetxController {
     }
   }
 
-  void toChat() {}
+  void toChat() {
+    AppNavigator.toChat(
+      isGroup: false,
+      userName: userInfo.value.userName,
+      userID: userInfo.value.oId,
+    );
+  }
 
   void toSetLabel() {
     Navigator.push(
