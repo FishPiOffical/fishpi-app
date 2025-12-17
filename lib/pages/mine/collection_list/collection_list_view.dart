@@ -1,7 +1,7 @@
-import 'package:fishpi_app/widgets/pi_image.dart';
 import 'package:fishpi_app/widgets/pi_title_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:flutter_svg_provider/flutter_svg_provider.dart';
 import 'package:get/get.dart';
 
 import 'collection_list_logic.dart';
@@ -21,11 +21,16 @@ class CollectionListPage extends StatelessWidget {
           ? ListView.builder(
               itemCount: logic.metals.length,
               itemBuilder: (context, index) {
-                return Image.network(
-                  logic.metals[index].url + '&apiKey=${logic.apikey.value}',
-                  width: 1.sw,
+                // TODO：坏了 svg 勋章显示不了，待修复
+                return Image(
+                  image: Svg(
+                    logic.metals[index].url + '&apiKey=${logic.apikey.value}',
+                    source: SvgSource.network,
+                  ),
+                  height: 1.sw,
+                  width: 200,
+                  fit: BoxFit.contain,
                 );
-                // return Text(logic.metals[index].url + '&apiKey=${logic.apikey.value}');
               },
             )
           : Center(child: Text('暂无数据')),
