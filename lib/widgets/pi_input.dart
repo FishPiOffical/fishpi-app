@@ -11,6 +11,7 @@ class PiInput extends StatelessWidget {
   final TextAlign? textAlign;
   final FocusNode? focusNode;
   final Function()? onEditingComplete;
+  final bool? obscureText;
 
   const PiInput({
     required this.controller,
@@ -20,6 +21,7 @@ class PiInput extends StatelessWidget {
     this.textAlign,
     this.focusNode,
     this.onEditingComplete,
+    this.obscureText,
     super.key,
   });
 
@@ -30,6 +32,7 @@ class PiInput extends StatelessWidget {
       cursorColor: Colors.black,
       textAlign: textAlign ?? TextAlign.center,
       textAlignVertical: TextAlignVertical.center,
+      obscureText: obscureText ?? false,
       focusNode: focusNode,
       style: TextStyle(
         fontSize: 14.sp,

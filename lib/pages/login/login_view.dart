@@ -104,9 +104,9 @@ class LoginPage extends StatelessWidget {
                       children: [
                         Text(
                           '还没有账号?'.tr,
-                          style: const TextStyle(
+                          style: TextStyle(
                               color: Colors.black,
-                              fontSize: 10.0,
+                              fontSize: 13.sp,
                               fontWeight: FontWeight.bold),
                         ),
                         GestureDetector(
@@ -115,9 +115,9 @@ class LoginPage extends StatelessWidget {
                           },
                           child: Text(
                             '现在注册'.tr,
-                            style: const TextStyle(
+                            style: TextStyle(
                                 color: Colors.red,
-                                fontSize: 10.0,
+                                fontSize: 13.sp,
                                 fontWeight: FontWeight.bold),
                           ),
                         ),
@@ -169,6 +169,7 @@ class LoginPage extends StatelessWidget {
         hintText: '密码',
         prefixIcon: const Icon(Icons.lock),
         controller: logic.pwdController,
+        obscureText: true,
         onInputChanged: (text) {
           logic.onPwdChanged(text);
         },
