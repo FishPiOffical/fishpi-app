@@ -64,6 +64,7 @@ dependencies:
   url_launcher: ^6.3.1
   fleather: ^1.26.0
   flutter_svg_provider: ^1.0.7
+  auto_size_text: ^3.0.0
 
 dev_dependencies:
   flutter_test:

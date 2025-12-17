@@ -4,6 +4,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg_provider/flutter_svg_provider.dart';
 import 'package:get/get.dart';
 
+import '../../../widgets/metail_widget.dart';
 import 'collection_list_logic.dart';
 
 class CollectionListPage extends StatelessWidget {
@@ -21,19 +22,31 @@ class CollectionListPage extends StatelessWidget {
           ? ListView.builder(
               itemCount: logic.metals.length,
               itemBuilder: (context, index) {
-                // TODO：坏了 svg 勋章显示不了，待修复
-                return Image(
-                  image: Svg(
-                    logic.metals[index].url + '&apiKey=${logic.apikey.value}',
-                    source: SvgSource.network,
+                return Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    border: Border(
+                      bottom: BorderSide(
+                        color: Colors.grey.shade300,
+                        width: 1,
+                      ),
+                    ),
                   ),
-                  height: 1.sw,
-                  width: 200,
-                  fit: BoxFit.contain,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      MedalWidget(
+                        medal: logic.metals[index],
+                      ),
+                      10.verticalSpace,
+                      Text(logic.metals[index].description)
+                    ],
+                  ),
                 );
               },
             )
-          : Center(child: Text('暂无数据')),
+          : const Center(child: Text('暂无数据')),
     );
   }
 }
