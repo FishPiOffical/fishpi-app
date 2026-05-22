@@ -33,6 +33,10 @@ class ChatMessageDomElement extends StatelessWidget {
   }
 }
 
+/// 按 DOM 节点原始顺序渲染聊天 HTML。
+///
+/// 不要在父元素上直接使用 element.text 渲染整段内容，否则嵌套标签的
+/// 后代文本会被父节点和子节点各渲染一次。
 class ChatMessageDomNode extends StatelessWidget {
   final dom.Node node;
   final dynamic chat;
@@ -152,6 +156,7 @@ class ChatMessageDomNode extends StatelessWidget {
       final child = element.nodes[index];
       if (!_shouldRenderNode(element.nodes, index)) continue;
 
+      // 连续行内节点放进同一个 Wrap，块级节点则单独占一行。
       if (_isInlineNode(child)) {
         inlineNodes.add(_IndexedNode(index, child));
       } else {
@@ -199,6 +204,7 @@ class ChatMessageDomNode extends StatelessWidget {
       node: child,
       chat: chat,
       isSelf: isSelf,
+      // 路径跟随 DOM 位置，用来生成稳定 Hero tag，避免 build 后变化。
       nodePath: '$nodePath.$index',
       textStyle: childTextStyle ?? textStyle,
       listIndex: childListIndex,
@@ -311,6 +317,8 @@ class ChatMessageDomNode extends StatelessWidget {
     if (node is dom.Text) return true;
     if (node is! dom.Element) return false;
 
+    // 这里维护的是“布局角色”，不是 HTML 语义完整分类。
+    // 新增标签时先判断它应该跟文本同行，还是单独成为一个块。
     switch (node.localName) {
       case "p":
       case "div":
@@ -334,6 +342,8 @@ class ChatMessageDomNode extends StatelessWidget {
     if (normalized.isEmpty) return false;
     if (normalized.trim().isNotEmpty) return true;
 
+    // HTML 解析会保留排版空白。只在两个行内节点之间保留一个空格，
+    // 避免源码换行或缩进在消息气泡里变成多余空白。
     return _hasInlineSibling(nodes, index, -1) &&
         _hasInlineSibling(nodes, index, 1);
   }

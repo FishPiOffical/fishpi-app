@@ -36,6 +36,7 @@ class _ChatDetailMessageState extends State<ChatDetailMessage> {
         children: [
           Text(isExpanded ? '#收起' : '#展开'),
           if (isExpanded)
+            // details 内可能同时包含普通文本和元素节点，必须按 nodes 渲染。
             ...List.generate(
               widget.content.nodes.length,
               (index) => ChatMessageDomNode(
