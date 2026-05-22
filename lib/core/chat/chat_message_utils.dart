@@ -78,9 +78,12 @@ class ChatMessageUtils {
     Iterable<ChatRoomMessage> messages,
     Iterable<BlackUser> blackUsers,
   ) {
-    return messages
-        .where((message) => !isBlockedMessage(message, blackUsers))
-        .toList();
+    return BlackList.visibleItems(
+      messages,
+      blackUsers,
+      oId: (message) => message.userOId.toString(),
+      userName: (message) => message.userName,
+    );
   }
 
   static bool hasMoreHistoryPage(int rawCount) {
@@ -134,13 +137,11 @@ class ChatMessageUtils {
     ChatRoomMessage message,
     Iterable<BlackUser> blackUsers,
   ) {
-    final userId = message.userOId.toString();
-    return blackUsers.any((user) {
-      final blackId = user.oId ?? '';
-      final blackName = user.userName ?? '';
-      return (blackId.isNotEmpty && blackId == userId) ||
-          (blackName.isNotEmpty && blackName == message.userName);
-    });
+    return BlackList.isBlockedUser(
+      blackUsers,
+      oId: message.userOId.toString(),
+      userName: message.userName,
+    );
   }
 
   static ParsedChatContent parseChatContent(String content) {

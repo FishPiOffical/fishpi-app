@@ -1,6 +1,9 @@
+import 'dart:async';
+
 import 'package:fishpi/types/breezemoon.dart';
 import 'package:fishpi_app/core/controller/im.dart';
 import 'package:fishpi_app/core/manager/toast.dart';
+import 'package:fishpi_app/core/sql/black_list.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:get/get.dart';
 import 'package:pull_to_refresh/pull_to_refresh.dart';
@@ -14,26 +17,33 @@ class BreezemoonsLogic extends GetxController {
   final isFinished = false.obs;
 
   final breezemoons = ''.obs;
+  final List<BlackUser> _blackUsers = [];
+  StreamSubscription<void>? _blackListSubscription;
 
   TextEditingController textEditingController = TextEditingController();
 
   @override
   void onInit() {
+    _blackListSubscription ??= BlackList.changes.listen((_) {
+      _reloadBlackUsersAndFilterList();
+    });
     initBreezemoon();
     super.onInit();
   }
 
   void initBreezemoon() async {
+    await _loadBlackUsers();
     List<BreezemoonContent> res = await imController.fishpi.breezemoon.list(
       page: page.value,
       size: 15,
     );
+    final visibleList = _visibleBreezemoons(res);
     if (page.value == 1) {
-      list.value = res;
+      list.value = visibleList;
       list.refresh();
       refresherController.loadComplete();
     } else {
-      list.addAll(res);
+      list.addAll(visibleList);
       list.refresh();
       if (res.isNotEmpty) {
         refresherController.loadComplete();
@@ -42,6 +52,33 @@ class BreezemoonsLogic extends GetxController {
         isFinished.value = true;
       }
     }
+  }
+
+  List<BreezemoonContent> _visibleBreezemoons(
+    Iterable<BreezemoonContent> source,
+  ) {
+    return BlackList.visibleItems(
+      source,
+      _blackUsers,
+      userName: (item) => item.authorName,
+    );
+  }
+
+  Future<void> _loadBlackUsers() async {
+    try {
+      await BlackList.init();
+      _blackUsers
+        ..clear()
+        ..addAll(await BlackList.getAllUser());
+    } catch (_) {
+      _blackUsers.clear();
+    }
+  }
+
+  Future<void> _reloadBlackUsersAndFilterList() async {
+    await _loadBlackUsers();
+    list.assignAll(_visibleBreezemoons(list));
+    list.refresh();
   }
 
   void onRefresh() {
@@ -69,5 +106,11 @@ class BreezemoonsLogic extends GetxController {
     textEditingController.text = '';
     breezemoons.value = '';
     onRefresh();
+  }
+
+  @override
+  void onClose() {
+    _blackListSubscription?.cancel();
+    super.onClose();
   }
 }

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:fishpi/fishpi.dart';
 import 'package:fishpi_app/core/controller/im.dart';
 import 'package:fishpi_app/core/sql/black_list.dart';
@@ -19,11 +21,16 @@ class UserPanelLogic extends GetxController {
 
   final userArticles = <ArticleDetail>[].obs;
   final userBreezemoons = <BreezemoonContent>[].obs;
+  final List<BlackUser> _blackUsers = [];
+  StreamSubscription<void>? _blackListSubscription;
 
   @override
   void onInit() {
     var args = Get.arguments;
     userName.value = args['userName'] ?? '';
+    _blackListSubscription ??= BlackList.changes.listen((_) {
+      _reloadBlackUsersAndFilterList();
+    });
     getUserInfo();
     BlackList.init();
     super.onInit();
@@ -38,21 +45,23 @@ class UserPanelLogic extends GetxController {
   }
 
   void getUserArticles() async {
+    await _loadBlackUsers();
     ArticleList res = await imController.fishpi.article.listByUser(
       user: userName.value,
       page: 1,
       size: 15,
     );
-    userArticles.value = res.list;
+    userArticles.value = _visibleArticles(res.list);
   }
 
   void getUserBreezemoons() async {
+    await _loadBlackUsers();
     List<BreezemoonContent> res = await imController.fishpi.breezemoon.list(
       user: userName.value,
       page: 1,
       size: 15,
     );
-    userBreezemoons.value = res;
+    userBreezemoons.value = _visibleBreezemoons(res);
   }
 
   void toFollow() async {
@@ -150,5 +159,49 @@ class UserPanelLogic extends GetxController {
 
   void changeTab(int idx) {
     tabIndex.value = idx;
+  }
+
+  List<ArticleDetail> _visibleArticles(Iterable<ArticleDetail> source) {
+    return BlackList.visibleItems(
+      source,
+      _blackUsers,
+      oId: (item) => item.authorId,
+      userName: (item) => item.authorName,
+    );
+  }
+
+  List<BreezemoonContent> _visibleBreezemoons(
+    Iterable<BreezemoonContent> source,
+  ) {
+    return BlackList.visibleItems(
+      source,
+      _blackUsers,
+      userName: (item) => item.authorName,
+    );
+  }
+
+  Future<void> _loadBlackUsers() async {
+    try {
+      await BlackList.init();
+      _blackUsers
+        ..clear()
+        ..addAll(await BlackList.getAllUser());
+    } catch (_) {
+      _blackUsers.clear();
+    }
+  }
+
+  Future<void> _reloadBlackUsersAndFilterList() async {
+    await _loadBlackUsers();
+    userArticles.assignAll(_visibleArticles(userArticles));
+    userBreezemoons.assignAll(_visibleBreezemoons(userBreezemoons));
+    userArticles.refresh();
+    userBreezemoons.refresh();
+  }
+
+  @override
+  void onClose() {
+    _blackListSubscription?.cancel();
+    super.onClose();
   }
 }

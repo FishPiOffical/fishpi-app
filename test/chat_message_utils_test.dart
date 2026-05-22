@@ -1,5 +1,7 @@
 import 'package:fishpi/types/chat.dart';
 import 'package:fishpi/types/chatroom.dart';
+import 'package:fishpi/types/article.dart';
+import 'package:fishpi/types/breezemoon.dart';
 import 'package:fishpi_app/core/chat/chat_message_utils.dart';
 import 'package:fishpi_app/core/sql/black_list.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -78,6 +80,74 @@ void main() {
       ];
 
       expect(ChatMessageUtils.isBlockedMessage(message, blackUsers), isTrue);
+    });
+
+    test('黑名单按 oId 命中文章作者', () {
+      final articles = [
+        ArticleDetail(authorId: '100', authorName: 'blocked', oId: 'a1'),
+        ArticleDetail(authorId: '200', authorName: 'visible', oId: 'a2'),
+      ];
+      final blackUsers = [
+        BlackUser(oId: '100', userName: 'other-name'),
+      ];
+
+      final result = BlackList.visibleItems(
+        articles,
+        blackUsers,
+        oId: (item) => item.authorId,
+        userName: (item) => item.authorName,
+      );
+
+      expect(result.map((item) => item.oId), ['a2']);
+    });
+
+    test('黑名单按用户名命中清风明月作者', () {
+      final breezemoons = [
+        BreezemoonContent(authorName: 'blocked', oId: 'b1'),
+        BreezemoonContent(authorName: 'visible', oId: 'b2'),
+      ];
+      final blackUsers = [
+        BlackUser(userName: 'blocked'),
+      ];
+
+      final result = BlackList.visibleItems(
+        breezemoons,
+        blackUsers,
+        userName: (item) => item.authorName,
+      );
+
+      expect(result.map((item) => item.oId), ['b2']);
+    });
+
+    test('过滤文章和清风明月时保持原始顺序', () {
+      final articles = [
+        ArticleDetail(authorId: '1', authorName: 'first', oId: 'a1'),
+        ArticleDetail(authorId: '2', authorName: 'blocked', oId: 'a2'),
+        ArticleDetail(authorId: '3', authorName: 'third', oId: 'a3'),
+      ];
+      final breezemoons = [
+        BreezemoonContent(authorName: 'first', oId: 'b1'),
+        BreezemoonContent(authorName: 'blocked', oId: 'b2'),
+        BreezemoonContent(authorName: 'third', oId: 'b3'),
+      ];
+      final blackUsers = [
+        BlackUser(oId: '2', userName: 'blocked'),
+      ];
+
+      final visibleArticles = BlackList.visibleItems(
+        articles,
+        blackUsers,
+        oId: (item) => item.authorId,
+        userName: (item) => item.authorName,
+      );
+      final visibleBreezemoons = BlackList.visibleItems(
+        breezemoons,
+        blackUsers,
+        userName: (item) => item.authorName,
+      );
+
+      expect(visibleArticles.map((item) => item.oId), ['a1', 'a3']);
+      expect(visibleBreezemoons.map((item) => item.oId), ['b1', 'b3']);
     });
 
     test('历史消息会过滤黑名单用户', () {

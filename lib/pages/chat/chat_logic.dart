@@ -39,6 +39,7 @@ class ChatLogic extends GetxController {
   final List<BlackUser> _blackUsers = [];
   StreamSubscription<ChatRoomData>? _chatRoomSubscription;
   StreamSubscription<PrivateChatEvent>? _privateChatSubscription;
+  StreamSubscription<void>? _blackListSubscription;
   bool _scrollListenerAttached = false;
 
   ConversationLogic? get _conversationController =>
@@ -60,6 +61,9 @@ class ChatLogic extends GetxController {
     }
     imController.fishpi.user.info().then((value) => userInfo.value = value);
     isClose.value = false;
+    _blackListSubscription ??= BlackList.changes.listen((_) {
+      _reloadBlackUsersAndFilterMessages();
+    });
     initChatRoom();
     loadEmojis();
   }
@@ -312,11 +316,20 @@ class ChatLogic extends GetxController {
     }
   }
 
+  Future<void> _reloadBlackUsersAndFilterMessages() async {
+    await _loadBlackUsers();
+    messageList.assignAll(
+      ChatMessageUtils.visibleMessages(messageList, _blackUsers),
+    );
+    messageList.refresh();
+  }
+
   @override
   void onClose() {
     isClose.value = true;
     _chatRoomSubscription?.cancel();
     _privateChatSubscription?.cancel();
+    _blackListSubscription?.cancel();
     if (!isGroup.value) {
       imController.unwatchPrivateChat(userName.value);
     }

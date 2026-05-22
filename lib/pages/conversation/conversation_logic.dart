@@ -18,6 +18,7 @@ class ConversationLogic extends GetxController {
   final List<BlackUser> _blackUsers = [];
   StreamSubscription<ChatRoomData>? _chatRoomSubscription;
   StreamSubscription<PrivateChatEvent>? _privateChatSubscription;
+  StreamSubscription<void>? _blackListSubscription;
 
   @override
   void onInit() {
@@ -34,10 +35,10 @@ class ConversationLogic extends GetxController {
 
     try {
       final history = await imController.fishpi.chatroom.more(1);
-      final visibleHistory = history.reversed
-          .where((message) =>
-              !ChatMessageUtils.isBlockedMessage(message, _blackUsers))
-          .toList();
+      final visibleHistory = ChatMessageUtils.visibleMessages(
+        history.reversed,
+        _blackUsers,
+      );
       chatRoomMsg.assignAll(visibleHistory);
       chatRoomLastMsg.value =
           visibleHistory.isEmpty ? ChatRoomMessage() : visibleHistory.last;
@@ -55,6 +56,9 @@ class ConversationLogic extends GetxController {
     _chatRoomSubscription ??= imController.chatRoomStream.listen(_onChatRoom);
     _privateChatSubscription ??=
         imController.privateChatStream.listen(_onPrivateChat);
+    _blackListSubscription ??= BlackList.changes.listen((_) {
+      _reloadBlackUsersAndFilterChatRoom();
+    });
   }
 
   void _onChatRoom(ChatRoomData data) {
@@ -131,10 +135,22 @@ class ConversationLogic extends GetxController {
     }
   }
 
+  Future<void> _reloadBlackUsersAndFilterChatRoom() async {
+    await _loadBlackUsers();
+    chatRoomMsg.assignAll(
+      ChatMessageUtils.visibleMessages(chatRoomMsg, _blackUsers),
+    );
+    chatRoomLastMsg.value =
+        chatRoomMsg.isEmpty ? ChatRoomMessage() : chatRoomMsg.last;
+    chatRoomMsg.refresh();
+    chatRoomLastMsg.refresh();
+  }
+
   @override
   void onClose() {
     _chatRoomSubscription?.cancel();
     _privateChatSubscription?.cancel();
+    _blackListSubscription?.cancel();
     super.onClose();
   }
 }
