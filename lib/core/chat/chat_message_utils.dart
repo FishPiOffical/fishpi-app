@@ -53,6 +53,40 @@ class ChatMessageUtils {
     return next;
   }
 
+  static List<ChatRoomMessage> prependUniqueChatRoomMessages(
+    List<ChatRoomMessage> source,
+    Iterable<ChatRoomMessage> history,
+  ) {
+    final existingKeys = source.map(messageKey).where((key) => key.isNotEmpty);
+    final seenKeys = existingKeys.toSet();
+    final olderMessages = <ChatRoomMessage>[];
+
+    for (final message in history) {
+      final key = messageKey(message);
+      if (key.isNotEmpty && seenKeys.contains(key)) continue;
+      if (key.isNotEmpty) seenKeys.add(key);
+      olderMessages.add(message);
+    }
+
+    return [
+      ...olderMessages,
+      ...source,
+    ];
+  }
+
+  static List<ChatRoomMessage> visibleMessages(
+    Iterable<ChatRoomMessage> messages,
+    Iterable<BlackUser> blackUsers,
+  ) {
+    return messages
+        .where((message) => !isBlockedMessage(message, blackUsers))
+        .toList();
+  }
+
+  static bool hasMoreHistoryPage(int rawCount) {
+    return rawCount > 0;
+  }
+
   static List<ChatRoomMessage> removeChatRoomMessage(
     List<ChatRoomMessage> source,
     String messageId,

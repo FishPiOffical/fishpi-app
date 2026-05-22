@@ -39,6 +39,25 @@ void main() {
       expect(limited.map((item) => item.oId), ['2']);
     });
 
+    test('历史消息插入列表头部时保持顺序并按 oId 去重', () {
+      final current = [
+        ChatRoomMessage(oId: '3', content: '<p>3</p>'),
+        ChatRoomMessage(oId: '4', content: '<p>4</p>'),
+      ];
+      final history = [
+        ChatRoomMessage(oId: '1', content: '<p>1</p>'),
+        ChatRoomMessage(oId: '2', content: '<p>2</p>'),
+        ChatRoomMessage(oId: '3', content: '<p>重复</p>'),
+      ];
+
+      final result = ChatMessageUtils.prependUniqueChatRoomMessages(
+        current,
+        history,
+      );
+
+      expect(result.map((item) => item.oId), ['1', '2', '3', '4']);
+    });
+
     test('私聊会话更新时同一会话置顶', () {
       final oldMessage = _chatData(oId: 'old', fromId: 'u1');
       final otherMessage = _chatData(oId: 'other', fromId: 'u2');
@@ -59,6 +78,25 @@ void main() {
       ];
 
       expect(ChatMessageUtils.isBlockedMessage(message, blackUsers), isTrue);
+    });
+
+    test('历史消息会过滤黑名单用户', () {
+      final messages = [
+        ChatRoomMessage(oId: '1', userOId: 100, userName: 'blocked'),
+        ChatRoomMessage(oId: '2', userOId: 200, userName: 'visible'),
+      ];
+      final blackUsers = [
+        BlackUser(oId: '100', userName: 'blocked'),
+      ];
+
+      final result = ChatMessageUtils.visibleMessages(messages, blackUsers);
+
+      expect(result.map((item) => item.oId), ['2']);
+    });
+
+    test('空历史页会标记为无更多', () {
+      expect(ChatMessageUtils.hasMoreHistoryPage(0), isFalse);
+      expect(ChatMessageUtils.hasMoreHistoryPage(1), isTrue);
     });
 
     test('会话预览兼容文本、图片、视频和空内容', () {

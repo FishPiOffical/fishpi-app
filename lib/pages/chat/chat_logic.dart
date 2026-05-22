@@ -22,6 +22,10 @@ class ChatLogic extends GetxController {
   final userID = ''.obs;
   final isClose = true.obs;
   final isSeeHistory = false.obs;
+  final isLoadingHistory = false.obs;
+  final hasMoreHistory = true.obs;
+  final historyPage = 0.obs;
+  final int historyPageSize = 20;
 
   ScrollController chatRoomController = ScrollController();
   TextEditingController chatRoomControllerText = TextEditingController();
@@ -73,27 +77,15 @@ class ChatLogic extends GetxController {
     await _loadBlackUsers();
     if (isGroup.value) {
       if (messageList.isEmpty) {
-        final history = await imController.fishpi.chatroom.more(1);
-        for (final message in history.reversed) {
-          _appendMessage(message, shouldScroll: false);
-        }
+        await _loadInitialHistory();
+      } else {
+        historyPage.value = 1;
       }
       _chatRoomSubscription ??=
           imController.chatRoomStream.listen(_onChatRoomData);
       scrollToBottom(delay: 300);
     } else {
-      List<ChatData> list = await imController.fishpi.chat.get(
-        user: userName.value,
-        page: 1,
-      );
-      list = list.reversed.toList();
-      for (var ele in list) {
-        _appendMessage(
-          ChatMessageUtils.chatDataToRoomMessage(ele),
-          shouldScroll: false,
-        );
-      }
-      messageList.refresh();
+      await _loadInitialHistory(markPrivateRead: true);
       scrollToBottom(delay: 300);
       _privateChatSubscription ??= imController
           .watchPrivateChat(userName.value)
@@ -130,7 +122,6 @@ class ChatLogic extends GetxController {
       ChatMessageUtils.appendUniqueChatRoomMessage(
         messageList,
         message,
-        maxLength: isGroup.value ? 50 : null,
       ),
     );
     messageList.refresh();
@@ -148,9 +139,120 @@ class ChatLogic extends GetxController {
 
   void _handleScroll() {
     if (!chatRoomController.hasClients) return;
-    final distance = chatRoomController.position.maxScrollExtent -
-        chatRoomController.position.pixels;
+    final position = chatRoomController.position;
+    final distance = position.maxScrollExtent - position.pixels;
     isSeeHistory.value = distance >= 100;
+    if (position.pixels <= 80) {
+      loadMoreHistory();
+    }
+  }
+
+  Future<void> _loadInitialHistory({bool markPrivateRead = false}) async {
+    isLoadingHistory.value = true;
+    try {
+      final result = await _fetchHistoryPage(
+        1,
+        markPrivateRead: markPrivateRead,
+      );
+      hasMoreHistory.value =
+          ChatMessageUtils.hasMoreHistoryPage(result.rawCount);
+      if (!hasMoreHistory.value) return;
+
+      historyPage.value = 1;
+      messageList.assignAll(result.messages);
+      messageList.refresh();
+    } catch (e) {
+      ToastManager.showToast('加载历史消息失败：$e');
+    } finally {
+      isLoadingHistory.value = false;
+    }
+  }
+
+  Future<void> loadMoreHistory() async {
+    if (isLoadingHistory.value || !hasMoreHistory.value) return;
+
+    final oldMaxScrollExtent = chatRoomController.hasClients
+        ? chatRoomController.position.maxScrollExtent
+        : 0.0;
+    final oldPixels = chatRoomController.hasClients
+        ? chatRoomController.position.pixels
+        : 0.0;
+
+    isLoadingHistory.value = true;
+    try {
+      final nextPage = historyPage.value + 1;
+      final result = await _fetchHistoryPage(
+        nextPage,
+        markPrivateRead: false,
+      );
+      hasMoreHistory.value =
+          ChatMessageUtils.hasMoreHistoryPage(result.rawCount);
+      if (!hasMoreHistory.value) return;
+
+      historyPage.value = nextPage;
+      final beforeLength = messageList.length;
+      messageList.assignAll(
+        ChatMessageUtils.prependUniqueChatRoomMessages(
+          messageList,
+          result.messages,
+        ),
+      );
+      messageList.refresh();
+
+      if (messageList.length > beforeLength) {
+        _restoreScrollOffsetAfterPrepend(oldMaxScrollExtent, oldPixels);
+      }
+    } catch (e) {
+      ToastManager.showToast('加载历史消息失败：$e');
+    } finally {
+      isLoadingHistory.value = false;
+    }
+  }
+
+  Future<_HistoryPageResult> _fetchHistoryPage(
+    int page, {
+    required bool markPrivateRead,
+  }) async {
+    if (isGroup.value) {
+      final history = await imController.fishpi.chatroom.more(page);
+      final messages = ChatMessageUtils.visibleMessages(
+        history.reversed,
+        _blackUsers,
+      );
+      return _HistoryPageResult(
+        rawCount: history.length,
+        messages: messages,
+      );
+    }
+
+    final history = await imController.fishpi.chat.get(
+      user: userName.value,
+      page: page,
+      size: historyPageSize,
+      autoRead: markPrivateRead,
+    );
+    final messages =
+        history.reversed.map(ChatMessageUtils.chatDataToRoomMessage).toList();
+    return _HistoryPageResult(
+      rawCount: history.length,
+      messages: ChatMessageUtils.visibleMessages(messages, _blackUsers),
+    );
+  }
+
+  void _restoreScrollOffsetAfterPrepend(
+    double oldMaxScrollExtent,
+    double oldPixels,
+  ) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (isClose.value || !chatRoomController.hasClients) return;
+
+      final position = chatRoomController.position;
+      final addedExtent = position.maxScrollExtent - oldMaxScrollExtent;
+      final target = (oldPixels + addedExtent)
+          .clamp(0.0, position.maxScrollExtent)
+          .toDouble();
+      chatRoomController.jumpTo(target);
+    });
   }
 
   void scrollToBottom({int? delay}) {
@@ -226,4 +328,14 @@ class ChatLogic extends GetxController {
     chatRoomFocusNode.dispose();
     super.onClose();
   }
+}
+
+class _HistoryPageResult {
+  final int rawCount;
+  final List<ChatRoomMessage> messages;
+
+  const _HistoryPageResult({
+    required this.rawCount,
+    required this.messages,
+  });
 }
