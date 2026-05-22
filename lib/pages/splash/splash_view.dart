@@ -32,14 +32,14 @@ class _SplashScreenPageState extends State<SplashPage>
 
     Future.delayed(const Duration(seconds: 1))
         .then((value) => setState(() => expanded = true))
-    // .then((value) => const Duration(seconds: 1))
+        // .then((value) => const Duration(seconds: 1))
         .then(
           (value) => Future.delayed(const Duration(seconds: 1)).then((value) {
-        _lottieAnimation.forward().then((value) {
-          logic.toStartApp();
-        });
-      }),
-    );
+            _lottieAnimation.forward().then((value) {
+              logic.toStartApp();
+            });
+          }),
+        );
     super.initState();
   }
 

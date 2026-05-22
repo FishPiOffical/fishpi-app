@@ -12,11 +12,6 @@ class LoginLogic extends GetxController {
   final pwd = "".obs;
   final mfaCode = "".obs;
 
-  @override
-  void onInit() {
-    super.onInit();
-  }
-
   /// 用户名输入框输入
   void onUserNameChanged(value) {
     userName.value = value;
@@ -38,7 +33,6 @@ class LoginLogic extends GetxController {
       passwd: pwd.value,
       mfaCode: mfaCode.value,
     );
-    print(loginData);
     return imController.login(
       loginData,
       mfaCb: mfaCb,

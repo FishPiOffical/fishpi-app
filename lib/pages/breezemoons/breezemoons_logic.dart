@@ -5,7 +5,6 @@ import 'package:flutter/cupertino.dart';
 import 'package:get/get.dart';
 import 'package:pull_to_refresh/pull_to_refresh.dart';
 
-
 class BreezemoonsLogic extends GetxController {
   final refresherController = RefreshController();
   final imController = Get.find<IMController>();
@@ -19,52 +18,51 @@ class BreezemoonsLogic extends GetxController {
   TextEditingController textEditingController = TextEditingController();
 
   @override
-  void onInit(){
+  void onInit() {
     initBreezemoon();
     super.onInit();
   }
 
-  void initBreezemoon() async{
+  void initBreezemoon() async {
     List<BreezemoonContent> res = await imController.fishpi.breezemoon.list(
       page: page.value,
       size: 15,
     );
-    print(res.toString());
-    if(page.value == 1){
+    if (page.value == 1) {
       list.value = res;
       list.refresh();
       refresherController.loadComplete();
-    }else{
+    } else {
       list.addAll(res);
       list.refresh();
-      if(res.isNotEmpty) {
+      if (res.isNotEmpty) {
         refresherController.loadComplete();
-      }else{
+      } else {
         refresherController.loadNoData();
         isFinished.value = true;
       }
     }
   }
 
-  void onRefresh(){
+  void onRefresh() {
     isFinished.value = false;
     page.value = 1;
     initBreezemoon();
     refresherController.refreshCompleted();
   }
 
-  void onLoading(){
-    if(isFinished.value) return;
+  void onLoading() {
+    if (isFinished.value) return;
     page.value++;
     initBreezemoon();
   }
 
-  void onInputChanged(text){
+  void onInputChanged(text) {
     breezemoons.value = text;
   }
 
-  void sendBreezemoon() async{
-    if(breezemoons.value == '') return;
+  void sendBreezemoon() async {
+    if (breezemoons.value == '') return;
     ToastManager.show();
     await imController.fishpi.breezemoon.send(breezemoons.value);
     ToastManager.dismiss();

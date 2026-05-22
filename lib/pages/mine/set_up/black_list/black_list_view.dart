@@ -22,8 +22,8 @@ class BlackListPage extends StatelessWidget {
         ),
         body: logic.blackList.isEmpty
             ? const Center(
-              child: Text('暂无数据'),
-            )
+                child: Text('暂无数据'),
+              )
             : ListView.builder(
                 itemBuilder: _buildBlackItem,
                 itemCount: logic.blackList.length,

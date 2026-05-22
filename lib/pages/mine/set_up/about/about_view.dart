@@ -1,6 +1,4 @@
 import 'package:fishpi_app/res/styles.dart';
-import 'package:fishpi_app/widgets/pi_image.dart';
-import 'package:fishpi_app/widgets/pi_title_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
@@ -38,7 +36,7 @@ class AboutPage extends StatelessWidget {
                   width: 1.sw - 32.w,
                   height: 40.w,
                   alignment: Alignment.centerLeft,
-                  child: Icon(Icons.arrow_back_ios_outlined),
+                  child: const Icon(Icons.arrow_back_ios_outlined),
                 ),
               ),
               100.verticalSpace,

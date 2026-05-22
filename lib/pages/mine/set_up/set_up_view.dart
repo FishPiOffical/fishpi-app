@@ -10,7 +10,7 @@ import 'set_up_logic.dart';
 class SetUpPage extends StatelessWidget {
   final SetUpLogic logic = Get.put(SetUpLogic());
 
-  SetUpPage({Key? key}) : super(key: key);
+  SetUpPage({super.key});
 
   @override
   Widget build(BuildContext context) {

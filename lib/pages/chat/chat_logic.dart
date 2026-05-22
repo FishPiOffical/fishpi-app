@@ -1,5 +1,9 @@
 import 'dart:async';
 import 'package:fishpi/fishpi.dart';
+import 'package:fishpi_app/core/chat/chat_message_utils.dart';
+import 'package:fishpi_app/core/im_event.dart';
+import 'package:fishpi_app/core/manager/toast.dart';
+import 'package:fishpi_app/core/sql/black_list.dart';
 import 'package:fishpi_app/pages/conversation/conversation_logic.dart';
 import 'package:fishpi_app/routers/navigator.dart';
 import 'package:flutter/cupertino.dart';
@@ -9,7 +13,6 @@ import '../../core/controller/im.dart';
 
 class ChatLogic extends GetxController {
   final imController = Get.find<IMController>();
-  final conversationController = Get.find<ConversationLogic>();
   final messageList = <ChatRoomMessage>[].obs;
   final chatMsgList = <ChatData>[].obs;
   final userInfo = UserInfo().obs;
@@ -29,51 +32,54 @@ class ChatLogic extends GetxController {
   get emojiList => imController.fishpi.emoji.defaultEmojis;
   final diyEmojiList = <String>[].obs;
   final emojiIndex = 0.obs;
+  final List<BlackUser> _blackUsers = [];
+  StreamSubscription<ChatRoomData>? _chatRoomSubscription;
+  StreamSubscription<PrivateChatEvent>? _privateChatSubscription;
+  bool _scrollListenerAttached = false;
+
+  ConversationLogic? get _conversationController =>
+      Get.isRegistered<ConversationLogic>()
+          ? Get.find<ConversationLogic>()
+          : null;
 
   @override
   void onInit() {
     super.onInit();
-    var args = Get.arguments;
+    final args = Get.arguments ?? {};
     isGroup.value = args['isGroup'] ?? false;
     userName.value = args['userName'] ?? '聊天室';
     userID.value = args['userID'] ?? '';
-    print(
-        "pageArgs:isGroup:${args['isGroup']},userName:${args['userName']},userID:${args['userID']}");
     if (isGroup.value) {
-      messageList.addAll(conversationController.chatRoomMsg);
+      messageList.addAll(_conversationController?.chatRoomMsg ?? []);
       messageList.refresh();
       scrollToBottom(delay: 300);
     }
     imController.fishpi.user.info().then((value) => userInfo.value = value);
     isClose.value = false;
-    if (chatRoomController.hasClients) {
-      chatRoomController.addListener(() {
-        if (chatRoomController.position.maxScrollExtent -
-                chatRoomController.position.pixels >=
-            100) {
-          isSeeHistory.value = true;
-        } else {
-          isSeeHistory.value = false;
-        }
-      });
-    }
     initChatRoom();
     loadEmojis();
   }
 
+  @override
+  void onReady() {
+    super.onReady();
+    if (!_scrollListenerAttached) {
+      chatRoomController.addListener(_handleScroll);
+      _scrollListenerAttached = true;
+    }
+  }
+
   void initChatRoom() async {
+    await _loadBlackUsers();
     if (isGroup.value) {
-      imController.onRecvNewMessage = (ChatRoomMessage msg) {
-        messageList.add(msg);
-        if (messageList.length > 50) {
-          messageList.removeAt(0);
+      if (messageList.isEmpty) {
+        final history = await imController.fishpi.chatroom.more(1);
+        for (final message in history.reversed) {
+          _appendMessage(message, shouldScroll: false);
         }
-        messageList.refresh();
-      };
-      imController.onRecvRedPacketMessage = (ChatRoomMessage msg) {
-        messageList.add(msg);
-        messageList.refresh();
-      };
+      }
+      _chatRoomSubscription ??=
+          imController.chatRoomStream.listen(_onChatRoomData);
       scrollToBottom(delay: 300);
     } else {
       List<ChatData> list = await imController.fishpi.chat.get(
@@ -82,46 +88,69 @@ class ChatLogic extends GetxController {
       );
       list = list.reversed.toList();
       for (var ele in list) {
-        messageList.add(ChatRoomMessage(
-          oId: ele.oId,
-          content: ele.content,
-          userName: ele.senderUserName,
-          userOId: int.parse(ele.fromId),
-          time: ele.time,
-          avatarURL: ele.senderAvatar,
-          md: ele.markdown,
-        ));
+        _appendMessage(
+          ChatMessageUtils.chatDataToRoomMessage(ele),
+          shouldScroll: false,
+        );
       }
       messageList.refresh();
       scrollToBottom(delay: 300);
-      imController.fishpi.chat.addListener(chatMsgListen, user: userName.value);
+      _privateChatSubscription ??= imController
+          .watchPrivateChat(userName.value)
+          .listen(_onPrivateChatEvent);
     }
   }
 
-  void chatMsgListen(
-    /// 消息类型
-    ChatMsgType type, {
-    /// 新聊天通知
-    ChatNotice? notice,
+  void _onChatRoomData(ChatRoomData data) {
+    if (data.type == ChatRoomMessageType.revoke) {
+      _removeMessage(data.revoke ?? '');
+      return;
+    }
+    final message = data.msg;
+    if (message == null) return;
+    _appendMessage(message);
+  }
 
-    /// 聊天内容
-    ChatData? data,
+  void _onPrivateChatEvent(PrivateChatEvent event) {
+    if (event.isRevoke) {
+      _removeMessage(event.revoke ?? '');
+      return;
+    }
+    final data = event.data;
+    if (data == null) return;
+    _appendMessage(ChatMessageUtils.chatDataToRoomMessage(data));
+  }
 
-    /// 撤回聊天
-    ChatRevoke? revoke,
+  void _appendMessage(
+    ChatRoomMessage message, {
+    bool shouldScroll = true,
   }) {
-    if (type != ChatMsgType.data) return;
-    messageList.add(ChatRoomMessage(
-      oId: data!.oId,
-      content: data.content,
-      userName: data.senderUserName,
-      userOId: int.parse(data.fromId),
-      time: data.time,
-      avatarURL: data.senderAvatar,
-      md: data.markdown,
-    ));
+    if (ChatMessageUtils.isBlockedMessage(message, _blackUsers)) return;
+    messageList.assignAll(
+      ChatMessageUtils.appendUniqueChatRoomMessage(
+        messageList,
+        message,
+        maxLength: isGroup.value ? 50 : null,
+      ),
+    );
     messageList.refresh();
-    scrollToBottom(delay: 300);
+    if (shouldScroll) {
+      scrollToBottom(delay: 300);
+    }
+  }
+
+  void _removeMessage(String messageId) {
+    messageList.assignAll(
+      ChatMessageUtils.removeChatRoomMessage(messageList, messageId),
+    );
+    messageList.refresh();
+  }
+
+  void _handleScroll() {
+    if (!chatRoomController.hasClients) return;
+    final distance = chatRoomController.position.maxScrollExtent -
+        chatRoomController.position.pixels;
+    isSeeHistory.value = distance >= 100;
   }
 
   void scrollToBottom({int? delay}) {
@@ -145,30 +174,56 @@ class ChatLogic extends GetxController {
     AppNavigator.toUserPanel(userName: userName);
   }
 
-  void clickSend() async {
-    if (isGroup.value) {
-      await imController.fishpi.chatroom.send(content.value);
-    } else {
-      await imController.fishpi.chat.send(userName.value, content.value);
+  Future<void> clickSend() async {
+    final text = content.value;
+    if (text.trim().isEmpty) return;
+
+    try {
+      if (isGroup.value) {
+        await imController.fishpi.chatroom.send(text);
+      } else {
+        await imController.fishpi.chat.send(userName.value, text);
+      }
+      content.value = '';
+      chatRoomControllerText.clear();
+      scrollToBottom(delay: 300);
+    } catch (e) {
+      ToastManager.showToast('发送失败：$e');
     }
-    content.value = '';
-    chatRoomControllerText.text = '';
-    scrollToBottom(delay: 300);
   }
 
   void loadEmojis() async {
-    diyEmojiList.value = await imController.fishpi.emoji.get();
-    diyEmojiList.refresh();
+    try {
+      diyEmojiList.value = await imController.fishpi.emoji.get();
+      diyEmojiList.refresh();
+    } catch (_) {}
+  }
+
+  Future<void> _loadBlackUsers() async {
+    try {
+      await BlackList.init();
+      _blackUsers
+        ..clear()
+        ..addAll(await BlackList.getAllUser());
+    } catch (_) {
+      _blackUsers.clear();
+    }
   }
 
   @override
   void onClose() {
     isClose.value = true;
-    chatRoomController.dispose();
-    if (!isGroup.value){
-      imController.fishpi.chat.removeListener();
+    _chatRoomSubscription?.cancel();
+    _privateChatSubscription?.cancel();
+    if (!isGroup.value) {
+      imController.unwatchPrivateChat(userName.value);
     }
-    print('聊天页面关闭');
+    if (_scrollListenerAttached) {
+      chatRoomController.removeListener(_handleScroll);
+    }
+    chatRoomController.dispose();
+    chatRoomControllerText.dispose();
+    chatRoomFocusNode.dispose();
     super.onClose();
   }
 }

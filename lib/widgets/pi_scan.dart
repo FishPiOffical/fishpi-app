@@ -1,12 +1,9 @@
 import 'dart:convert';
 
-import 'package:fishpi/types/user.dart';
 import 'package:fishpi_app/core/manager/login_im.dart';
 import 'package:fishpi_app/core/manager/toast.dart';
-import 'package:fishpi_app/main.dart';
 import 'package:fishpi_app/res/styles.dart';
 import 'package:fishpi_app/routers/navigator.dart';
-import 'package:fishpi_app/widgets/pi_title_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
@@ -40,7 +37,7 @@ class PiScan extends StatelessWidget {
                 scanLineColor: Styles.primaryColor,
                 onCapture: (data) {
                   controller.pause();
-                  getResult(data, context);
+                  getResult(data);
                 },
               ),
               Positioned(
@@ -82,7 +79,7 @@ class PiScan extends StatelessWidget {
                       XFile image = res.first;
                       String? result = await Scan.parse(image.path);
                       if (result != null) {
-                        getResult(result, context);
+                        getResult(result);
                       }
                     } else {
                       controller.resume();
@@ -95,9 +92,8 @@ class PiScan extends StatelessWidget {
     );
   }
 
-  void getResult(String result, BuildContext context) async {
+  void getResult(String result) async {
     final imController = Get.find<IMController>();
-    print(result);
     if (result.startsWith('login')) {
       bool isLogin = PiUtils.getBool('isLogin');
       if (isLogin) {
@@ -126,7 +122,7 @@ class PiScan extends StatelessWidget {
         "targetId": targetId,
       }));
       await Future.delayed(const Duration(seconds: 1));
-      String apiKey = await PiUtils.getString('token');
+      String apiKey = PiUtils.getString('token');
       LoginIM.send(jsonEncode({
         "type": 2,
         "targetId": targetId,
@@ -136,7 +132,7 @@ class PiScan extends StatelessWidget {
       await Future.delayed(const Duration(milliseconds: 300));
       LoginIM.close();
       Get.back();
-    }else{
+    } else {
       AppNavigator.toScanResult(result);
     }
   }

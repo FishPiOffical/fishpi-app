@@ -29,20 +29,20 @@ class PostPage extends StatelessWidget {
             children: [
               TextField(
                 controller: logic.titleController,
-                decoration: InputDecoration(
+                decoration: const InputDecoration(
                   hintText: '请输入标题',
                   border: InputBorder.none,
                 ),
               ),
-              Divider(),
+              const Divider(),
               TextField(
                 controller: logic.tagController,
-                decoration: InputDecoration(
+                decoration: const InputDecoration(
                   hintText: '请输入标签,多个标签用空格隔开',
                   border: InputBorder.none,
                 ),
               ),
-              Divider(),
+              const Divider(),
               FleatherToolbar.basic(
                 controller: logic.controller,
                 hideBackgroundColor: true,
@@ -58,7 +58,7 @@ class PostPage extends StatelessWidget {
                   controller: logic.controller,
                 ),
               ),
-              Divider(),
+              const Divider(),
               GestureDetector(
                 onTap: () {
                   logic.submit();
@@ -72,7 +72,10 @@ class PostPage extends StatelessWidget {
                     borderRadius: BorderRadius.circular(16.r),
                   ),
                   child: Center(
-                    child: Text("发布",style: TextStyle(fontSize: 18.sp),),
+                    child: Text(
+                      "发布",
+                      style: TextStyle(fontSize: 18.sp),
+                    ),
                   ),
                 ),
               )

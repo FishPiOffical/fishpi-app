@@ -6,10 +6,10 @@ import 'edit_info_logic.dart';
 class EditInfoPage extends StatelessWidget {
   final EditInfoLogic logic = Get.put(EditInfoLogic());
 
-  EditInfoPage({Key? key}) : super(key: key);
+  EditInfoPage({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold();
+    return const Scaffold();
   }
 }

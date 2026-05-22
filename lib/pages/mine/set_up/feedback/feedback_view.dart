@@ -7,7 +7,7 @@ import 'feedback_logic.dart';
 class FeedbackPage extends StatelessWidget {
   final FeedbackLogic logic = Get.put(FeedbackLogic());
 
-  FeedbackPage({Key? key}) : super(key: key);
+  FeedbackPage({super.key});
 
   @override
   Widget build(BuildContext context) {

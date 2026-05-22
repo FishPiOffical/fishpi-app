@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 /// 抄作业完成感谢鸽鸽
 class MedalWidget extends StatelessWidget {
   final Metal medal;
-  const MedalWidget({Key? key, required this.medal}) : super(key: key);
+  const MedalWidget({super.key, required this.medal});
 
   @override
   Widget build(BuildContext context) {

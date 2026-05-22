@@ -1,18 +1,17 @@
-import 'package:fishpi/fishpi.dart';
 import 'package:hive/hive.dart';
 
 class BlackList {
-  static late Box msgBox;
+  static Box? msgBox;
 
   static Future<void> init() async {
-    msgBox = await Hive.openBox('blackList');
+    await _box();
   }
 
   static get blackList => getAllUser();
 
   static getAllUser() async {
     List<BlackUser> list = [];
-    var lists = await msgBox.values.toList();
+    var lists = (await _box()).values.toList();
     for (var item in lists) {
       list.add(BlackUser.fromJson(item));
     }
@@ -20,23 +19,34 @@ class BlackList {
   }
 
   static getOneUser(String oId) async {
-    return await msgBox.get(oId);
+    return await (await _box()).get(oId);
   }
 
   static addUser(BlackUser user) async {
-    return await msgBox.put(user.oId, user.toJson());
+    return await (await _box()).put(user.oId, user.toJson());
   }
 
   static removeUser(String oId) async {
-    return await msgBox.delete(oId);
+    return await (await _box()).delete(oId);
   }
 
   static clear() async {
-    return await msgBox.clear();
+    return await (await _box()).clear();
   }
 
-  static dispose() {
-    msgBox.close();
+  static Future<void> dispose() async {
+    final box = msgBox;
+    if (box != null && box.isOpen) {
+      await box.close();
+    }
+    msgBox = null;
+  }
+
+  static Future<Box> _box() async {
+    final box = msgBox;
+    if (box != null && box.isOpen) return box;
+    msgBox = await Hive.openBox('blackList');
+    return msgBox!;
   }
 }
 

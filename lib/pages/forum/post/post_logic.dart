@@ -3,6 +3,7 @@ import 'package:fishpi_app/core/manager/toast.dart';
 import 'package:fleather/fleather.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:get/get.dart';
+import 'package:parchment/codecs.dart';
 
 import '../../../core/controller/im.dart';
 
@@ -12,13 +13,8 @@ class PostLogic extends GetxController {
   TextEditingController titleController = TextEditingController();
   TextEditingController tagController = TextEditingController();
 
-  @override
-  void onInit() {
-    super.onInit();
-  }
-
   submit() async {
-    final mdCode = ParchmentMarkdownCodec();
+    const mdCode = ParchmentMarkdownCodec();
     final md = mdCode.encode(controller.document);
     String title = titleController.text;
     String tag = tagController.text.split(" ").join(",");

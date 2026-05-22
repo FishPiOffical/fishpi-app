@@ -3,7 +3,6 @@ import 'package:fishpi/types/redpacket.dart';
 import 'package:fishpi_app/res/styles.dart';
 import 'package:fishpi_app/utils/pi_utils.dart';
 import 'package:fishpi_app/widgets/pi_avatar.dart';
-import 'package:fishpi_app/widgets/pi_image.dart';
 import 'package:fishpi_app/widgets/pi_title_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -13,7 +12,7 @@ import '../../widgets/chat/chat_input_box.dart';
 import 'chat_logic.dart';
 
 class ChatPage extends StatelessWidget {
-  final ChatLogic logic = Get.put(ChatLogic());
+  final ChatLogic logic = Get.find<ChatLogic>();
 
   ChatPage({super.key});
 
@@ -30,7 +29,7 @@ class ChatPage extends StatelessWidget {
               child: logic.messageList.isEmpty
                   ? Container()
                   : GestureDetector(
-                      onTap: (){
+                      onTap: () {
                         FocusScope.of(Get.context!).requestFocus(FocusNode());
                       },
                       child: Container(

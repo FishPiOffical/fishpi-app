@@ -11,7 +11,7 @@ import '../../widgets/pi_dashed.dart';
 import 'conversation_logic.dart';
 
 class ConversationPage extends StatelessWidget {
-  final ConversationLogic logic = Get.put(ConversationLogic());
+  final ConversationLogic logic = Get.find<ConversationLogic>();
 
   ConversationPage({super.key});
 
@@ -102,9 +102,7 @@ class ConversationPage extends StatelessWidget {
                         ],
                       ),
                       Text(
-                        chat != null
-                            ? chat.preview
-                            : '${logic.chatRoomLastMsg.value.allName}:${PiUtils.getConversationPreview(logic.chatRoomLastMsg.value.content)}',
+                        chat != null ? chat.preview : _chatRoomPreview(),
                         style: TextStyle(
                           fontSize: 12.sp,
                           color: Styles.secondaryTextColor,
@@ -125,5 +123,11 @@ class ConversationPage extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  String _chatRoomPreview() {
+    final message = logic.chatRoomLastMsg.value;
+    if (message.oId.isEmpty && message.content.isEmpty) return '暂无消息';
+    return '${message.allName}:${PiUtils.getConversationPreview(message.content)}';
   }
 }

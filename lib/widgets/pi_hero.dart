@@ -1,7 +1,6 @@
 import 'package:fishpi_app/widgets/pi_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:get/get.dart';
 
 class PiHero extends StatefulWidget {
   final Map arguments;

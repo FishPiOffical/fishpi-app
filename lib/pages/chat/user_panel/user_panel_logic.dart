@@ -56,7 +56,7 @@ class UserPanelLogic extends GetxController {
   }
 
   void toFollow() async {
-    ResponseResult res = await imController.fishpi.user.follow(
+    await imController.fishpi.user.follow(
       userInfo.value.oId,
       follow: userInfo.value.canFollow == 'yes',
     );
@@ -106,7 +106,7 @@ class UserPanelLogic extends GetxController {
     var user = await BlackList.getOneUser(userInfo.value.oId);
     if (user == null) {
       // 添加黑名单
-      BlackList.addUser(BlackUser(
+      await BlackList.addUser(BlackUser(
         oId: userInfo.value.oId,
         userName: userInfo.value.userName,
         avatarURL: userInfo.value.avatarURL,
@@ -114,7 +114,7 @@ class UserPanelLogic extends GetxController {
       ToastManager.showToast('已添加到黑名单');
     } else {
       // 移除黑名单
-      BlackList.removeUser(userInfo.value.oId);
+      await BlackList.removeUser(userInfo.value.oId);
       ToastManager.showToast('已从黑名单移除');
     }
   }
@@ -150,11 +150,5 @@ class UserPanelLogic extends GetxController {
 
   void changeTab(int idx) {
     tabIndex.value = idx;
-  }
-
-  @override
-  void dispose() {
-    BlackList.dispose();
-    super.dispose();
   }
 }

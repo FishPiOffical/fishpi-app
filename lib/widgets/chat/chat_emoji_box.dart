@@ -23,7 +23,7 @@ class _EmojiBoxState extends State<EmojiBox> {
   int emojiIndex = 0;
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return SizedBox(
       width: 1.sw,
       height: 224.h,
       child: Column(
@@ -79,7 +79,7 @@ class _EmojiBoxState extends State<EmojiBox> {
             ),
           ),
           Expanded(
-            child: Container(
+            child: SizedBox(
               width: 1.sw,
               child: [
                 _buildDefaultEmojiBox(widget.emojiList),
@@ -94,14 +94,15 @@ class _EmojiBoxState extends State<EmojiBox> {
 
   Widget _buildDefaultEmojiBox(emojiList) {
     List<Widget> list = [];
-    emojiList.forEach((key, value) {
+    emojiList.forEach((emojiName, value) {
       list.add(
         GestureDetector(
+          key: ValueKey('emoji_default_$emojiName'),
           onTap: () {
             // logic.chatRoomControllerText.text = ':$key:';
             // logic.onInput(':$key:');
             // logic.clickSend();
-            widget.onTap(':$key:');
+            widget.onTap(':$emojiName:');
           },
           child: Container(
             width: 24.w,
@@ -133,6 +134,7 @@ class _EmojiBoxState extends State<EmojiBox> {
     for (var item in diyEmojiList) {
       list.add(
         GestureDetector(
+          key: ValueKey('emoji_diy_$item'),
           onTap: () {
             // logic.chatRoomControllerText.text = '![图片表情]($item)';
             // logic.onInput('![图片表情]($item)');

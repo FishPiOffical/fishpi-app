@@ -26,7 +26,7 @@ class PiEditWidget extends StatelessWidget {
           Expanded(
             child: GestureDetector(
               child: Container(
-                color: Colors.black.withOpacity(.5),
+                color: Colors.black.withValues(alpha: .5),
               ),
               onTap: () {
                 Navigator.pop(context);
@@ -73,7 +73,7 @@ class PiEditWidget extends StatelessWidget {
                   child: Text(
                     '确定',
                     style: TextStyle(
-                      color: Color(0xFF191722),
+                      color: const Color(0xFF191722),
                       fontSize: 14.sp,
                       fontWeight: FontWeight.w600,
                     ),

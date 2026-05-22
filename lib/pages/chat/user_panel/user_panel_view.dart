@@ -23,7 +23,7 @@ class UserPanelPage extends StatelessWidget {
     return Obx(
       () => Scaffold(
         appBar: PiTitleBar.back(
-          title: logic.userName.value ?? '用户信息',
+          title: logic.userName.value,
           showUnderline: false,
         ),
         body: logic.isLoading.value
@@ -119,7 +119,7 @@ class UserPanelPage extends StatelessWidget {
                                 bottomLeft: Radius.circular(12.r),
                                 bottomRight: Radius.circular(12.r),
                               ),
-                              color: Colors.white.withOpacity(.9),
+                              color: Colors.white.withValues(alpha: .9),
                             ),
                             padding: EdgeInsets.symmetric(
                                 horizontal: 10.w, vertical: 10.h),
@@ -151,7 +151,8 @@ class UserPanelPage extends StatelessWidget {
                                   overflow: TextOverflow.ellipsis,
                                 ),
                                 Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
                                   children: [
                                     Row(
                                       mainAxisSize: MainAxisSize.min,
@@ -188,7 +189,8 @@ class UserPanelPage extends StatelessWidget {
                                             ),
                                             2.horizontalSpace,
                                             Text(
-                                              logic.userInfo.value.point.toString(),
+                                              logic.userInfo.value.point
+                                                  .toString(),
                                               style: TextStyle(
                                                 color: Styles.primaryTextColor,
                                                 fontSize: 16.sp,
@@ -199,7 +201,8 @@ class UserPanelPage extends StatelessWidget {
                                         ),
                                       ],
                                     ),
-                                    PiUtils.roleWidget(logic.userInfo.value.role),
+                                    PiUtils.roleWidget(
+                                        logic.userInfo.value.role),
                                   ],
                                 ),
                               ],
@@ -209,7 +212,7 @@ class UserPanelPage extends StatelessWidget {
                         Positioned(
                           right: 16.w,
                           bottom: 80.h,
-                          child: Container(
+                          child: SizedBox(
                             width: 70.w,
                             height: 70.w,
                             child: PiAvatar(

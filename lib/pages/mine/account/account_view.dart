@@ -7,7 +7,7 @@ import 'account_logic.dart';
 class AccountPage extends StatelessWidget {
   final AccountLogic logic = Get.put(AccountLogic());
 
-  AccountPage({Key? key}) : super(key: key);
+  AccountPage({super.key});
 
   @override
   Widget build(BuildContext context) {

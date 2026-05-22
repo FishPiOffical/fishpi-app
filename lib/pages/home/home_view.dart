@@ -11,7 +11,7 @@ import '../forum/forum_view.dart';
 import 'home_logic.dart';
 
 class HomePage extends StatelessWidget {
-  final HomeLogic logic = Get.put(HomeLogic());
+  final HomeLogic logic = Get.find<HomeLogic>();
 
   HomePage({super.key});
 

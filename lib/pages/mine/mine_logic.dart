@@ -15,7 +15,6 @@ class MineLogic extends GetxController {
 
   void initUserInfo() async {
     userInfo.value = await imController.fishpi.user.info();
-    print(userInfo.value.toJson());
   }
 
   void toAccountPage() {

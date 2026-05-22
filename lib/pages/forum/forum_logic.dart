@@ -17,37 +17,36 @@ class ForumLogic extends GetxController {
     super.onInit();
   }
 
-  void initArticle() async{
+  void initArticle() async {
     ArticleList res = await imController.fishpi.article.list(
       type: ArticleListType.Reply,
       page: page.value,
     );
-    if(page.value == 1){
+    if (page.value == 1) {
       list.value = res.list;
       list.refresh();
       refresherController.loadComplete();
-    }else{
+    } else {
       list.addAll(res.list);
       list.refresh();
-      if(res.list.isNotEmpty) {
+      if (res.list.isNotEmpty) {
         refresherController.loadComplete();
-      }else{
+      } else {
         refresherController.loadNoData();
         isFinished.value = true;
       }
     }
-
   }
 
-  void onRefresh(){
+  void onRefresh() {
     isFinished.value = false;
     page.value = 1;
     initArticle();
     refresherController.refreshCompleted();
   }
 
-  void onLoading(){
-    if(isFinished.value) return;
+  void onLoading() {
+    if (isFinished.value) return;
     page.value++;
     initArticle();
   }

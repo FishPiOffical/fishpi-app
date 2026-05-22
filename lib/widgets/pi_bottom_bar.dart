@@ -100,7 +100,8 @@ class PiBottomBar extends StatelessWidget {
               ),
               Icon(
                 Icons.arrow_drop_up_outlined,
-                color: index == idx ? Styles.primaryTextColor : Colors.transparent,
+                color:
+                    index == idx ? Styles.primaryTextColor : Colors.transparent,
                 size: 15.h,
               )
             ],

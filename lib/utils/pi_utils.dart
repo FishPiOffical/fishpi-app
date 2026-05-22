@@ -1,15 +1,10 @@
 import 'dart:math';
 
-import 'package:fishpi_app/widgets/pi_image.dart';
-import 'package:flutter/cupertino.dart';
+import 'package:fishpi_app/core/chat/chat_message_utils.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:get/get.dart';
-import 'package:html/dom.dart' as dom;
-import 'package:html/parser.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../widgets/pi_hero.dart';
 import '../widgets/pi_msg_dom.dart';
 
 class PiUtils {
@@ -148,8 +143,10 @@ class PiUtils {
   }) {
     String url = '';
     RegExp regW = RegExp(r'/w/\d{1,3}');
-    RegExp regH = RegExp(r'/w/\d{1,3}');
-    url = imgUrl.replaceAll(regW, '/w/$width').replaceAll(regH, '/w/$height');
+    RegExp regH = RegExp(r'/h/\d{1,3}');
+    url = imgUrl
+        .replaceAll(regW, width == null ? '' : '/w/$width')
+        .replaceAll(regH, height == null ? '' : '/h/$height');
     return url;
   }
 
@@ -162,15 +159,23 @@ class PiUtils {
     } else {
       content = chat.content;
     }
-    dom.Document document = parse(content);
-    List<Widget> list = [];
-    //不用管它是什么，只管加一个ChatMessageDomElement widget，绘制由ChatMessageDomElement内部自己管理
-    document.body?.children.forEach((item) {
+    final parsed = ChatMessageUtils.parseChatContent(content);
+    final list = <Widget>[];
+    for (var index = 0; index < parsed.elements.length; index++) {
       list.add(
-        ChatMessageDomElement(content: item, chat: chat, isSelf: isSelf),
+        ChatMessageDomElement(
+          content: parsed.elements[index],
+          chat: chat,
+          isSelf: isSelf,
+          nodePath: '$index',
+        ),
       );
-    });
+    }
+    if (list.isEmpty && parsed.plainText.isNotEmpty) {
+      list.add(Text(parsed.plainText));
+    }
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: list,
     );
   }
@@ -178,36 +183,7 @@ class PiUtils {
   /// 处理会话列表显示消息
   /// [content] 消息内容
   static String getConversationPreview(String content) {
-    var document = parse(content);
-    List<String> list = [];
-
-    /// 处理文本
-    var res = document.querySelectorAll("img");
-    var item = res.firstOrNull;
-    print(item?.localName);
-    if (item == null) {
-      /// 处理文本
-      document.querySelectorAll("p,h1,h2,h3,h4,h5,h6,h7").forEach((element) {
-        if (element.text.isEmpty || element.text == '') return;
-        list.add(element.text);
-      });
-    } else {
-      if (item.localName == "img") {
-        list.add('[图片]');
-      } else if (item.localName == "video") {
-        list.add('[视频]');
-      } else if (item.localName == 'iframe') {
-        if (item.attributes['src']!.startsWith('https://fishpi.yuis.cc')) {
-          list.add('[天气卡片]');
-        } else if (item.attributes['src']!
-            .startsWith('https://music.163.com')) {
-          list.add('[音乐]');
-        } else {
-          list.add('[不支持的消息,请在web端查看]');
-        }
-      }
-    }
-    return list.join(' ');
+    return ChatMessageUtils.conversationPreview(content);
   }
 
   // 随机字符串函数

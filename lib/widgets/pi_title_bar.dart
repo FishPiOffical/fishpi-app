@@ -1,11 +1,8 @@
-import 'package:fishpi_app/core/manager/toast.dart';
 import 'package:fishpi_app/res/styles.dart';
 import 'package:fishpi_app/routers/navigator.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
-
-import '../res/icons.dart';
 
 class PiTitleBar extends StatelessWidget implements PreferredSizeWidget {
   final Widget? left;

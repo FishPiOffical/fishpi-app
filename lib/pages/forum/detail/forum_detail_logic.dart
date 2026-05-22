@@ -1,5 +1,3 @@
-import 'dart:ffi';
-
 import 'package:fishpi/types/types.dart';
 import 'package:fishpi_app/core/controller/im.dart';
 import 'package:fishpi_app/core/manager/toast.dart';
@@ -29,13 +27,11 @@ class ForumDetailLogic extends GetxController {
     ArticleDetail res = await imController.fishpi.article.detail(oId.value);
     isLoading.value = false;
     article.value = res;
-    print(article.value.toJson());
   }
 
   void toReward() async {
     ResponseResult res =
         await imController.fishpi.article.reward(article.value.oId);
-    print(res.msg);
     if (res.success) {
       initArticleInfo();
     } else {
@@ -62,7 +58,7 @@ class ForumDetailLogic extends GetxController {
               if (res.success) {
                 ToastManager.showToast('提交成功');
                 ArticleComment comment = ArticleComment(
-                  content: '<p>$context<\/p>',
+                  content: '<p>$context</p>',
                   author: user.userName,
                   thumbnailURL: user.avatarURL,
                   timeAgo: '刚刚',

@@ -1,8 +1,13 @@
+import 'dart:async';
+
 import 'package:fishpi/types/chat.dart';
 import 'package:fishpi/types/chatroom.dart';
 import 'package:get/get.dart';
 
+import '../../core/chat/chat_message_utils.dart';
 import '../../core/controller/im.dart';
+import '../../core/im_event.dart';
+import '../../core/sql/black_list.dart';
 
 class ConversationLogic extends GetxController {
   final imController = Get.find<IMController>();
@@ -10,6 +15,9 @@ class ConversationLogic extends GetxController {
   final chatRoomLastMsg = ChatRoomMessage().obs;
   final showItem = "";
   final chatRoomMsg = <ChatRoomMessage>[].obs;
+  final List<BlackUser> _blackUsers = [];
+  StreamSubscription<ChatRoomData>? _chatRoomSubscription;
+  StreamSubscription<PrivateChatEvent>? _privateChatSubscription;
 
   @override
   void onInit() {
@@ -18,62 +26,115 @@ class ConversationLogic extends GetxController {
   }
 
   void loadHistoryMessage() async {
-    List<ChatData> list = await imController.fishpi.chat.list();
-    chatList.value = list;
+    await _loadBlackUsers();
+    try {
+      final list = await imController.fishpi.chat.list();
+      chatList.assignAll(list);
+    } catch (_) {}
+
+    try {
+      final history = await imController.fishpi.chatroom.more(1);
+      final visibleHistory = history.reversed
+          .where((message) =>
+              !ChatMessageUtils.isBlockedMessage(message, _blackUsers))
+          .toList();
+      chatRoomMsg.assignAll(visibleHistory);
+      chatRoomLastMsg.value =
+          visibleHistory.isEmpty ? ChatRoomMessage() : visibleHistory.last;
+    } catch (_) {
+      chatRoomMsg.clear();
+      chatRoomLastMsg.value = ChatRoomMessage();
+    }
     chatList.refresh();
-    imController.fishpi.chatroom.more(1).then((value) {
-      print("loadHistory:${value.length}条");
-      value = value.reversed.toList();
-      chatRoomMsg.addAll(value);
-      chatRoomMsg.refresh();
-      chatRoomLastMsg.value = value.last;
-      chatRoomLastMsg.refresh();
-      initChat();
-    });
+    chatRoomMsg.refresh();
+    chatRoomLastMsg.refresh();
+    initChat();
   }
 
   void initChat() {
-    imController.fishpi.chatroom.addListener((ChatRoomData data) {
-      switch (data.type) {
-        case ChatRoomMessageType.msg:
-          chatRoomLastMsg.value = data.msg!;
-          chatRoomMsg.add(data.msg!);
-          break;
-        case ChatRoomMessageType.redPacket:
-          chatRoomLastMsg.value = data.msg!;
-          chatRoomMsg.add(data.msg!);
-          break;
-      }
-      chatRoomLastMsg.refresh();
-      chatRoomMsg.refresh();
-    });
-
-    imController.fishpi.chat.addListener(
-      chatMsgListen,
-    );
+    _chatRoomSubscription ??= imController.chatRoomStream.listen(_onChatRoom);
+    _privateChatSubscription ??=
+        imController.privateChatStream.listen(_onPrivateChat);
   }
 
-  void chatMsgListen(
-    /// 消息类型
-    ChatMsgType type, {
-    /// 新聊天通知
-    ChatNotice? notice,
-
-    /// 聊天内容
-    ChatData? data,
-
-    /// 撤回聊天
-    ChatRevoke? revoke,
-  }) {
-    print("chatMsgListen:$type");
-    if (type != ChatMsgType.data) return;
-    print("chatMsgListen:${data!.fromId}");
-    for (var i = 0; i < chatList.length; i++) {
-      if (chatList[i].fromId == data.fromId) {
-        chatList.removeAt(i);
-      }
+  void _onChatRoom(ChatRoomData data) {
+    if (data.type == ChatRoomMessageType.revoke) {
+      chatRoomMsg.assignAll(
+        ChatMessageUtils.removeChatRoomMessage(
+          chatRoomMsg,
+          data.revoke ?? '',
+        ),
+      );
+      chatRoomMsg.refresh();
+      return;
     }
-    chatList.insert(0, data);
+
+    final message = data.msg;
+    if (message == null ||
+        ChatMessageUtils.isBlockedMessage(message, _blackUsers)) {
+      return;
+    }
+
+    chatRoomLastMsg.value = message;
+    chatRoomMsg.assignAll(
+      ChatMessageUtils.appendUniqueChatRoomMessage(
+        chatRoomMsg,
+        message,
+        maxLength: 100,
+      ),
+    );
+    chatRoomLastMsg.refresh();
+    chatRoomMsg.refresh();
+  }
+
+  void _onPrivateChat(PrivateChatEvent event) {
+    if (event.isRevoke) {
+      chatList.assignAll(
+        ChatMessageUtils.removePrivateConversationMessage(
+          chatList,
+          event.revoke ?? '',
+        ),
+      );
+      chatList.refresh();
+      return;
+    }
+
+    final data = event.data;
+    if (data != null) {
+      chatList.assignAll(
+        ChatMessageUtils.upsertPrivateConversation(chatList, data),
+      );
+      chatList.refresh();
+      return;
+    }
+
+    if (event.isNotice) {
+      _refreshChatList();
+    }
+  }
+
+  Future<void> _refreshChatList() async {
+    try {
+      chatList.assignAll(await imController.fishpi.chat.list());
+    } catch (_) {}
     chatList.refresh();
+  }
+
+  Future<void> _loadBlackUsers() async {
+    try {
+      await BlackList.init();
+      _blackUsers
+        ..clear()
+        ..addAll(await BlackList.getAllUser());
+    } catch (_) {
+      _blackUsers.clear();
+    }
+  }
+
+  @override
+  void onClose() {
+    _chatRoomSubscription?.cancel();
+    _privateChatSubscription?.cancel();
+    super.onClose();
   }
 }

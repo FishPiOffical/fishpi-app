@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 class Scan {
-  static const MethodChannel _channel = const MethodChannel('chavesgu/scan');
+  static const MethodChannel _channel = MethodChannel('chavesgu/scan');
 
   static Future<String> get platformVersion async {
     final String version = await _channel.invokeMethod('getPlatformVersion');
@@ -18,13 +18,15 @@ class Scan {
 }
 
 class ScanView extends StatefulWidget {
-  ScanView({
+  const ScanView({
+    Key? key,
     this.controller,
     this.onCapture,
     this.scanLineColor = Colors.green,
     this.scanAreaScale = 0.7,
   })  : assert(scanAreaScale <= 1.0, 'scanAreaScale must <= 1.0'),
-        assert(scanAreaScale > 0.0, 'scanAreaScale must > 0.0');
+        assert(scanAreaScale > 0.0, 'scanAreaScale must > 0.0'),
+        super(key: key);
 
   final ScanController? controller;
   final CaptureCallback? onCapture;
@@ -32,7 +34,7 @@ class ScanView extends StatefulWidget {
   final double scanAreaScale;
 
   @override
-  State<StatefulWidget> createState() => _ScanViewState();
+  State<ScanView> createState() => _ScanViewState();
 }
 
 class _ScanViewState extends State<ScanView> {
@@ -43,12 +45,12 @@ class _ScanViewState extends State<ScanView> {
     if (Platform.isIOS) {
       return UiKitView(
         viewType: 'chavesgu/scan_view',
-        creationParamsCodec: StandardMessageCodec(),
+        creationParamsCodec: const StandardMessageCodec(),
         creationParams: {
-          "r": widget.scanLineColor.red,
-          "g": widget.scanLineColor.green,
-          "b": widget.scanLineColor.blue,
-          "a": widget.scanLineColor.opacity,
+          "r": _colorValue(widget.scanLineColor.r),
+          "g": _colorValue(widget.scanLineColor.g),
+          "b": _colorValue(widget.scanLineColor.b),
+          "a": widget.scanLineColor.a,
           "scale": widget.scanAreaScale,
         },
         onPlatformViewCreated: (id) {
@@ -58,12 +60,12 @@ class _ScanViewState extends State<ScanView> {
     } else {
       return AndroidView(
         viewType: 'chavesgu/scan_view',
-        creationParamsCodec: StandardMessageCodec(),
+        creationParamsCodec: const StandardMessageCodec(),
         creationParams: {
-          "r": widget.scanLineColor.red,
-          "g": widget.scanLineColor.green,
-          "b": widget.scanLineColor.blue,
-          "a": widget.scanLineColor.opacity,
+          "r": _colorValue(widget.scanLineColor.r),
+          "g": _colorValue(widget.scanLineColor.g),
+          "b": _colorValue(widget.scanLineColor.b),
+          "a": widget.scanLineColor.a,
           "scale": widget.scanAreaScale,
         },
         onPlatformViewCreated: (id) {
@@ -77,15 +79,20 @@ class _ScanViewState extends State<ScanView> {
     _channel = MethodChannel('chavesgu/scan/method_$id');
     _channel?.setMethodCallHandler((MethodCall call) async {
       if (call.method == 'onCaptured') {
-        if (widget.onCapture != null)
+        if (widget.onCapture != null) {
           widget.onCapture!(call.arguments.toString());
+        }
       }
     });
     widget.controller?._channel = _channel;
   }
+
+  int _colorValue(double value) {
+    return (value * 255.0).round().clamp(0, 255);
+  }
 }
 
-typedef CaptureCallback(String data);
+typedef CaptureCallback = void Function(String data);
 
 class ScanArea {
   const ScanArea(this.width, this.height);

@@ -3,11 +3,6 @@ import 'package:fishpi_app/utils/pi_utils.dart';
 import 'package:get/get.dart';
 
 class SetUpLogic extends GetxController {
-  @override
-  void onInit() {
-    super.onInit();
-  }
-
   void toBlackPage() {
     AppNavigator.toBlackList();
   }

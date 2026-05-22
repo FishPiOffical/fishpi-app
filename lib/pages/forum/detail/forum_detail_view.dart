@@ -220,15 +220,16 @@ class ForumDetailPage extends StatelessWidget {
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               GestureDetector(
-                                onTap: (){
-                                  AppNavigator.toUserPanel(userName: logic.article.value.authorName);
+                                onTap: () {
+                                  AppNavigator.toUserPanel(
+                                      userName: logic.article.value.authorName);
                                 },
                                 child: Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
                                     PiAvatar(
                                       avatarURL:
-                                      logic.article.value.author.avatarURL,
+                                          logic.article.value.author.avatarURL,
                                       width: 26.w,
                                       height: 26.w,
                                     ),

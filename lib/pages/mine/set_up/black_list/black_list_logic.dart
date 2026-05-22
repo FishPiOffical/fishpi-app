@@ -15,18 +15,11 @@ class BlackListLogic extends GetxController {
     await BlackList.init();
     blackList.value = await BlackList.getAllUser();
     blackList.refresh();
-    print(blackList.length);
   }
 
   removeUser(String oId) async {
-    BlackList.removeUser(oId);
+    await BlackList.removeUser(oId);
     blackList.removeWhere((element) => element.oId == oId);
     ToastManager.showToast("操作成功");
-  }
-
-  @override
-  void dispose() {
-    BlackList.dispose();
-    super.dispose();
   }
 }

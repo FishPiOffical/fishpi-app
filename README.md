@@ -27,9 +27,11 @@ but！今天！也就是 2024.09.13 该项目被重新提上日程，并将弃�
 ## 项目环境
 
 ```
-Flutter stable 当前3.24.5
-Dart stable 当前3.5.4
+Flutter stable 当前3.44.0
+Dart stable 当前3.12.0
 ```
+
+本地验证前请确认 Flutter 已加入当前 shell 的 `PATH`，并按目标平台配置 Android SDK/`ANDROID_HOME`、完整 Xcode 和 CocoaPods。
 
 ## 功能一览
 

@@ -63,6 +63,7 @@ dependencies:
   hive_flutter: 1.1.0
   url_launcher: ^6.3.1
   fleather: ^1.26.0
+  parchment: ^1.25.1
   flutter_svg_provider: ^1.0.7
   auto_size_text: ^3.0.0
 

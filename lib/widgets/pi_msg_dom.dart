@@ -7,20 +7,19 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:html/dom.dart' as dom;
 import 'package:url_launcher/url_launcher.dart';
-import 'dart:math';
-
-import '../utils/pi_utils.dart';
 
 class ChatMessageDomElement extends StatefulWidget {
   final dom.Element content;
   final dynamic chat;
   final bool? isSelf;
+  final String nodePath;
 
   const ChatMessageDomElement({
     super.key,
     required this.content,
     required this.chat,
     this.isSelf = false,
+    this.nodePath = '0',
   });
 
   @override
@@ -48,6 +47,7 @@ class _ChatMessageDomElementState extends State<ChatMessageDomElement> {
               content: widget.content.children[index],
               chat: widget.chat,
               isSelf: widget.isSelf,
+              nodePath: '${widget.nodePath}.$index',
             ),
           ),
       ],
@@ -55,37 +55,67 @@ class _ChatMessageDomElementState extends State<ChatMessageDomElement> {
   }
 
   Widget _buildElement(dom.Element element) {
-    switch (widget.content.localName) {
+    switch (element.localName) {
       case "p":
-        return Text(widget.content.text);
+      case "div":
+      case "span":
+        return element.children.isEmpty ? Text(element.text) : Container();
       case "img":
-        return buildImg(widget.content, widget.chat, widget.isSelf);
+        return buildImg(element, widget.chat, widget.isSelf, widget.nodePath);
       case "details":
         return ChatDetailMessage(
-          content: widget.content,
+          content: element,
           chat: widget.chat,
+          isSelf: widget.isSelf,
+          nodePath: widget.nodePath,
         );
       case "code":
+      case "pre":
         return Container(
           padding: EdgeInsets.symmetric(horizontal: 5.w, vertical: 2.h),
-          color: Colors.grey.withOpacity(.3),
+          color: Colors.grey.withValues(alpha: .3),
           child: Text(
-            widget.content.text,
+            element.text,
             style: TextStyle(fontSize: 12.sp),
           ),
         );
       case "del":
         return Text(
-          widget.content.text,
+          element.text,
           style: const TextStyle(decoration: TextDecoration.lineThrough),
         );
+      case "blockquote":
+        return Container(
+          padding: EdgeInsets.only(left: 8.w),
+          decoration: const BoxDecoration(
+            border: Border(
+              left: BorderSide(color: Styles.secondaryTextColor, width: 3),
+            ),
+          ),
+          child: Text(element.text),
+        );
+      case "li":
+        return Text('- ${element.text}');
+      case "ul":
+      case "ol":
+        return Container();
+      case "video":
+        return const Text('[视频]');
+      case "iframe":
+        return Text(_iframePreview(element.attributes['src'] ?? ''));
       case "a":
         return GestureDetector(
-          onTap: () {
-            launchUrl(Uri.parse(widget.content.attributes['href']!));
+          onTap: () async {
+            final href = element.attributes['href'] ?? '';
+            final uri = Uri.tryParse(href);
+            if (uri == null ||
+                (uri.scheme != 'http' && uri.scheme != 'https')) {
+              return;
+            }
+            await launchUrl(uri, mode: LaunchMode.externalApplication);
           },
           child: Text(
-            widget.content.text,
+            element.text,
             style: const TextStyle(
               color: Styles.secondaryTextColor,
               decoration: TextDecoration.underline,
@@ -97,8 +127,10 @@ class _ChatMessageDomElementState extends State<ChatMessageDomElement> {
     }
   }
 
-  static buildImg(item, chat, isSelf) {
-    int random = Random().nextInt(1000);
+  static buildImg(item, chat, isSelf, String nodePath) {
+    final src = item.attributes['src'] ?? '';
+    if (src.isEmpty) return const SizedBox.shrink();
+    final tag = _heroTag(chat, src, nodePath);
     return GestureDetector(
       onTap: () {
         Navigator.push(
@@ -106,21 +138,21 @@ class _ChatMessageDomElementState extends State<ChatMessageDomElement> {
           MaterialPageRoute(
             builder: (context) => PiHero(
               arguments: {
-                "imageUrl": item.attributes['src']!,
-                "oId": "${chat.oId}_$random",
+                "imageUrl": src,
+                "oId": tag,
               },
             ),
           ),
         );
       },
       child: Hero(
-        tag: "${chat.oId}_$random",
+        tag: tag,
         child: Container(
           width: 120.w,
           height: 70.h,
           alignment: isSelf! ? Alignment.centerRight : Alignment.centerLeft,
           child: PiImage(
-            imgUrl: item.attributes['src']!,
+            imgUrl: src,
             width: 120.w,
             height: 70.h,
             fit: BoxFit.contain,
@@ -129,5 +161,24 @@ class _ChatMessageDomElementState extends State<ChatMessageDomElement> {
         ),
       ),
     );
+  }
+
+  static String _heroTag(dynamic chat, String src, String nodePath) {
+    final chatId = _chatId(chat);
+    return 'chat_image_${chatId}_${src.hashCode}_$nodePath';
+  }
+
+  static String _chatId(dynamic chat) {
+    try {
+      final id = chat.oId;
+      if (id is String && id.isNotEmpty) return id;
+    } catch (_) {}
+    return 'content';
+  }
+
+  static String _iframePreview(String src) {
+    if (src.startsWith('https://fishpi.yuis.cc')) return '[天气卡片]';
+    if (src.startsWith('https://music.163.com')) return '[音乐]';
+    return '[不支持的消息,请在web端查看]';
   }
 }

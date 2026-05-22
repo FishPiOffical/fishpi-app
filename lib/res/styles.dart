@@ -16,16 +16,24 @@ class Styles {
     color: primaryTextColor,
   );
   static const commonBorder = Border(
-    top: BorderSide(color: primaryTextColor, width: 2, style: BorderStyle.solid),
-    bottom: BorderSide(color: primaryTextColor, width: 4, style: BorderStyle.solid),
-    left: BorderSide(color: primaryTextColor, width: 2, style: BorderStyle.solid),
-    right: BorderSide(color: primaryTextColor, width: 2, style: BorderStyle.solid),
+    top:
+        BorderSide(color: primaryTextColor, width: 2, style: BorderStyle.solid),
+    bottom:
+        BorderSide(color: primaryTextColor, width: 4, style: BorderStyle.solid),
+    left:
+        BorderSide(color: primaryTextColor, width: 2, style: BorderStyle.solid),
+    right:
+        BorderSide(color: primaryTextColor, width: 2, style: BorderStyle.solid),
   );
   static const redpacketBorder = Border(
-    top: BorderSide(color: redpacketBorderColor, width: 2, style: BorderStyle.solid),
-    bottom: BorderSide(color: redpacketBorderColor, width: 4, style: BorderStyle.solid),
-    left: BorderSide(color: redpacketBorderColor, width: 2, style: BorderStyle.solid),
-    right: BorderSide(color: redpacketBorderColor, width: 2, style: BorderStyle.solid),
+    top: BorderSide(
+        color: redpacketBorderColor, width: 2, style: BorderStyle.solid),
+    bottom: BorderSide(
+        color: redpacketBorderColor, width: 4, style: BorderStyle.solid),
+    left: BorderSide(
+        color: redpacketBorderColor, width: 2, style: BorderStyle.solid),
+    right: BorderSide(
+        color: redpacketBorderColor, width: 2, style: BorderStyle.solid),
   );
   static TextStyle bottomTextStyle = TextStyle(
     fontSize: 12.sp,

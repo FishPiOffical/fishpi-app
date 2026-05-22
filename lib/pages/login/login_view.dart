@@ -51,7 +51,6 @@ class LoginPage extends StatelessWidget {
                 ),
                 GestureDetector(
                   onTap: () async {
-                    print('点击了登录');
                     if (logic.userName.isEmpty) {
                       ToastManager.showToast('请输入用户名/邮箱');
                       return;
@@ -67,7 +66,6 @@ class LoginPage extends StatelessWidget {
                     }).then((token) {
                       ToastManager.dismiss();
                       ToastManager.showToast('登录成功');
-                      print(token);
                       PiUtils.setString('token', token);
                       PiUtils.setBool('isLogin', true);
                       AppNavigator.closeAllToHome();
@@ -110,9 +108,7 @@ class LoginPage extends StatelessWidget {
                               fontWeight: FontWeight.bold),
                         ),
                         GestureDetector(
-                          onTap: () {
-                            print('点击了注册');
-                          },
+                          onTap: () {},
                           child: Text(
                             '现在注册'.tr,
                             style: TextStyle(
@@ -125,7 +121,6 @@ class LoginPage extends StatelessWidget {
                     ),
                     GestureDetector(
                       onTap: () {
-                        // print('点击了扫码登录');
                         AppNavigator.toScan();
                       },
                       child: const Icon(
@@ -181,7 +176,7 @@ class LoginPage extends StatelessWidget {
   void _showMfaCodeDialog() {
     showGeneralDialog(
       context: Get.context!,
-      barrierColor: Colors.black.withOpacity(.1),
+      barrierColor: Colors.black.withValues(alpha: .1),
       barrierDismissible: true,
       barrierLabel: '',
       transitionDuration: const Duration(milliseconds: 200),
@@ -236,7 +231,6 @@ class LoginPage extends StatelessWidget {
                     )),
                 GestureDetector(
                   onTap: () {
-                    print('点击提交二次验证码');
                     Navigator.pop(context);
                     logic.pinEditingController.clear();
                     logic.login(mfaCb: () {
@@ -244,7 +238,6 @@ class LoginPage extends StatelessWidget {
                     }).then((token) {
                       ToastManager.dismiss();
                       ToastManager.showToast('登录成功');
-                      print(token);
                       PiUtils.setString('token', token);
                       PiUtils.setBool('isLogin', true);
                       AppNavigator.closeAllToHome();

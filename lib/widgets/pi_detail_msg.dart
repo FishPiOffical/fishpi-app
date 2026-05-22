@@ -6,12 +6,14 @@ class ChatDetailMessage extends StatefulWidget {
   final dom.Element content;
   final dynamic chat;
   final bool? isSelf;
+  final String nodePath;
 
   const ChatDetailMessage({
     super.key,
     required this.content,
     required this.chat,
     this.isSelf = false,
+    this.nodePath = '0',
   });
 
   @override
@@ -40,6 +42,7 @@ class _ChatDetailMessageState extends State<ChatDetailMessage> {
                 content: widget.content.children[index],
                 chat: widget.chat,
                 isSelf: widget.isSelf,
+                nodePath: '${widget.nodePath}.$index',
               ),
             ),
         ],

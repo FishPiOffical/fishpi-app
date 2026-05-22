@@ -2,9 +2,7 @@ import 'package:animate_do/animate_do.dart';
 import 'package:fishpi_app/widgets/chat/chat_emoji_box.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:get/get.dart';
 
-import '../../core/controller/im.dart';
 import '../../res/styles.dart';
 import '../pi_input.dart';
 
@@ -14,7 +12,7 @@ class ChatInputBox extends StatefulWidget {
   final Map<String, String> emojiList;
   final List<String> diyEmojiList;
   final Function(String t) onInput;
-  final Function() clickSend;
+  final Future<void> Function() clickSend;
   final Function() scrollToBottom;
   final String? content;
 
@@ -42,17 +40,14 @@ class ChatInputBoxState extends State<ChatInputBox> {
 
   @override
   void initState() {
-    widget.focusNode.addListener(() {
-      if (widget.focusNode.hasFocus) {
-        setState(() {
-          isShowVoice = false;
-          isShowTools = false;
-          isShowEmoji = false;
-        });
-        widget.scrollToBottom();
-      }
-    });
+    widget.focusNode.addListener(_onFocusChange);
     super.initState();
+  }
+
+  @override
+  void dispose() {
+    widget.focusNode.removeListener(_onFocusChange);
+    super.dispose();
   }
 
   @override
@@ -84,7 +79,7 @@ class ChatInputBoxState extends State<ChatInputBox> {
                     onTap: () {
                       toggleVoice();
                     },
-                    child: Container(
+                    child: SizedBox(
                       width: 24.w,
                       height: 24.w,
                       child: isShowVoice
@@ -138,7 +133,13 @@ class ChatInputBoxState extends State<ChatInputBox> {
                                     widget.onInput(t);
                                   });
                                 },
-                                onEditingComplete: widget.clickSend,
+                                onEditingComplete: () async {
+                                  await widget.clickSend();
+                                  if (!mounted) return;
+                                  setState(() {
+                                    content = widget.controller.text;
+                                  });
+                                },
                               ),
                             )),
                   GestureDetector(
@@ -156,11 +157,15 @@ class ChatInputBoxState extends State<ChatInputBox> {
                     ),
                   ),
                   GestureDetector(
-                    onTap: () {
+                    onTap: () async {
                       if (content == '') {
                         toggleTools();
                       } else {
-                        widget.clickSend();
+                        await widget.clickSend();
+                        if (!mounted) return;
+                        setState(() {
+                          content = widget.controller.text;
+                        });
                       }
                     },
                     child: Container(
@@ -333,9 +338,9 @@ class ChatInputBoxState extends State<ChatInputBox> {
     );
   }
 
-  focus() => FocusScope.of(Get.context!).requestFocus(widget.focusNode);
+  focus() => FocusScope.of(context).requestFocus(widget.focusNode);
 
-  unFocus() => FocusScope.of(Get.context!).requestFocus(FocusNode());
+  unFocus() => FocusScope.of(context).requestFocus(FocusNode());
 
   void toggleTools() {
     setState(() {
@@ -374,9 +379,21 @@ class ChatInputBoxState extends State<ChatInputBox> {
   }
 
   void closeAllTools() {
-    isShowEmoji = false;
-    isShowTools = false;
-    isShowVoice = false;
+    setState(() {
+      isShowEmoji = false;
+      isShowTools = false;
+      isShowVoice = false;
+    });
     unFocus();
+  }
+
+  void _onFocusChange() {
+    if (!widget.focusNode.hasFocus) return;
+    setState(() {
+      isShowVoice = false;
+      isShowTools = false;
+      isShowEmoji = false;
+    });
+    widget.scrollToBottom();
   }
 }

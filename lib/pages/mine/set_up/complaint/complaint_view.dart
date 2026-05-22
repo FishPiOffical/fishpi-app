@@ -7,7 +7,7 @@ import 'complaint_logic.dart';
 class ComplaintPage extends StatelessWidget {
   final ComplaintLogic logic = Get.put(ComplaintLogic());
 
-  ComplaintPage({Key? key}) : super(key: key);
+  ComplaintPage({super.key});
 
   @override
   Widget build(BuildContext context) {

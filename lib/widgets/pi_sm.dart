@@ -38,7 +38,9 @@ class _ZebraStripesBackState extends State<PiZebraStripesBack> {
           image: AssetImage('assets/images/zebra.png'),
           repeat: ImageRepeat.repeat,
         ),
-        borderRadius: widget.borderRaduis != null ? BorderRadius.circular(widget.borderRaduis!) : null,
+        borderRadius: widget.borderRaduis != null
+            ? BorderRadius.circular(widget.borderRaduis!)
+            : null,
       ),
       height: widget.height,
       width: widget.width,
