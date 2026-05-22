@@ -37,9 +37,9 @@ class _ChatDetailMessageState extends State<ChatDetailMessage> {
           Text(isExpanded ? '#收起' : '#展开'),
           if (isExpanded)
             ...List.generate(
-              widget.content.children.length,
-              (index) => ChatMessageDomElement(
-                content: widget.content.children[index],
+              widget.content.nodes.length,
+              (index) => ChatMessageDomNode(
+                node: widget.content.nodes[index],
                 chat: widget.chat,
                 isSelf: widget.isSelf,
                 nodePath: '${widget.nodePath}.$index',
