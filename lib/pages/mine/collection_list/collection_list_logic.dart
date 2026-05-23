@@ -1,19 +1,133 @@
 import 'package:fishpi/types/user.dart';
+import 'package:fishpi_app/core/controller/im.dart';
+import 'package:fishpi_app/core/manager/toast.dart';
+import 'package:fishpi_app/core/medal/medal_service.dart';
+import 'package:fishpi_app/pages/mine/mine_logic.dart';
 import 'package:get/get.dart';
 
 import '../../../utils/pi_utils.dart';
 
 class CollectionListLogic extends GetxController {
-  RxList metals = <Metal>[].obs;
-  final apikey = "".obs;
+  CollectionListLogic({
+    MedalService? medalService,
+    this.autoLoad = true,
+  }) : medalService = medalService ?? MedalService();
+
+  final MedalService medalService;
+  final bool autoLoad;
+  final imController = Get.find<IMController>();
+
+  final medals = <CollectionMedal>[].obs;
+  final updatingMedalIds = <String>{}.obs;
+  final isLoading = false.obs;
+  final apikey = ''.obs;
 
   @override
   void onInit() {
     super.onInit();
-    var args = Get.arguments;
-    if (args != null) {
-      metals.value = args['metals'] ?? [];
+    _loadArgumentMedals();
+    apikey.value = _currentApiKey();
+    if (autoLoad) {
+      loadMedals();
     }
-    apikey.value = PiUtils.getString('token');
+  }
+
+  Future<void> loadMedals() async {
+    final token = _currentApiKey();
+    if (token.isEmpty) return;
+
+    isLoading.value = true;
+    try {
+      final remoteMedals = await medalService.listMyMedals(apiKey: token);
+      if (remoteMedals.isNotEmpty) {
+        medals.assignAll(remoteMedals);
+        return;
+      }
+      await _loadUserInfoFallback();
+    } catch (e) {
+      if (medals.isEmpty) {
+        await _loadUserInfoFallback();
+      }
+      ToastManager.showToast('加载勋章失败：$e');
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  Future<void> toggleDisplay(CollectionMedal medal) async {
+    if (medal.id.isEmpty || updatingMedalIds.contains(medal.id)) return;
+    final token = _currentApiKey();
+    if (token.isEmpty) {
+      ToastManager.showToast('请先登录后再操作');
+      return;
+    }
+
+    final nextDisplay = !medal.display;
+    updatingMedalIds.add(medal.id);
+    try {
+      await medalService.updateDisplay(
+        apiKey: token,
+        medalId: medal.id,
+        display: nextDisplay,
+      );
+      _updateLocalDisplay(medal.id, nextDisplay);
+      await _refreshMineUserInfo();
+      ToastManager.showToast(nextDisplay ? '已展示勋章' : '已卸下勋章');
+    } catch (e) {
+      ToastManager.showToast(e.toString());
+    } finally {
+      updatingMedalIds.remove(medal.id);
+    }
+  }
+
+  bool isUpdating(CollectionMedal medal) {
+    return updatingMedalIds.contains(medal.id);
+  }
+
+  void _loadArgumentMedals() {
+    final args = Get.arguments;
+    if (args is! Map) return;
+    final rawMedals = args['metals'];
+    if (rawMedals is List<CollectionMedal>) {
+      medals.assignAll(rawMedals);
+      return;
+    }
+    if (rawMedals is List<Metal>) {
+      medals.assignAll(rawMedals.map(CollectionMedal.fromMetal));
+    }
+  }
+
+  Future<void> _loadUserInfoFallback() async {
+    final info = await imController.fishpi.user.info(false);
+    _syncMineUserInfo(info);
+    final ownedMedals =
+        info.allMetals.isNotEmpty ? info.allMetals : info.sysMetal;
+    medals.assignAll(ownedMedals.map(CollectionMedal.fromMetal));
+  }
+
+  Future<void> _refreshMineUserInfo() async {
+    if (imController.fishpi.token.isEmpty) return;
+    final info = await imController.fishpi.user.info(false);
+    _syncMineUserInfo(info);
+  }
+
+  void _syncMineUserInfo(UserInfo info) {
+    if (Get.isRegistered<MineLogic>()) {
+      Get.find<MineLogic>().userInfo.value = info;
+    }
+  }
+
+  void _updateLocalDisplay(String medalId, bool display) {
+    final index = medals.indexWhere((item) => item.id == medalId);
+    if (index < 0) return;
+    medals[index] = medals[index].copyWith(display: display);
+  }
+
+  String _currentApiKey() {
+    final token = imController.fishpi.token.isNotEmpty
+        ? imController.fishpi.token
+        : PiUtils.getString('token');
+    apikey.value = token;
+    return token;
   }
 }

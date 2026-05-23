@@ -22,7 +22,9 @@ class MineLogic extends GetxController {
   }
 
   void toCollectionPage() {
-    List<Metal> metals = userInfo.value.sysMetal;
+    final metals = userInfo.value.allMetals.isNotEmpty
+        ? userInfo.value.allMetals
+        : userInfo.value.sysMetal;
     AppNavigator.toCollection(metals);
   }
 
