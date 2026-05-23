@@ -1,3 +1,8 @@
+import 'dart:convert';
+import 'dart:typed_data';
+
+import 'package:dio/dio.dart';
+import 'package:fishpi/fishpi.dart';
 import 'package:fishpi/types/user.dart';
 import 'package:fishpi_app/core/account/account_service.dart';
 import 'package:fishpi_app/core/controller/im.dart';
@@ -28,6 +33,22 @@ void main() {
         () => AccountService.parseResponse({'code': 1, 'msg': '失败'}),
         throwsA('失败'),
       );
+    });
+
+    test('设置接口使用 JSON 请求体', () async {
+      final adapter = _CaptureAdapter();
+      final dio = Dio()..httpClientAdapter = adapter;
+      final service = AccountService(dio: dio);
+
+      await service.updatePassword(
+        fishpi: Fishpi('test-api-key'),
+        oldPassword: 'old123',
+        newPassword: 'abc123',
+      );
+
+      expect(adapter.options?.contentType, Headers.jsonContentType);
+      expect(adapter.options?.headers['Accept'], Headers.jsonContentType);
+      expect(adapter.body, contains('"apiKey":"test-api-key"'));
     });
   });
 
@@ -213,4 +234,32 @@ UserInfo _userInfo() {
     intro: '摸鱼中',
     avatarURL: '',
   );
+}
+
+class _CaptureAdapter implements HttpClientAdapter {
+  RequestOptions? options;
+  String body = '';
+
+  @override
+  Future<ResponseBody> fetch(
+    RequestOptions options,
+    Stream<Uint8List>? requestStream,
+    Future<void>? cancelFuture,
+  ) async {
+    this.options = options;
+    if (requestStream != null) {
+      final bytes = await requestStream.expand((chunk) => chunk).toList();
+      body = utf8.decode(bytes);
+    }
+    return ResponseBody.fromString(
+      jsonEncode({'code': 0, 'msg': 'ok'}),
+      200,
+      headers: {
+        Headers.contentTypeHeader: [Headers.jsonContentType],
+      },
+    );
+  }
+
+  @override
+  void close({bool force = false}) {}
 }

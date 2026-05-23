@@ -110,11 +110,14 @@ class AccountService {
 
   Future<dynamic> _post(String path,
       {required Map<String, dynamic> data}) async {
-    // 设置页接口目前没有被 fishpi SDK 封装，这里按网页端表单提交方式调用。
+    // 设置页接口目前没有被 fishpi SDK 封装，按开放 API 文档使用 JSON 请求体。
     final response = await _dio.post(
       '$baseUrl$path',
       data: data,
-      options: Options(contentType: Headers.formUrlEncodedContentType),
+      options: Options(
+        contentType: Headers.jsonContentType,
+        headers: {'Accept': Headers.jsonContentType},
+      ),
     );
     return response.data;
   }
