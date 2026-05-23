@@ -32,6 +32,8 @@ import 'package:fishpi_app/pages/mine/set_up/feedback/feedback_binding.dart';
 import 'package:fishpi_app/pages/mine/set_up/feedback/feedback_view.dart';
 import 'package:fishpi_app/pages/mine/set_up/set_up_binding.dart';
 import 'package:fishpi_app/pages/mine/set_up/set_up_view.dart';
+import 'package:fishpi_app/pages/register/register_binding.dart';
+import 'package:fishpi_app/pages/register/register_view.dart';
 import 'package:fishpi_app/pages/splash/splash_binding.dart';
 import 'package:fishpi_app/pages/splash/splash_view.dart';
 import 'package:get/get.dart';
@@ -70,6 +72,11 @@ class AppPages {
       page: () => LoginPage(),
       binding: LoginBinding(),
       transition: Transition.fadeIn,
+    ),
+    _pageBuilder(
+      name: AppRoutes.register,
+      page: () => RegisterPage(),
+      binding: RegisterBinding(),
     ),
     _pageBuilder(
       name: AppRoutes.home,

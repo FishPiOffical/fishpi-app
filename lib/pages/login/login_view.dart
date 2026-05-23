@@ -108,7 +108,7 @@ class LoginPage extends StatelessWidget {
                               fontWeight: FontWeight.bold),
                         ),
                         GestureDetector(
-                          onTap: () {},
+                          onTap: AppNavigator.toRegister,
                           child: Text(
                             '现在注册'.tr,
                             style: TextStyle(

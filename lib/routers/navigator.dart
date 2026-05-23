@@ -11,6 +11,9 @@ class AppNavigator {
     Get.offAllNamed(AppRoutes.login);
   }
 
+  /// 注册
+  static void toRegister() => Get.toNamed(AppRoutes.register);
+
   static void closeAllToHome() {
     Get.offAllNamed(AppRoutes.home);
   }

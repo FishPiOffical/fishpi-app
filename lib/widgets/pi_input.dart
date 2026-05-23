@@ -12,6 +12,10 @@ class PiInput extends StatelessWidget {
   final FocusNode? focusNode;
   final Function()? onEditingComplete;
   final bool? obscureText;
+  final TextInputType? keyboardType;
+  final TextInputAction? textInputAction;
+  final Widget? suffixIcon;
+  final EdgeInsetsGeometry? contentPadding;
 
   const PiInput({
     required this.controller,
@@ -22,6 +26,10 @@ class PiInput extends StatelessWidget {
     this.focusNode,
     this.onEditingComplete,
     this.obscureText,
+    this.keyboardType,
+    this.textInputAction,
+    this.suffixIcon,
+    this.contentPadding,
     super.key,
   });
 
@@ -44,16 +52,20 @@ class PiInput extends StatelessWidget {
         hintStyle: const TextStyle(
           color: Colors.black,
         ),
-        contentPadding: const EdgeInsets.fromLTRB(10, 0, 50, 0),
+        contentPadding: contentPadding ??
+            EdgeInsets.fromLTRB(10, 0, suffixIcon == null ? 50 : 10, 0),
         filled: true,
         fillColor: Colors.white,
         prefixIcon: prefixIcon,
         prefixIconColor: Colors.black,
+        suffixIcon: suffixIcon,
+        suffixIconColor: Colors.black,
         enabledBorder: Styles.inputBorder,
         focusedBorder: Styles.inputBorder,
         border: Styles.inputBorder,
       ),
-      keyboardType: TextInputType.text,
+      keyboardType: keyboardType ?? TextInputType.text,
+      textInputAction: textInputAction,
       onChanged: onInputChanged,
       onEditingComplete: onEditingComplete,
     );
