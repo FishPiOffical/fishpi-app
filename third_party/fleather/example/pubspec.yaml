@@ -1,0 +1,42 @@
+name: example
+description: Fleather example.
+
+version: 1.0.0+1
+
+publish_to: none
+
+environment:
+  sdk: ">=3.0.0 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+  url_launcher: ^6.3.1
+  image_picker: ^1.1.2
+  fleather:
+    path: ../
+  parchment:
+    path: ../../parchment
+
+dependency_overrides:
+  parchment:
+    path: ../../parchment
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  integration_test:
+    sdk: flutter
+  flutter_driver:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+  flutter_test_robots: ^0.0.24
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/
+    - images/breeze.jpg
+    - images/cody-manning-82xt4MtbJqg-unsplash.jpg

@@ -276,10 +276,9 @@ packages:
   fleather:
     dependency: "direct main"
     description:
-      name: fleather
-      sha256: baa1cbba5de755adf8114eac3b8adf352f06a18e55d1d58636e9c10a0f86aed5
-      url: "https://pub.dev"
-    source: hosted
+      path: "third_party/fleather"
+      relative: true
+    source: path
     version: "1.26.0"
   flutter:
     dependency: "direct main"

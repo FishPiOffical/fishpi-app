@@ -79,6 +79,8 @@ dev_dependencies:
   flutter_lints: ^3.0.0
 dependency_overrides:
   intl: ^0.18.0
+  fleather:
+    path: third_party/fleather
 
 flutter_native_splash:
   color: "#F0D35E"
