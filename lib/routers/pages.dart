@@ -18,6 +18,8 @@ import 'package:fishpi_app/pages/login/login_binding.dart';
 import 'package:fishpi_app/pages/login/login_view.dart';
 import 'package:fishpi_app/pages/mine/account/account_binding.dart';
 import 'package:fishpi_app/pages/mine/account/account_view.dart';
+import 'package:fishpi_app/pages/mine/change_password/change_password_binding.dart';
+import 'package:fishpi_app/pages/mine/change_password/change_password_view.dart';
 import 'package:fishpi_app/pages/mine/collection_list/collection_list_binding.dart';
 import 'package:fishpi_app/pages/mine/collection_list/collection_list_view.dart';
 import 'package:fishpi_app/pages/mine/edit_info/edit_info_binding.dart';
@@ -118,6 +120,11 @@ class AppPages {
       name: AppRoutes.editInfo,
       page: () => EditInfoPage(),
       binding: EditInfoBinding(),
+    ),
+    _pageBuilder(
+      name: AppRoutes.changePassword,
+      page: () => ChangePasswordPage(),
+      binding: ChangePasswordBinding(),
     ),
     _pageBuilder(
       name: AppRoutes.setUp,

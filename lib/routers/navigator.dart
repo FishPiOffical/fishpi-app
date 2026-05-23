@@ -65,6 +65,12 @@ class AppNavigator {
   /// 账号与安全
   static void toAccount() => Get.toNamed(AppRoutes.account);
 
+  /// 修改用户信息
+  static void toEditInfo() => Get.toNamed(AppRoutes.editInfo);
+
+  /// 修改密码
+  static void toChangePassword() => Get.toNamed(AppRoutes.changePassword);
+
   /// Ta人主页
   static void toUserPanel({String? userName}) => Get.toNamed(
         AppRoutes.userPanel,
