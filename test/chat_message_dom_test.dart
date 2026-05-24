@@ -1,5 +1,6 @@
 import 'package:fishpi_app/widgets/pi_msg_dom.dart';
 import 'package:fishpi_app/widgets/pi_image.dart';
+import 'package:fishpi_app/widgets/chat/chat_voice_message.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -96,6 +97,19 @@ void main() {
       expect(image.width, 120.w);
       expect(image.height, 70.h);
       expect(image.fit, BoxFit.contain);
+    });
+
+    testWidgets('HTML music 标签渲染为语音消息卡片', (tester) async {
+      await tester.pumpWidget(
+        _wrap(
+          _message(
+            '<music type="voice" source="https://example.com/a.m4a" title="语音消息 3s"></music>',
+          ),
+        ),
+      );
+
+      expect(find.byType(ChatVoiceMessage), findsOneWidget);
+      expect(find.text('语音消息 3s'), findsOneWidget);
     });
   });
 }

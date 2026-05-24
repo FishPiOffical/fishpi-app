@@ -4,6 +4,7 @@ import 'package:fishpi/types/article.dart';
 import 'package:fishpi/types/breezemoon.dart';
 import 'package:fishpi/types/redpacket.dart';
 import 'package:fishpi_app/core/chat/chat_message_utils.dart';
+import 'package:fishpi_app/core/chat/chat_voice_message_utils.dart';
 import 'package:fishpi_app/core/sql/black_list.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -181,6 +182,37 @@ void main() {
         '[视频]',
       );
       expect(ChatMessageUtils.conversationPreview(''), '');
+    });
+
+    test('语音 music 消息可生成并解析为会话预览', () {
+      final content = ChatVoiceMessageUtils.buildMusicMessage(
+        url: 'https://example.com/a.m4a',
+        durationSeconds: 3,
+      );
+      final roomMessage = ChatRoomMessage.from({
+        'oId': 'voice-1',
+        'userOId': 1,
+        'userName': 'sender',
+        'userAvatarURL': '',
+        'sysMetal': '{"list":[]}',
+        'client': '',
+        'content': content,
+        'time': '',
+      });
+
+      expect(roomMessage.isMusic, isTrue);
+      expect(roomMessage.music?.type, 'voice');
+      expect(roomMessage.music?.source, 'https://example.com/a.m4a');
+      expect(ChatMessageUtils.conversationPreview(content), '[语音]');
+    });
+
+    test('HTML music 标签会降级为语音预览', () {
+      expect(
+        ChatMessageUtils.conversationPreview(
+          '<music type="voice" source="https://example.com/a.m4a"></music>',
+        ),
+        '[语音]',
+      );
     });
 
     test('纯单图消息识别图片地址', () {

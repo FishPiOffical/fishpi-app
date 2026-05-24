@@ -28,6 +28,8 @@
 	<true/>
 	<key>NSCameraUsageDescription</key>
 	<string>给予摄像头权限以使用扫码登录，拍照消息等功能</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>给予麦克风权限以使用聊天室语音消息功能</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>给予相册权限以使用图片上传等功能</string>
 	<key>UIApplicationSupportsIndirectInputEvents</key>

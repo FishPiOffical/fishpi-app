@@ -4,6 +4,7 @@ import 'package:fishpi_app/core/chat/chat_message_utils.dart';
 import 'package:fishpi_app/res/styles.dart';
 import 'package:fishpi_app/utils/pi_utils.dart';
 import 'package:fishpi_app/widgets/chat/chat_repeat_avatar_strip.dart';
+import 'package:fishpi_app/widgets/chat/chat_voice_message.dart';
 import 'package:fishpi_app/widgets/pi_avatar.dart';
 import 'package:fishpi_app/widgets/pi_msg_dom.dart';
 import 'package:fishpi_app/widgets/pi_title_bar.dart';
@@ -78,6 +79,13 @@ class ChatPage extends StatelessWidget {
                 onInput: logic.onInput,
                 clickSend: logic.clickSend,
                 scrollToBottom: logic.scrollToBottom,
+                enableVoice: logic.isGroup.value,
+                isRecordingVoice: logic.isRecordingVoice.value,
+                isSendingVoice: logic.isSendingVoice.value,
+                voiceRecordSeconds: logic.voiceRecordSeconds.value,
+                onVoiceRecordStart: logic.startVoiceRecord,
+                onVoiceRecordFinish: logic.finishVoiceRecord,
+                onVoiceRecordCancel: logic.cancelVoiceRecord,
               ),
             ],
           ),
@@ -122,47 +130,53 @@ class ChatPage extends StatelessWidget {
                 ),
                 chat.isRedpacket
                     ? _buildRedpacket(chat.redpacket!)
-                    : singleImageUrl != null
-                        ? _buildSingleImage(chat, singleImageUrl, true)
-                        : Container(
-                            width: 0.8.sw - 58.w,
-                            padding: EdgeInsets.all(10.w),
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.only(
-                                topLeft: Radius.circular(16.w),
-                                bottomRight: Radius.circular(16.w),
-                                bottomLeft: Radius.circular(16.w),
-                              ),
-                              border: Styles.commonBorder,
-                              color: Styles.primaryColor,
-                            ),
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Column(
-                                  mainAxisSize: MainAxisSize.max,
-                                  mainAxisAlignment: MainAxisAlignment.start,
+                    : chat.isMusic
+                        ? _buildMusic(chat, true)
+                        : singleImageUrl != null
+                            ? _buildSingleImage(chat, singleImageUrl, true)
+                            : Container(
+                                width: 0.8.sw - 58.w,
+                                padding: EdgeInsets.all(10.w),
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.only(
+                                    topLeft: Radius.circular(16.w),
+                                    bottomRight: Radius.circular(16.w),
+                                    bottomLeft: Radius.circular(16.w),
+                                  ),
+                                  border: Styles.commonBorder,
+                                  color: Styles.primaryColor,
+                                ),
+                                child: Column(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    PiUtils.getChatPreview(chat, isSelf: true)
+                                    Column(
+                                      mainAxisSize: MainAxisSize.max,
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.start,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        PiUtils.getChatPreview(chat,
+                                            isSelf: true)
+                                      ],
+                                    ),
+                                    SizedBox(
+                                      width: 0.8.sw - 58.w,
+                                      child: Text(
+                                        chat.time,
+                                        style: TextStyle(
+                                          color: const Color(0xFF9FA4B4),
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 11.sp,
+                                        ),
+                                        textAlign: TextAlign.right,
+                                      ),
+                                    ),
                                   ],
                                 ),
-                                SizedBox(
-                                  width: 0.8.sw - 58.w,
-                                  child: Text(
-                                    chat.time,
-                                    style: TextStyle(
-                                      color: const Color(0xFF9FA4B4),
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 11.sp,
-                                    ),
-                                    textAlign: TextAlign.right,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
+                              ),
                 _buildRepeaters(group, true),
               ],
             ),
@@ -217,47 +231,51 @@ class ChatPage extends StatelessWidget {
                 ),
                 chat.isRedpacket
                     ? _buildRedpacket(chat.redpacket!)
-                    : singleImageUrl != null
-                        ? _buildSingleImage(chat, singleImageUrl, false)
-                        : Container(
-                            width: 0.8.sw - 58.w,
-                            padding: EdgeInsets.all(10.w),
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.only(
-                                topRight: Radius.circular(16.w),
-                                bottomRight: Radius.circular(16.w),
-                                bottomLeft: Radius.circular(16.w),
-                              ),
-                              border: Styles.commonBorder,
-                              color: Colors.white,
-                            ),
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Column(
-                                    mainAxisSize: MainAxisSize.max,
-                                    mainAxisAlignment: MainAxisAlignment.start,
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      PiUtils.getChatPreview(chat),
-                                    ]),
-                                SizedBox(
-                                  width: 0.8.sw - 58.w,
-                                  child: Text(
-                                    chat.time,
-                                    style: TextStyle(
-                                      color: const Color(0xFF9FA4B4),
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 11.sp,
-                                    ),
-                                    textAlign: TextAlign.right,
+                    : chat.isMusic
+                        ? _buildMusic(chat, false)
+                        : singleImageUrl != null
+                            ? _buildSingleImage(chat, singleImageUrl, false)
+                            : Container(
+                                width: 0.8.sw - 58.w,
+                                padding: EdgeInsets.all(10.w),
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.only(
+                                    topRight: Radius.circular(16.w),
+                                    bottomRight: Radius.circular(16.w),
+                                    bottomLeft: Radius.circular(16.w),
                                   ),
+                                  border: Styles.commonBorder,
+                                  color: Colors.white,
                                 ),
-                              ],
-                            ),
-                          ),
+                                child: Column(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Column(
+                                        mainAxisSize: MainAxisSize.max,
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.start,
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          PiUtils.getChatPreview(chat),
+                                        ]),
+                                    SizedBox(
+                                      width: 0.8.sw - 58.w,
+                                      child: Text(
+                                        chat.time,
+                                        style: TextStyle(
+                                          color: const Color(0xFF9FA4B4),
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 11.sp,
+                                        ),
+                                        textAlign: TextAlign.right,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
                 _buildRepeaters(group, false),
               ],
             ),
@@ -354,6 +372,15 @@ class ChatPage extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildMusic(ChatRoomMessage chat, bool isSelf) {
+    final music = chat.music;
+    if (music == null) return PiUtils.getChatPreview(chat, isSelf: isSelf);
+    return ChatVoiceMessage(
+      music: music,
+      isSelf: isSelf,
     );
   }
 

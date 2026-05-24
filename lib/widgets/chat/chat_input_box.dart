@@ -15,6 +15,13 @@ class ChatInputBox extends StatefulWidget {
   final Future<void> Function() clickSend;
   final Function() scrollToBottom;
   final String? content;
+  final bool enableVoice;
+  final bool isRecordingVoice;
+  final bool isSendingVoice;
+  final int voiceRecordSeconds;
+  final Future<void> Function()? onVoiceRecordStart;
+  final Future<void> Function()? onVoiceRecordFinish;
+  final Future<void> Function()? onVoiceRecordCancel;
 
   const ChatInputBox({
     required this.controller,
@@ -25,6 +32,13 @@ class ChatInputBox extends StatefulWidget {
     required this.clickSend,
     required this.scrollToBottom,
     this.content,
+    this.enableVoice = true,
+    this.isRecordingVoice = false,
+    this.isSendingVoice = false,
+    this.voiceRecordSeconds = 0,
+    this.onVoiceRecordStart,
+    this.onVoiceRecordFinish,
+    this.onVoiceRecordCancel,
     super.key,
   });
 
@@ -37,6 +51,9 @@ class ChatInputBoxState extends State<ChatInputBox> {
   bool isShowTools = false;
   bool isShowVoice = false;
   String content = "";
+  bool _isVoicePressing = false;
+  bool _isVoiceReleaseHandled = false;
+  Future<void>? _voiceStartFuture;
 
   @override
   void initState() {
@@ -75,48 +92,11 @@ class ChatInputBoxState extends State<ChatInputBox> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  GestureDetector(
-                    onTap: () {
-                      toggleVoice();
-                    },
-                    child: SizedBox(
-                      width: 24.w,
-                      height: 24.w,
-                      child: isShowVoice
-                          ? Image.asset('assets/images/keyboard.png')
-                          : const Icon(
-                              Icons.keyboard_voice_outlined,
-                            ),
-                    ),
-                  ),
+                  _buildVoiceToggle(),
                   SizedBox(
                       width: 220.w,
                       child: isShowVoice
-                          ? GestureDetector(
-                              onTap: () {},
-                              behavior: HitTestBehavior.translucent,
-                              child: Container(
-                                width: 220.w,
-                                height: 34.h,
-                                decoration: BoxDecoration(
-                                  border: Border.all(
-                                    width: 2.w,
-                                    color: Styles.primaryTextColor,
-                                  ),
-                                  borderRadius: BorderRadius.circular(10),
-                                  color: Colors.white,
-                                ),
-                                alignment: Alignment.center,
-                                child: Text(
-                                  '长按讲话',
-                                  style: TextStyle(
-                                    color: Styles.primaryTextColor,
-                                    fontSize: 14.sp,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ),
-                            )
+                          ? _buildVoiceButton()
                           : SizedBox(
                               width: 220.w,
                               height: 34.h,
@@ -208,6 +188,75 @@ class ChatInputBoxState extends State<ChatInputBox> {
               ),
             )
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildVoiceToggle() {
+    if (!widget.enableVoice) return SizedBox(width: 24.w, height: 24.w);
+    return GestureDetector(
+      onTap: () {
+        toggleVoice();
+      },
+      child: SizedBox(
+        width: 24.w,
+        height: 24.w,
+        child: isShowVoice
+            ? Image.asset('assets/images/keyboard.png')
+            : const Icon(
+                Icons.keyboard_voice_outlined,
+              ),
+      ),
+    );
+  }
+
+  Widget _buildVoiceButton() {
+    final recording = widget.isRecordingVoice;
+    final sending = widget.isSendingVoice;
+    final text = sending
+        ? '语音发送中...'
+        : recording
+            ? '松开发送 ${widget.voiceRecordSeconds}s/60s'
+            : '长按讲话';
+
+    return GestureDetector(
+      onLongPressStart: sending
+          ? null
+          : (_) async {
+              await _startVoiceRecord();
+            },
+      onLongPressEnd: sending
+          ? null
+          : (_) async {
+              await _finishVoiceRecord();
+            },
+      onLongPressCancel: sending
+          ? null
+          : () async {
+              await _cancelVoiceRecord();
+            },
+      behavior: HitTestBehavior.translucent,
+      child: Container(
+        key: const ValueKey('chat_voice_record_button'),
+        width: 220.w,
+        height: 34.h,
+        decoration: BoxDecoration(
+          border: Border.all(
+            width: 2.w,
+            color: Styles.primaryTextColor,
+          ),
+          borderRadius: BorderRadius.circular(10),
+          color: recording ? Styles.primaryColor : Colors.white,
+        ),
+        alignment: Alignment.center,
+        child: Text(
+          text,
+          style: TextStyle(
+            color: Styles.primaryTextColor,
+            fontSize: 14.sp,
+            fontWeight: FontWeight.bold,
+          ),
         ),
       ),
     );
@@ -367,6 +416,7 @@ class ChatInputBoxState extends State<ChatInputBox> {
   }
 
   void toggleVoice() {
+    if (!widget.enableVoice) return;
     setState(() {
       isShowVoice = !isShowVoice;
       isShowTools = false;
@@ -376,6 +426,33 @@ class ChatInputBoxState extends State<ChatInputBox> {
     Future.delayed(const Duration(milliseconds: 100), () {
       widget.scrollToBottom();
     });
+  }
+
+  Future<void> _startVoiceRecord() async {
+    _isVoicePressing = true;
+    _isVoiceReleaseHandled = false;
+    final future = widget.onVoiceRecordStart?.call() ?? Future.value();
+    _voiceStartFuture = future;
+    await future;
+    if (!mounted || _isVoicePressing || _isVoiceReleaseHandled) return;
+    _isVoiceReleaseHandled = true;
+    await widget.onVoiceRecordFinish?.call();
+  }
+
+  Future<void> _finishVoiceRecord() async {
+    _isVoicePressing = false;
+    await _voiceStartFuture;
+    if (!mounted || _isVoiceReleaseHandled) return;
+    _isVoiceReleaseHandled = true;
+    await widget.onVoiceRecordFinish?.call();
+  }
+
+  Future<void> _cancelVoiceRecord() async {
+    _isVoicePressing = false;
+    await _voiceStartFuture;
+    if (!mounted || _isVoiceReleaseHandled) return;
+    _isVoiceReleaseHandled = true;
+    await widget.onVoiceRecordCancel?.call();
   }
 
   void closeAllTools() {

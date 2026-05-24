@@ -5,6 +5,7 @@ import 'package:fishpi/types/chatroom.dart';
 import 'package:html/dom.dart' as dom;
 import 'package:html/parser.dart';
 
+import 'chat_voice_message_utils.dart';
 import '../sql/black_list.dart';
 
 class ParsedChatContent {
@@ -256,6 +257,11 @@ class ChatMessageUtils {
 
   static String _buildPreview(dom.Element? body) {
     if (body == null) return '';
+    final music = ChatVoiceMessageUtils.parseMusicMessage(body.text.trim());
+    if (music != null) {
+      return ChatVoiceMessageUtils.previewFor(music);
+    }
+
     final parts = <String>[];
 
     void visit(dom.Node node) {
@@ -272,6 +278,16 @@ class ChatMessageUtils {
           return;
         case 'video':
           parts.add('[视频]');
+          return;
+        case 'music':
+          final music = MusicMsg(
+            type: node.attributes['type'] ?? 'voice',
+            source: node.attributes['source'] ?? node.attributes['src'] ?? '',
+            coverURL: node.attributes['coverURL'] ?? '',
+            title: node.attributes['title'] ?? '',
+            from: node.attributes['from'] ?? '',
+          );
+          parts.add(ChatVoiceMessageUtils.previewFor(music));
           return;
         case 'iframe':
           parts.add(_iframePreview(node.attributes['src'] ?? ''));

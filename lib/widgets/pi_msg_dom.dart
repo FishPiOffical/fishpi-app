@@ -1,4 +1,6 @@
+import 'package:fishpi/types/chatroom.dart';
 import 'package:fishpi_app/res/styles.dart';
+import 'package:fishpi_app/widgets/chat/chat_voice_message.dart';
 import 'package:fishpi_app/widgets/pi_detail_msg.dart';
 import 'package:fishpi_app/widgets/pi_hero.dart';
 import 'package:fishpi_app/widgets/pi_image.dart';
@@ -124,6 +126,8 @@ class ChatMessageDomNode extends StatelessWidget {
         return _buildList(element, ordered: true);
       case "video":
         return const Text('[视频]');
+      case "music":
+        return _buildMusic(element);
       case "iframe":
         return Text(_iframePreview(element.attributes['src'] ?? ''));
       case "a":
@@ -254,6 +258,20 @@ class ChatMessageDomNode extends StatelessWidget {
     );
   }
 
+  Widget _buildMusic(dom.Element element) {
+    final music = MusicMsg(
+      type: element.attributes['type'] ?? 'voice',
+      source: element.attributes['source'] ?? element.attributes['src'] ?? '',
+      coverURL: element.attributes['coverURL'] ?? '',
+      title: element.attributes['title'] ?? '语音消息',
+      from: element.attributes['from'] ?? '摸鱼派 App',
+    );
+    return ChatVoiceMessage(
+      music: music,
+      isSelf: isSelf ?? false,
+    );
+  }
+
   Widget _buildList(dom.Element element, {bool ordered = false}) {
     final children = <Widget>[];
     var itemIndex = 1;
@@ -328,6 +346,7 @@ class ChatMessageDomNode extends StatelessWidget {
       case "li":
       case "details":
       case "pre":
+      case "music":
         return false;
       default:
         return true;

@@ -66,6 +66,8 @@ dependencies:
   parchment: ^1.25.1
   flutter_svg_provider: ^1.0.7
   auto_size_text: ^3.0.0
+  record: ^6.2.1
+  just_audio: ^0.10.5
 
 dev_dependencies:
   flutter_test:
