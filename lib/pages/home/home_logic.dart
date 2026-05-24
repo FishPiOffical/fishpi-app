@@ -16,9 +16,12 @@ class HomeLogic extends GetxController {
     super.onInit();
   }
 
-  void initChat() {
-    imController.init(token.value);
-    imController.chatInit();
+  Future<void> initChat() async {
+    if (token.value.isEmpty) return;
+    await imController.init(token.value);
+    try {
+      await imController.chatInit();
+    } catch (_) {}
   }
 
   void onPageChanged(int idx) {

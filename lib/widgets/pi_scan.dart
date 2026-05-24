@@ -102,7 +102,7 @@ class PiScan extends StatelessWidget {
         return;
       }
       String token = result.split(":")[1];
-      imController.init(token);
+      await imController.init(token);
       ToastManager.showToast('登录成功');
       PiUtils.setString('token', token);
       PiUtils.setBool('isLogin', true);

@@ -79,6 +79,8 @@ dev_dependencies:
   flutter_lints: ^3.0.0
 dependency_overrides:
   intl: ^0.18.0
+  fishpi:
+    path: third_party/fishpi
   fleather:
     path: third_party/fleather
 

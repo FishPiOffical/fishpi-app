@@ -51,6 +51,7 @@ class IMController extends GetxController {
   }
 
   Future<void> chatInit() async {
+    if (fishpi.token.isEmpty) return;
     await _ensureChatRoomListener();
     _ensurePrivateNoticeListener();
   }
@@ -84,10 +85,18 @@ class IMController extends GetxController {
     }
 
     _chatRoomListener = listener;
-    await fishpi.chatroom.addListener(listener);
+    try {
+      await fishpi.chatroom.addListener(
+        listener,
+        error: (_) {},
+      );
+    } catch (_) {
+      _chatRoomListener = null;
+    }
   }
 
   void _ensurePrivateNoticeListener() {
+    if (fishpi.token.isEmpty) return;
     if (_privateNoticeListener != null) return;
     void listener(
       ChatMsgType type, {
@@ -105,7 +114,11 @@ class IMController extends GetxController {
     }
 
     _privateNoticeListener = listener;
-    fishpi.chat.addListener(listener);
+    try {
+      fishpi.chat.addListener(listener);
+    } catch (_) {
+      _privateNoticeListener = null;
+    }
   }
 
   void _retainPrivateChat(String user) {
@@ -129,7 +142,12 @@ class IMController extends GetxController {
     }
 
     _privateUserListeners[user] = listener;
-    fishpi.chat.addListener(listener, user: user);
+    try {
+      fishpi.chat.addListener(listener, user: user);
+    } catch (_) {
+      _privateUserListeners.remove(user);
+      _privateUserRefs.remove(user);
+    }
   }
 
   void _emitPrivateChat({

@@ -1,0 +1,27 @@
+name: fishpi
+description: A Package to use API of fishpi. Contain a command line tool to use fishpi services.
+version: 1.0.27
+repository: https://github.com/FishPiOffical/fishpi.dart
+
+environment:
+  sdk: ^3.1.3
+
+# Add regular dependencies here.
+dependencies:
+  convert: ^3.1.1
+  crypto: ^3.0.3
+  dio: ^5.3.3
+  web_socket_channel: ^2.4.0
+  args: ^2.4.2
+  yaml_modify: ^1.0.1
+  path: ^1.8.3
+  cli_dialog: ^0.5.0
+  dart_console: ^1.2.0
+  # path: ^1.8.0
+
+dev_dependencies:
+  lints: ^2.0.0
+  test: ^1.21.0
+
+executables:
+  fishpi: main
