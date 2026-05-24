@@ -138,10 +138,7 @@ class CollectionListPage extends StatelessWidget {
 
   Widget _buildMedalPreview(CollectionMedal medal) {
     if (medal.rawMetal != null) {
-      return MedalWidget(
-        medal: medal.rawMetal!,
-        level: medal.type,
-      );
+      return MedalWidget(medal: medal.rawMetal!);
     }
 
     if (medal.imageUrl.isEmpty) {
@@ -233,7 +230,42 @@ class CollectionListPage extends StatelessWidget {
   }
 
   Widget _buildTypeChip(String text) {
-    return _buildChip(text, const Color(0xFFE6F4FF));
+    final style = _MedalLevelChipStyle.resolve(text);
+    return Container(
+      key: ValueKey('medal_level_chip_${style.key}'),
+      padding: EdgeInsets.symmetric(horizontal: 9.w, vertical: 4.h),
+      decoration: BoxDecoration(
+        color: style.backgroundColor,
+        gradient: style.gradient,
+        border: Border.all(color: style.borderColor, width: style.borderWidth),
+        borderRadius: BorderRadius.circular(8.r),
+        boxShadow: style.shadows,
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (style.markColor != null) ...[
+            Container(
+              width: 5.w,
+              height: 5.w,
+              decoration: BoxDecoration(
+                color: style.markColor,
+                shape: BoxShape.circle,
+              ),
+            ),
+            5.horizontalSpace,
+          ],
+          Text(
+            text,
+            style: TextStyle(
+              color: style.foregroundColor,
+              fontSize: 12.sp,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _buildExpireChip(String text) {
@@ -258,4 +290,159 @@ class CollectionListPage extends StatelessWidget {
       ),
     );
   }
+}
+
+class _MedalLevelChipStyle {
+  final String key;
+  final Color backgroundColor;
+  final Color foregroundColor;
+  final Color borderColor;
+  final double borderWidth;
+  final Gradient? gradient;
+  final List<BoxShadow> shadows;
+  final Color? markColor;
+
+  const _MedalLevelChipStyle({
+    required this.key,
+    required this.backgroundColor,
+    required this.foregroundColor,
+    required this.borderColor,
+    this.borderWidth = 1.5,
+    this.gradient,
+    this.shadows = const [],
+    this.markColor,
+  });
+
+  static _MedalLevelChipStyle resolve(String level) {
+    // 等级特效只作用在等级按钮上，勋章本体保持服务端配置的原始样式。
+    switch (level.trim()) {
+      case '精良':
+        return fine;
+      case '稀有':
+        return rare;
+      case '史诗':
+        return epic;
+      case '传说':
+        return legendary;
+      case '神话':
+        return mythic;
+      case '限定':
+        return limited;
+      case '普通':
+      default:
+        return normal;
+    }
+  }
+
+  static const normal = _MedalLevelChipStyle(
+    key: 'normal',
+    backgroundColor: Color(0xFFF0F0F0),
+    foregroundColor: Colors.black,
+    borderColor: Colors.black,
+  );
+
+  static const fine = _MedalLevelChipStyle(
+    key: 'fine',
+    backgroundColor: Color(0xFFE6F4FF),
+    foregroundColor: Color(0xFF0F3D91),
+    borderColor: Color(0xFF2F80ED),
+    markColor: Color(0xFF2F80ED),
+    shadows: [
+      BoxShadow(
+        color: Color(0x262F80ED),
+        blurRadius: 8,
+        offset: Offset(0, 2),
+      ),
+    ],
+  );
+
+  static const rare = _MedalLevelChipStyle(
+    key: 'rare',
+    backgroundColor: Color(0xFFF2EAFE),
+    foregroundColor: Color(0xFF4C1D95),
+    borderColor: Color(0xFF8854D0),
+    markColor: Color(0xFF8854D0),
+    shadows: [
+      BoxShadow(
+        color: Color(0x268854D0),
+        blurRadius: 9,
+        offset: Offset(0, 2),
+      ),
+    ],
+  );
+
+  static const epic = _MedalLevelChipStyle(
+    key: 'epic',
+    backgroundColor: Color(0xFFFFF4CC),
+    foregroundColor: Color(0xFF7A3B00),
+    borderColor: Color(0xFFF59E0B),
+    markColor: Color(0xFFF59E0B),
+    gradient: LinearGradient(
+      colors: [Color(0xFFFFF7D6), Color(0xFFFFE2A8)],
+    ),
+    shadows: [
+      BoxShadow(
+        color: Color(0x2EF59E0B),
+        blurRadius: 10,
+        offset: Offset(0, 2),
+      ),
+    ],
+  );
+
+  static const legendary = _MedalLevelChipStyle(
+    key: 'legendary',
+    backgroundColor: Color(0xFFFFF0B8),
+    foregroundColor: Color(0xFF5F3B00),
+    borderColor: Color(0xFFD6A300),
+    borderWidth: 1.7,
+    markColor: Color(0xFFD6A300),
+    gradient: LinearGradient(
+      colors: [Color(0xFFFFF6C8), Color(0xFFFFD95A)],
+    ),
+    shadows: [
+      BoxShadow(
+        color: Color(0x3DF5C542),
+        blurRadius: 12,
+        offset: Offset(0, 2),
+      ),
+    ],
+  );
+
+  static const mythic = _MedalLevelChipStyle(
+    key: 'mythic',
+    backgroundColor: Color(0xFFEDE9FE),
+    foregroundColor: Color(0xFF3B0764),
+    borderColor: Color(0xFF7C3AED),
+    borderWidth: 1.8,
+    markColor: Color(0xFF22D3EE),
+    gradient: LinearGradient(
+      colors: [Color(0xFFFFF0A3), Color(0xFFEDE9FE), Color(0xFFD9F7FF)],
+    ),
+    shadows: [
+      BoxShadow(
+        color: Color(0x407C3AED),
+        blurRadius: 13,
+        offset: Offset(0, 2),
+      ),
+    ],
+  );
+
+  static const limited = _MedalLevelChipStyle(
+    key: 'limited',
+    backgroundColor: Color(0xFFFFE8E6),
+    foregroundColor: Color(0xFFFFFFFF),
+    borderColor: Color(0xFFFFCC33),
+    borderWidth: 1.8,
+    markColor: Color(0xFFFFCC33),
+    gradient: LinearGradient(
+      colors: [Color(0xFFE53935), Color(0xFF9F1239)],
+    ),
+    shadows: [
+      BoxShadow(
+        color: Color(0x3DE53935),
+        blurRadius: 12,
+        offset: Offset(0, 2),
+      ),
+    ],
+  );
 }

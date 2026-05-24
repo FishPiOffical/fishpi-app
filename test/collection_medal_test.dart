@@ -72,57 +72,37 @@ void main() {
     });
   });
 
-  group('勋章等级特效', () {
-    testWidgets('普通和未知等级按普通样式处理且不显示角标', (tester) async {
-      _ignoreNetworkImageErrors();
+  group('勋章等级按钮特效', () {
+    const levels = {
+      '普通': 'normal',
+      '精良': 'fine',
+      '稀有': 'rare',
+      '史诗': 'epic',
+      '传说': 'legendary',
+      '神话': 'mythic',
+      '限定': 'limited',
+    };
 
-      await _pumpMedalWidget(tester, level: '普通');
-      expect(
-        find.byKey(const ValueKey('medal_effect_normal_m1')),
-        findsOneWidget,
-      );
-      expect(find.text('限定'), findsNothing);
+    for (final entry in levels.entries) {
+      testWidgets('${entry.key} 等级按钮渲染对应静态特效', (tester) async {
+        await _pumpCollectionPageWithMedal(tester, type: entry.key);
 
-      await _pumpMedalWidget(tester, level: '未知等级');
-      expect(
-        find.byKey(const ValueKey('medal_effect_normal_m1')),
-        findsOneWidget,
-      );
-      expect(find.text('限定'), findsNothing);
-    });
-
-    testWidgets('不同等级渲染对应静态特效', (tester) async {
-      _ignoreNetworkImageErrors();
-
-      const levels = {
-        '精良': 'fine',
-        '稀有': 'rare',
-        '史诗': 'epic',
-        '传说': 'legendary',
-        '神话': 'mythic',
-        '限定': 'limited',
-      };
-
-      for (final entry in levels.entries) {
-        await _pumpMedalWidget(tester, level: entry.key);
-
+        expect(find.text(entry.key), findsOneWidget);
         expect(
-          find.byKey(ValueKey('medal_effect_${entry.value}_m1')),
+          find.byKey(ValueKey('medal_level_chip_${entry.value}')),
           findsOneWidget,
         );
-      }
-    });
+      });
+    }
 
-    testWidgets('限定等级显示限定角标', (tester) async {
-      _ignoreNetworkImageErrors();
+    testWidgets('未知等级按钮按普通样式兜底', (tester) async {
+      await _pumpCollectionPageWithMedal(tester, type: '未知等级');
 
-      await _pumpMedalWidget(tester, level: '限定');
-
+      expect(find.text('未知等级'), findsOneWidget);
       expect(
-        find.byKey(const ValueKey('medal_level_badge_limited_m1')),
+        find.byKey(const ValueKey('medal_level_chip_normal')),
         findsOneWidget,
       );
-      expect(find.text('限定'), findsOneWidget);
     });
   });
 
@@ -196,25 +176,38 @@ void main() {
     expect(find.text('神话'), findsOneWidget);
     expect(find.byType(MedalWidget), findsOneWidget);
     expect(
-      find.byKey(const ValueKey('medal_effect_mythic_m1')),
+      find.byKey(const ValueKey('medal_level_chip_mythic')),
       findsOneWidget,
     );
     expect(find.text('取消展示'), findsOneWidget);
   });
 }
 
-Future<void> _pumpMedalWidget(
+Future<void> _pumpCollectionPageWithMedal(
   WidgetTester tester, {
-  required String level,
+  required String type,
 }) async {
+  _ignoreNetworkImageErrors();
+
+  Get.testMode = true;
+  Get.put(IMController());
+  final logic = Get.put(CollectionListLogic(autoLoad: false));
+  logic.medals.assignAll([
+    CollectionMedal(
+      id: 'm1',
+      name: '摸鱼勋章',
+      description: '认真摸鱼',
+      type: type,
+      display: true,
+      imageUrl: 'https://fishpi.cn/images/favicon.png',
+      rawMetal: _metal(),
+    ),
+  ]);
+
   await tester.pumpWidget(
-    MaterialApp(
-      home: Center(
-        child: MedalWidget(
-          medal: _metal(),
-          level: level,
-        ),
-      ),
+    ScreenUtilInit(
+      designSize: const Size(360, 812),
+      builder: (context, _) => GetMaterialApp(home: CollectionListPage()),
     ),
   );
   await tester.pump();
