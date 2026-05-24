@@ -138,7 +138,10 @@ class CollectionListPage extends StatelessWidget {
 
   Widget _buildMedalPreview(CollectionMedal medal) {
     if (medal.rawMetal != null) {
-      return MedalWidget(medal: medal.rawMetal!);
+      return MedalWidget(
+        medal: medal.rawMetal!,
+        level: medal.type,
+      );
     }
 
     if (medal.imageUrl.isEmpty) {

@@ -72,6 +72,60 @@ void main() {
     });
   });
 
+  group('勋章等级特效', () {
+    testWidgets('普通和未知等级按普通样式处理且不显示角标', (tester) async {
+      _ignoreNetworkImageErrors();
+
+      await _pumpMedalWidget(tester, level: '普通');
+      expect(
+        find.byKey(const ValueKey('medal_effect_normal_m1')),
+        findsOneWidget,
+      );
+      expect(find.text('限定'), findsNothing);
+
+      await _pumpMedalWidget(tester, level: '未知等级');
+      expect(
+        find.byKey(const ValueKey('medal_effect_normal_m1')),
+        findsOneWidget,
+      );
+      expect(find.text('限定'), findsNothing);
+    });
+
+    testWidgets('不同等级渲染对应静态特效', (tester) async {
+      _ignoreNetworkImageErrors();
+
+      const levels = {
+        '精良': 'fine',
+        '稀有': 'rare',
+        '史诗': 'epic',
+        '传说': 'legendary',
+        '神话': 'mythic',
+        '限定': 'limited',
+      };
+
+      for (final entry in levels.entries) {
+        await _pumpMedalWidget(tester, level: entry.key);
+
+        expect(
+          find.byKey(ValueKey('medal_effect_${entry.value}_m1')),
+          findsOneWidget,
+        );
+      }
+    });
+
+    testWidgets('限定等级显示限定角标', (tester) async {
+      _ignoreNetworkImageErrors();
+
+      await _pumpMedalWidget(tester, level: '限定');
+
+      expect(
+        find.byKey(const ValueKey('medal_level_badge_limited_m1')),
+        findsOneWidget,
+      );
+      expect(find.text('限定'), findsOneWidget);
+    });
+  });
+
   test('远端展示状态会合并本地勋章结构', () async {
     Get.testMode = true;
     final imController = Get.put(IMController());
@@ -117,7 +171,15 @@ void main() {
     Get.put(IMController());
     final logic = Get.put(CollectionListLogic(autoLoad: false));
     logic.medals.assignAll([
-      CollectionMedal.fromMetal(_metal()).copyWith(display: true),
+      CollectionMedal(
+        id: 'm1',
+        name: '摸鱼勋章',
+        description: '认真摸鱼',
+        type: '神话',
+        display: true,
+        imageUrl: 'https://fishpi.cn/images/favicon.png',
+        rawMetal: _metal(),
+      ),
     ]);
 
     await tester.pumpWidget(
@@ -131,9 +193,40 @@ void main() {
     expect(find.text('典藏馆'), findsOneWidget);
     expect(find.text('摸鱼勋章'), findsOneWidget);
     expect(find.text('展示中'), findsOneWidget);
+    expect(find.text('神话'), findsOneWidget);
     expect(find.byType(MedalWidget), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('medal_effect_mythic_m1')),
+      findsOneWidget,
+    );
     expect(find.text('取消展示'), findsOneWidget);
   });
+}
+
+Future<void> _pumpMedalWidget(
+  WidgetTester tester, {
+  required String level,
+}) async {
+  await tester.pumpWidget(
+    MaterialApp(
+      home: Center(
+        child: MedalWidget(
+          medal: _metal(),
+          level: level,
+        ),
+      ),
+    ),
+  );
+  await tester.pump();
+}
+
+void _ignoreNetworkImageErrors() {
+  final oldOnError = FlutterError.onError;
+  FlutterError.onError = (details) {
+    if (details.exception is NetworkImageLoadException) return;
+    oldOnError?.call(details);
+  };
+  addTearDown(() => FlutterError.onError = oldOnError);
 }
 
 Metal _metal() {
