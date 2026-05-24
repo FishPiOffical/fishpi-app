@@ -109,6 +109,8 @@ class PiTitleBar extends StatelessWidget implements PreferredSizeWidget {
     super.key,
     String? title,
     bool? showUnderline,
+    Widget? rightWidget,
+    VoidCallback? onRightTap,
   })  : center = Expanded(
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -137,10 +139,12 @@ class PiTitleBar extends StatelessWidget implements PreferredSizeWidget {
           ),
         ),
         right = GestureDetector(
-          onTap: () {},
+          onTap: onRightTap,
+          behavior: HitTestBehavior.translucent,
           child: SizedBox(
             width: 24.w,
             height: 24.w,
+            child: rightWidget,
           ),
         ),
         backgroundColor = null;

@@ -3,6 +3,7 @@ import 'package:fishpi/types/redpacket.dart';
 import 'package:fishpi_app/core/chat/chat_message_utils.dart';
 import 'package:fishpi_app/res/styles.dart';
 import 'package:fishpi_app/utils/pi_utils.dart';
+import 'package:fishpi_app/widgets/chat/chat_repeat_avatar_strip.dart';
 import 'package:fishpi_app/widgets/pi_avatar.dart';
 import 'package:fishpi_app/widgets/pi_msg_dom.dart';
 import 'package:fishpi_app/widgets/pi_title_bar.dart';
@@ -21,62 +22,82 @@ class ChatPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Obx(
-      () => Scaffold(
-        appBar: PiTitleBar.back(
-          title: logic.isGroup.value
-              ? '聊天室'
-              : logic.displayNameFor(logic.userName.value),
-        ),
-        body: Column(
-          children: [
-            Expanded(
-              child: logic.messageList.isEmpty
-                  ? Container()
-                  : GestureDetector(
-                      onTap: () {
-                        FocusScope.of(Get.context!).requestFocus(FocusNode());
-                      },
-                      child: Container(
-                        width: 1.sw,
-                        height: 1.sh,
-                        padding: EdgeInsets.symmetric(
-                          horizontal: 16.w,
-                        ),
-                        child: ListView.builder(
-                          controller: logic.chatRoomController,
-                          padding: EdgeInsets.symmetric(vertical: 20.h),
-                          itemBuilder: _buildChatItem,
-                          itemCount: logic.messageList.length,
+      () {
+        final messageGroups = logic.isGroup.value
+            ? ChatMessageUtils.groupConsecutiveDuplicateMessages(
+                logic.messageList,
+              )
+            : logic.messageList
+                .map((message) => ChatMessageGroup(message: message))
+                .toList();
+
+        return Scaffold(
+          appBar: PiTitleBar.back(
+            title: logic.isGroup.value
+                ? '聊天室'
+                : logic.displayNameFor(logic.userName.value),
+            rightWidget: logic.isGroup.value
+                ? const Icon(
+                    Icons.more_horiz,
+                    key: ValueKey('chat_room_more_button'),
+                    color: Styles.primaryTextColor,
+                  )
+                : null,
+            onRightTap: logic.isGroup.value ? logic.toChatRoomSettings : null,
+          ),
+          body: Column(
+            children: [
+              Expanded(
+                child: messageGroups.isEmpty
+                    ? Container()
+                    : GestureDetector(
+                        onTap: () {
+                          FocusScope.of(Get.context!).requestFocus(FocusNode());
+                        },
+                        child: Container(
+                          width: 1.sw,
+                          height: 1.sh,
+                          padding: EdgeInsets.symmetric(
+                            horizontal: 16.w,
+                          ),
+                          child: ListView.builder(
+                            controller: logic.chatRoomController,
+                            padding: EdgeInsets.symmetric(vertical: 20.h),
+                            itemBuilder: (context, index) =>
+                                _buildChatItem(context, messageGroups[index]),
+                            itemCount: messageGroups.length,
+                          ),
                         ),
                       ),
-                    ),
-            ),
-            ChatInputBox(
-              emojiList: logic.emojiList,
-              diyEmojiList: logic.diyEmojiList,
-              controller: logic.chatRoomControllerText,
-              focusNode: logic.chatRoomFocusNode,
-              onInput: logic.onInput,
-              clickSend: logic.clickSend,
-              scrollToBottom: logic.scrollToBottom,
-            ),
-          ],
-        ),
-      ),
+              ),
+              ChatInputBox(
+                emojiList: logic.emojiList,
+                diyEmojiList: logic.diyEmojiList,
+                controller: logic.chatRoomControllerText,
+                focusNode: logic.chatRoomFocusNode,
+                onInput: logic.onInput,
+                clickSend: logic.clickSend,
+                scrollToBottom: logic.scrollToBottom,
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 
-  Widget _buildChatItem(BuildContext context, int index) {
-    ChatRoomMessage chat = logic.messageList[index];
+  Widget _buildChatItem(BuildContext context, ChatMessageGroup group) {
+    ChatRoomMessage chat = group.message;
     return GestureDetector(
       onTap: () {},
       child: chat.userName == logic.userInfo.value.userName
-          ? _buildRight(chat)
-          : _buildLeft(chat),
+          ? _buildRight(group)
+          : _buildLeft(group),
     );
   }
 
-  Widget _buildRight(ChatRoomMessage chat) {
+  Widget _buildRight(ChatMessageGroup group) {
+    final chat = group.message;
     final singleImageUrl = ChatMessageUtils.singleImageUrl(chat.content);
     return Container(
       width: 0.8.sw,
@@ -142,6 +163,7 @@ class ChatPage extends StatelessWidget {
                               ],
                             ),
                           ),
+                _buildRepeaters(group, true),
               ],
             ),
           ),
@@ -157,7 +179,8 @@ class ChatPage extends StatelessWidget {
     );
   }
 
-  Widget _buildLeft(ChatRoomMessage chat) {
+  Widget _buildLeft(ChatMessageGroup group) {
+    final chat = group.message;
     final singleImageUrl = ChatMessageUtils.singleImageUrl(chat.content);
     return Container(
       width: 0.8.sw,
@@ -235,11 +258,23 @@ class ChatPage extends StatelessWidget {
                               ],
                             ),
                           ),
+                _buildRepeaters(group, false),
               ],
             ),
           )
         ],
       ),
+    );
+  }
+
+  Widget _buildRepeaters(ChatMessageGroup group, bool isSelf) {
+    if (!logic.isGroup.value || !group.hasRepeaters) {
+      return const SizedBox.shrink();
+    }
+    return ChatRepeatAvatarStrip(
+      repeaters: group.repeaters,
+      isSelf: isSelf,
+      onTapUser: logic.clickUserAvatar,
     );
   }
 

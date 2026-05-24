@@ -40,6 +40,9 @@ class AppNavigator {
         },
       );
 
+  /// 聊天室设置
+  static void toChatRoomSettings() => Get.toNamed(AppRoutes.chatRoomSettings);
+
   /// 设置页面
   static void toForumCreate() => Get.toNamed(AppRoutes.forumCreate);
 

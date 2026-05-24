@@ -2,6 +2,7 @@ import 'package:fishpi/types/chat.dart';
 import 'package:fishpi/types/chatroom.dart';
 import 'package:fishpi/types/article.dart';
 import 'package:fishpi/types/breezemoon.dart';
+import 'package:fishpi/types/redpacket.dart';
 import 'package:fishpi_app/core/chat/chat_message_utils.dart';
 import 'package:fishpi_app/core/sql/black_list.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -207,7 +208,93 @@ void main() {
       expect(ChatMessageUtils.singleImageUrl('<video src="a.mp4"></video>'),
           isNull);
     });
+
+    test('连续相同内容会合并为一个展示组', () {
+      final messages = [
+        _roomMessage(
+            oId: '1', userOId: 1, userName: 'first', content: '<p>same</p>'),
+        _roomMessage(
+            oId: '2', userOId: 2, userName: 'second', content: '<p>same</p>'),
+        _roomMessage(
+            oId: '3', userOId: 3, userName: 'third', content: '<p>same</p>'),
+      ];
+
+      final groups =
+          ChatMessageUtils.groupConsecutiveDuplicateMessages(messages);
+
+      expect(groups, hasLength(1));
+      expect(groups.single.message.userName, 'first');
+      expect(groups.single.repeaters.map((item) => item.userName), [
+        'second',
+        'third',
+      ]);
+    });
+
+    test('非连续相同内容不会合并', () {
+      final messages = [
+        _roomMessage(oId: '1', content: '<p>same</p>'),
+        _roomMessage(oId: '2', content: '<p>other</p>'),
+        _roomMessage(oId: '3', content: '<p>same</p>'),
+      ];
+
+      final groups =
+          ChatMessageUtils.groupConsecutiveDuplicateMessages(messages);
+
+      expect(groups.map((item) => item.message.oId), ['1', '2', '3']);
+      expect(groups.every((item) => item.repeaters.isEmpty), isTrue);
+    });
+
+    test('红包和其它特殊消息不参与重复合并', () {
+      final messages = [
+        _roomMessage(
+          oId: '1',
+          content: '<p>same</p>',
+          type: ChatRoomMessageType.redPacket,
+          redpacket: RedPacketMessage(msg: '红包'),
+        ),
+        _roomMessage(oId: '2', content: '<p>same</p>'),
+      ];
+
+      final groups =
+          ChatMessageUtils.groupConsecutiveDuplicateMessages(messages);
+
+      expect(groups, hasLength(2));
+    });
+
+    test('同一用户重复消息会合并且头像按用户去重', () {
+      final messages = [
+        _roomMessage(oId: '1', userOId: 100, userName: 'same-user'),
+        _roomMessage(oId: '2', userOId: 100, userName: 'same-user'),
+        _roomMessage(oId: '3', userOId: 100, userName: 'same-user'),
+      ];
+
+      final groups =
+          ChatMessageUtils.groupConsecutiveDuplicateMessages(messages);
+
+      expect(groups, hasLength(1));
+      expect(groups.single.repeaters, hasLength(1));
+      expect(groups.single.repeaters.single.userName, 'same-user');
+    });
   });
+}
+
+ChatRoomMessage _roomMessage({
+  String oId = 'room-msg',
+  int userOId = 1,
+  String userName = 'sender',
+  String content = '<p>你好</p>',
+  String type = ChatRoomMessageType.msg,
+  RedPacketMessage? redpacket,
+}) {
+  return ChatRoomMessage(
+    oId: oId,
+    userOId: userOId,
+    userName: userName,
+    avatarURL: '',
+    content: content,
+    type: type,
+    redpacket: redpacket,
+  );
 }
 
 ChatData _chatData({

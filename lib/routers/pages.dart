@@ -2,6 +2,8 @@ import 'package:fishpi_app/pages/breezemoons/breezemoons_binding.dart';
 import 'package:fishpi_app/pages/breezemoons/breezemoons_view.dart';
 import 'package:fishpi_app/pages/chat/chat_binding.dart';
 import 'package:fishpi_app/pages/chat/chat_view.dart';
+import 'package:fishpi_app/pages/chat/chat_room_settings/chat_room_settings_binding.dart';
+import 'package:fishpi_app/pages/chat/chat_room_settings/chat_room_settings_view.dart';
 import 'package:fishpi_app/pages/chat/user_panel/user_panel_binding.dart';
 import 'package:fishpi_app/pages/chat/user_panel/user_panel_view.dart';
 import 'package:fishpi_app/pages/conversation/conversation_binding.dart';
@@ -95,6 +97,11 @@ class AppPages {
       name: AppRoutes.chat,
       page: () => ChatPage(),
       binding: ChatBinding(),
+    ),
+    _pageBuilder(
+      name: AppRoutes.chatRoomSettings,
+      page: () => const ChatRoomSettingsPage(),
+      binding: ChatRoomSettingsBinding(),
     ),
     _pageBuilder(
       name: AppRoutes.forum,

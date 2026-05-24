@@ -78,6 +78,25 @@ void main() {
       expect(image.fit, BoxFit.cover);
       expect(clip.borderRadius, BorderRadius.circular(10));
     });
+
+    testWidgets('普通 HTML 图片保持固定尺寸防止撑开消息列表', (tester) async {
+      await tester.pumpWidget(
+        _wrap(
+          ChatMessageDomNode.buildImageUrl(
+            'https://example.com/a.png',
+            'chat-1',
+            false,
+            '0',
+          ),
+        ),
+      );
+
+      final image = tester.widget<PiImage>(find.byType(PiImage));
+
+      expect(image.width, 120.w);
+      expect(image.height, 70.h);
+      expect(image.fit, BoxFit.contain);
+    });
   });
 }
 

@@ -287,6 +287,11 @@ class ChatLogic extends GetxController {
     AppNavigator.toUserPanel(userName: userName);
   }
 
+  void toChatRoomSettings() {
+    if (!isGroup.value) return;
+    AppNavigator.toChatRoomSettings();
+  }
+
   String displayNameFor(String userName, {String? fallback}) {
     // 让 Obx 感知备注变更，触发当前聊天页的昵称刷新。
     remarkVersion.value;

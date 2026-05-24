@@ -8,6 +8,7 @@ abstract class AppRoutes {
   static const home = '/home';
   static const conversation = '/conversation';
   static const chat = '/chat';
+  static const chatRoomSettings = '/chat_room_settings';
   static const userPanel = '/user_panel';
   static const forum = '/forum';
   static const forumDetail = '/forum_detail';

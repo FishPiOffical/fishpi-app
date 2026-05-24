@@ -21,6 +21,18 @@ class ParsedChatContent {
   });
 }
 
+class ChatMessageGroup {
+  final ChatRoomMessage message;
+  final List<ChatRoomMessage> repeaters;
+
+  const ChatMessageGroup({
+    required this.message,
+    this.repeaters = const [],
+  });
+
+  bool get hasRepeaters => repeaters.isNotEmpty;
+}
+
 class ChatMessageUtils {
   static const int previewCacheLimit = 200;
   static final LinkedHashMap<String, ParsedChatContent> _contentCache =
@@ -88,6 +100,45 @@ class ChatMessageUtils {
     );
   }
 
+  static List<ChatMessageGroup> groupConsecutiveDuplicateMessages(
+    Iterable<ChatRoomMessage> messages,
+  ) {
+    final groups = <ChatMessageGroup>[];
+    ChatRoomMessage? currentMessage;
+    final currentRepeaters = <ChatRoomMessage>[];
+    final repeaterKeys = <String>{};
+
+    void flushCurrent() {
+      final message = currentMessage;
+      if (message == null) return;
+      groups.add(
+        ChatMessageGroup(
+          message: message,
+          repeaters: List<ChatRoomMessage>.from(currentRepeaters),
+        ),
+      );
+      currentRepeaters.clear();
+      repeaterKeys.clear();
+    }
+
+    for (final message in messages) {
+      final base = currentMessage;
+      if (base != null && _isConsecutiveDuplicate(base, message)) {
+        final key = _senderKey(message);
+        if (key.isNotEmpty && repeaterKeys.add(key)) {
+          currentRepeaters.add(message);
+        }
+        continue;
+      }
+
+      flushCurrent();
+      currentMessage = message;
+    }
+
+    flushCurrent();
+    return groups;
+  }
+
   static bool hasMoreHistoryPage(int rawCount) {
     return rawCount > 0;
   }
@@ -104,6 +155,33 @@ class ChatMessageUtils {
     if (message.oId.isNotEmpty) return message.oId;
     if (message.content.isEmpty && message.time.isEmpty) return '';
     return '${message.userName}|${message.time}|${message.content.hashCode}';
+  }
+
+  static bool _isConsecutiveDuplicate(
+    ChatRoomMessage base,
+    ChatRoomMessage next,
+  ) {
+    if (!_canMergeDuplicate(base) || !_canMergeDuplicate(next)) return false;
+    final baseContent = base.content.trim();
+    return baseContent.isNotEmpty && baseContent == next.content.trim();
+  }
+
+  static bool _canMergeDuplicate(ChatRoomMessage message) {
+    return message.type == ChatRoomMessageType.msg &&
+        !message.isRedpacket &&
+        !message.isWeather &&
+        !message.isMusic;
+  }
+
+  static String _senderKey(ChatRoomMessage message) {
+    if (message.userOId > 0) return 'id:${message.userOId}';
+    if (message.userName.trim().isNotEmpty) {
+      return 'name:${message.userName.trim()}';
+    }
+    if (message.avatarURL.trim().isNotEmpty) {
+      return 'avatar:${message.avatarURL.trim()}';
+    }
+    return '';
   }
 
   static List<ChatData> upsertPrivateConversation(
