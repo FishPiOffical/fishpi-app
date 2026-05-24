@@ -63,7 +63,7 @@ class CollectionMedal {
     );
   }
 
-  CollectionMedal copyWith({bool? display}) {
+  CollectionMedal copyWith({bool? display, Metal? rawMetal}) {
     return CollectionMedal(
       id: id,
       name: name,
@@ -72,8 +72,8 @@ class CollectionMedal {
       display: display ?? this.display,
       displayOrder: displayOrder,
       expireTime: expireTime,
-      imageUrl: imageUrl,
-      rawMetal: rawMetal,
+      imageUrl: imageUrl.isNotEmpty ? imageUrl : rawMetal?.attr.url ?? '',
+      rawMetal: rawMetal ?? this.rawMetal,
     );
   }
 

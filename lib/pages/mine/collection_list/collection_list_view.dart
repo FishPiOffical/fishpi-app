@@ -75,64 +75,32 @@ class CollectionListPage extends StatelessWidget {
         borderRadius: BorderRadius.circular(12.r),
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              _buildMedalPreview(medal),
-              12.horizontalSpace,
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      medal.name,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        color: Styles.primaryTextColor,
-                        fontSize: 17.sp,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    6.verticalSpace,
-                    Wrap(
-                      spacing: 8.w,
-                      runSpacing: 6.h,
-                      children: [
-                        _buildStatusChip(medal.display),
-                        if (medal.type.isNotEmpty) _buildTypeChip(medal.type),
-                        if (medal.expireTime.isNotEmpty)
-                          _buildExpireChip(medal.expireTime),
-                      ],
-                    ),
-                  ],
-                ),
+          _buildMedalPreview(medal),
+          if (medal.rawMetal == null) ...[
+            12.verticalSpace,
+            Text(
+              medal.name,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: Styles.primaryTextColor,
+                fontSize: 17.sp,
+                fontWeight: FontWeight.bold,
               ),
-              updating
-                  ? SizedBox(
-                      width: 44.w,
-                      height: 44.w,
-                      child: const Center(
-                        child: SizedBox(
-                          width: 22,
-                          height: 22,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2.4,
-                            color: Colors.black,
-                          ),
-                        ),
-                      ),
-                    )
-                  : Switch(
-                      value: medal.display,
-                      activeThumbColor: Colors.black,
-                      activeTrackColor: Styles.primaryColor,
-                      inactiveThumbColor: Colors.black,
-                      inactiveTrackColor: const Color(0xFFE8E8E8),
-                      onChanged: (_) => logic.toggleDisplay(medal),
-                    ),
+            ),
+          ],
+          8.verticalSpace,
+          Wrap(
+            alignment: WrapAlignment.center,
+            spacing: 8.w,
+            runSpacing: 6.h,
+            children: [
+              _buildStatusChip(medal.display),
+              if (medal.type.isNotEmpty) _buildTypeChip(medal.type),
+              if (medal.expireTime.isNotEmpty)
+                _buildExpireChip(medal.expireTime),
             ],
           ),
           if (medal.description.isNotEmpty) ...[
@@ -144,8 +112,11 @@ class CollectionListPage extends StatelessWidget {
                 fontSize: 13.sp,
                 height: 1.45,
               ),
+              textAlign: TextAlign.center,
             ),
           ],
+          14.verticalSpace,
+          _buildActionButton(medal, updating),
         ],
       ),
     );
@@ -183,6 +154,56 @@ class CollectionListPage extends StatelessWidget {
         borderRadius: BorderRadius.circular(17.r),
       ),
       child: const Icon(Icons.workspace_premium_outlined),
+    );
+  }
+
+  Widget _buildActionButton(CollectionMedal medal, bool updating) {
+    final text = medal.display ? '取消展示' : '展示勋章';
+    final icon = medal.display
+        ? Icons.visibility_off_outlined
+        : Icons.visibility_outlined;
+    return GestureDetector(
+      onTap: updating ? null : () => logic.toggleDisplay(medal),
+      child: Opacity(
+        opacity: updating ? 0.62 : 1,
+        child: Container(
+          width: 1.sw - 60.w,
+          height: 46.h,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: medal.display ? Colors.white : Colors.black,
+            border: Border.all(color: Colors.black, width: 2),
+            borderRadius: BorderRadius.circular(10.r),
+          ),
+          child: updating
+              ? SizedBox(
+                  width: 20.w,
+                  height: 20.w,
+                  child: const CircularProgressIndicator(
+                    strokeWidth: 2.2,
+                    color: Colors.black,
+                  ),
+                )
+              : Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      icon,
+                      color: medal.display ? Colors.black : Colors.white,
+                    ),
+                    8.horizontalSpace,
+                    Text(
+                      text,
+                      style: TextStyle(
+                        color: medal.display ? Colors.black : Colors.white,
+                        fontSize: 15.sp,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+        ),
+      ),
     );
   }
 

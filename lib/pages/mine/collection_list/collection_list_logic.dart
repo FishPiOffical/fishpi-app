@@ -40,7 +40,7 @@ class CollectionListLogic extends GetxController {
     try {
       final remoteMedals = await medalService.listMyMedals(apiKey: token);
       if (remoteMedals.isNotEmpty) {
-        medals.assignAll(remoteMedals);
+        medals.assignAll(_mergeWithRawMedals(remoteMedals));
         return;
       }
       await _loadUserInfoFallback();
@@ -122,6 +122,52 @@ class CollectionListLogic extends GetxController {
     if (index < 0) return;
     medals[index] = medals[index].copyWith(display: display);
   }
+
+  List<CollectionMedal> _mergeWithRawMedals(
+      List<CollectionMedal> remoteMedals) {
+    final rawMedals = <String, Metal>{};
+    for (final medal in medals) {
+      _putRawMedal(rawMedals, medal.rawMetal);
+    }
+
+    final cachedInfo = imController.fishpi.user.current;
+    for (final medal in cachedInfo.allMetals) {
+      _putRawMedal(rawMedals, medal);
+    }
+    for (final medal in cachedInfo.sysMetal) {
+      _putRawMedal(rawMedals, medal);
+    }
+
+    if (Get.isRegistered<MineLogic>()) {
+      final mineInfo = Get.find<MineLogic>().userInfo.value;
+      for (final medal in mineInfo.allMetals) {
+        _putRawMedal(rawMedals, medal);
+      }
+      for (final medal in mineInfo.sysMetal) {
+        _putRawMedal(rawMedals, medal);
+      }
+    }
+
+    return remoteMedals.map((medal) {
+      final rawMetal = rawMedals[_metalKey(medal.id)] ??
+          rawMedals[_metalKey(medal.name)] ??
+          medal.rawMetal;
+      return medal.copyWith(rawMetal: rawMetal);
+    }).toList();
+  }
+
+  void _putRawMedal(Map<String, Metal> rawMedals, Metal? medal) {
+    if (medal == null) return;
+    final keys = [
+      medal.data,
+      medal.name,
+    ].map(_metalKey).where((key) => key.isNotEmpty);
+    for (final key in keys) {
+      rawMedals.putIfAbsent(key, () => medal);
+    }
+  }
+
+  String _metalKey(String value) => value.trim().toLowerCase();
 
   String _currentApiKey() {
     final token = imController.fishpi.token.isNotEmpty
