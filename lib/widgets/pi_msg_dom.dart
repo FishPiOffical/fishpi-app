@@ -367,8 +367,29 @@ class ChatMessageDomNode extends StatelessWidget {
       dom.Element item, chat, bool? isSelf, String nodePath) {
     final src = item.attributes['src'] ?? '';
     if (src.isEmpty) return const SizedBox.shrink();
+    return buildImageUrl(src, chat, isSelf, nodePath);
+  }
+
+  static Widget buildImageUrl(
+    String src,
+    dynamic chat,
+    bool? isSelf,
+    String nodePath, {
+    double? width,
+    double? height,
+    double? borderRadius,
+  }) {
     final tag = _heroTag(chat, src, nodePath);
     final alignRight = isSelf ?? false;
+    final imageWidth = width ?? 120.w;
+    final imageHeight = height ?? 70.h;
+    final image = PiImage(
+      imgUrl: src,
+      width: imageWidth,
+      height: imageHeight,
+      fit: BoxFit.contain,
+      alignment: alignRight ? Alignment.centerRight : Alignment.centerLeft,
+    );
     return GestureDetector(
       onTap: () {
         Navigator.push(
@@ -386,17 +407,15 @@ class ChatMessageDomNode extends StatelessWidget {
       child: Hero(
         tag: tag,
         child: Container(
-          width: 120.w,
-          height: 70.h,
+          width: imageWidth,
+          height: imageHeight,
           alignment: alignRight ? Alignment.centerRight : Alignment.centerLeft,
-          child: PiImage(
-            imgUrl: src,
-            width: 120.w,
-            height: 70.h,
-            fit: BoxFit.contain,
-            alignment:
-                alignRight ? Alignment.centerRight : Alignment.centerLeft,
-          ),
+          child: borderRadius == null
+              ? image
+              : ClipRRect(
+                  borderRadius: BorderRadius.circular(borderRadius),
+                  child: image,
+                ),
         ),
       ),
     );

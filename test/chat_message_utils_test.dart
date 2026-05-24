@@ -181,6 +181,32 @@ void main() {
       );
       expect(ChatMessageUtils.conversationPreview(''), '');
     });
+
+    test('纯单图消息识别图片地址', () {
+      expect(
+        ChatMessageUtils.singleImageUrl('<p><img src="a.png"></p>'),
+        'a.png',
+      );
+      expect(
+        ChatMessageUtils.singleImageUrl('<div>  <img src="b.png">  </div>'),
+        'b.png',
+      );
+    });
+
+    test('图文混排和多图消息不按纯单图处理', () {
+      expect(
+        ChatMessageUtils.singleImageUrl('<p>看图</p><img src="a.png">'),
+        isNull,
+      );
+      expect(
+        ChatMessageUtils.singleImageUrl(
+          '<p><img src="a.png"><img src="b.png"></p>',
+        ),
+        isNull,
+      );
+      expect(ChatMessageUtils.singleImageUrl('<video src="a.mp4"></video>'),
+          isNull);
+    });
   });
 }
 

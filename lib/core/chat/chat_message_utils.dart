@@ -11,11 +11,13 @@ class ParsedChatContent {
   final List<dom.Element> elements;
   final String preview;
   final String plainText;
+  final String? singleImageUrl;
 
   const ParsedChatContent({
     required this.elements,
     required this.preview,
     required this.plainText,
+    this.singleImageUrl,
   });
 }
 
@@ -154,6 +156,7 @@ class ChatMessageUtils {
       elements: List<dom.Element>.from(body?.children ?? const []),
       preview: _buildPreview(body),
       plainText: body?.text.trim() ?? content.trim(),
+      singleImageUrl: _findSingleImageUrl(body),
     );
 
     _contentCache[content] = parsed;
@@ -166,6 +169,11 @@ class ChatMessageUtils {
   static String conversationPreview(String content) {
     if (content.trim().isEmpty) return '';
     return parseChatContent(content).preview;
+  }
+
+  static String? singleImageUrl(String content) {
+    if (content.trim().isEmpty) return null;
+    return parseChatContent(content).singleImageUrl;
   }
 
   static String _buildPreview(dom.Element? body) {
@@ -215,6 +223,58 @@ class ChatMessageUtils {
     if (src.startsWith('https://fishpi.yuis.cc')) return '[天气卡片]';
     if (src.startsWith('https://music.163.com')) return '[音乐]';
     return '[不支持的消息,请在web端查看]';
+  }
+
+  static String? _findSingleImageUrl(dom.Element? body) {
+    if (body == null) return null;
+
+    // 只有单张图片且没有其它可见内容时才使用极简图片样式，避免图文混排被误判。
+    final images = <String>[];
+    var hasOtherContent = false;
+
+    void visit(dom.Node node) {
+      if (hasOtherContent) return;
+
+      if (node is dom.Text) {
+        if (node.text.trim().isNotEmpty) {
+          hasOtherContent = true;
+        }
+        return;
+      }
+
+      if (node is! dom.Element) return;
+      switch (node.localName) {
+        case 'img':
+          final src = node.attributes['src']?.trim() ?? '';
+          if (src.isEmpty) {
+            hasOtherContent = true;
+            return;
+          }
+          images.add(src);
+          if (images.length > 1) hasOtherContent = true;
+          return;
+        case 'p':
+        case 'div':
+        case 'span':
+        case 'a':
+        case 'br':
+          break;
+        default:
+          hasOtherContent = true;
+          return;
+      }
+
+      for (final child in node.nodes) {
+        visit(child);
+      }
+    }
+
+    for (final node in body.nodes) {
+      visit(node);
+    }
+
+    if (hasOtherContent || images.length != 1) return null;
+    return images.single;
   }
 
   static void clearPreviewCache() {
