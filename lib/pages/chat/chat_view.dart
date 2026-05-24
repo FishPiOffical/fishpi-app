@@ -337,6 +337,9 @@ class ChatPage extends StatelessWidget {
         width: 190.w,
         height: 150.h,
         borderRadius: 10.r,
+        // 纯图片消息是固定缩略图，使用 cover 保证图片铺满圆角裁剪框，
+        // 避免 contain 留白时只裁到外框、没有裁到真实图片边缘。
+        fit: BoxFit.cover,
       ),
     );
   }

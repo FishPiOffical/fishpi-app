@@ -378,6 +378,7 @@ class ChatMessageDomNode extends StatelessWidget {
     double? width,
     double? height,
     double? borderRadius,
+    BoxFit fit = BoxFit.contain,
   }) {
     final tag = _heroTag(chat, src, nodePath);
     final alignRight = isSelf ?? false;
@@ -387,7 +388,7 @@ class ChatMessageDomNode extends StatelessWidget {
       imgUrl: src,
       width: imageWidth,
       height: imageHeight,
-      fit: BoxFit.contain,
+      fit: fit,
       alignment: alignRight ? Alignment.centerRight : Alignment.centerLeft,
     );
     return GestureDetector(

@@ -1,4 +1,5 @@
 import 'package:fishpi_app/widgets/pi_msg_dom.dart';
+import 'package:fishpi_app/widgets/pi_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -53,6 +54,29 @@ void main() {
 
       expect(find.text('#收起'), findsOneWidget);
       expect(_textWithTrim('hidden'), findsOneWidget);
+    });
+
+    testWidgets('纯图片缩略图可使用 cover 保证圆角裁剪一致', (tester) async {
+      await tester.pumpWidget(
+        _wrap(
+          ChatMessageDomNode.buildImageUrl(
+            'https://example.com/a.png',
+            'chat-1',
+            false,
+            'single_image',
+            width: 100,
+            height: 80,
+            borderRadius: 10,
+            fit: BoxFit.cover,
+          ),
+        ),
+      );
+
+      final image = tester.widget<PiImage>(find.byType(PiImage));
+      final clip = tester.widget<ClipRRect>(find.byType(ClipRRect));
+
+      expect(image.fit, BoxFit.cover);
+      expect(clip.borderRadius, BorderRadius.circular(10));
     });
   });
 }
