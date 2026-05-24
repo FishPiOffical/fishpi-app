@@ -8,6 +8,7 @@ class PiEditWidget extends StatelessWidget {
   final String? title;
   final String? hintText;
   final int? maxLength;
+  final String? initialText;
 
   PiEditWidget({
     super.key,
@@ -15,7 +16,10 @@ class PiEditWidget extends StatelessWidget {
     this.title = '发表评论',
     this.hintText = '善语皆善缘,恶言伤人心',
     this.maxLength = 999,
-  });
+    this.initialText,
+  }) {
+    controller.text = initialText ?? '';
+  }
 
   @override
   Widget build(BuildContext context) {

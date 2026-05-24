@@ -79,7 +79,9 @@ class ConversationPage extends StatelessWidget {
                         children: [
                           Expanded(
                             child: Text(
-                              chat != null ? chat.receiverUserName : '聊天室',
+                              chat != null
+                                  ? logic.displayNameFor(chat.receiverUserName)
+                                  : '聊天室',
                               style: TextStyle(
                                 fontSize: 16.sp,
                                 color: Styles.primaryTextColor,
@@ -128,6 +130,10 @@ class ConversationPage extends StatelessWidget {
   String _chatRoomPreview() {
     final message = logic.chatRoomLastMsg.value;
     if (message.oId.isEmpty && message.content.isEmpty) return '暂无消息';
-    return '${message.allName}:${PiUtils.getConversationPreview(message.content)}';
+    final name = logic.displayNameFor(
+      message.userName,
+      fallback: message.allName,
+    );
+    return '$name:${PiUtils.getConversationPreview(message.content)}';
   }
 }

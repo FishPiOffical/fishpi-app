@@ -4,6 +4,7 @@ import 'package:fishpi/types/breezemoon.dart';
 import 'package:fishpi_app/core/controller/im.dart';
 import 'package:fishpi_app/core/manager/toast.dart';
 import 'package:fishpi_app/core/sql/black_list.dart';
+import 'package:fishpi_app/core/sql/user_remark.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:get/get.dart';
 import 'package:pull_to_refresh/pull_to_refresh.dart';
@@ -19,6 +20,7 @@ class BreezemoonsLogic extends GetxController {
   final breezemoons = ''.obs;
   final List<BlackUser> _blackUsers = [];
   StreamSubscription<void>? _blackListSubscription;
+  StreamSubscription<void>? _remarkSubscription;
 
   TextEditingController textEditingController = TextEditingController();
 
@@ -26,6 +28,10 @@ class BreezemoonsLogic extends GetxController {
   void onInit() {
     _blackListSubscription ??= BlackList.changes.listen((_) {
       _reloadBlackUsersAndFilterList();
+    });
+    UserRemark.init();
+    _remarkSubscription ??= UserRemark.changes.listen((_) {
+      list.refresh();
     });
     initBreezemoon();
     super.onInit();
@@ -111,6 +117,7 @@ class BreezemoonsLogic extends GetxController {
   @override
   void onClose() {
     _blackListSubscription?.cancel();
+    _remarkSubscription?.cancel();
     super.onClose();
   }
 }

@@ -4,6 +4,7 @@ import 'package:fishpi_app/core/chat/chat_message_utils.dart';
 import 'package:fishpi_app/core/im_event.dart';
 import 'package:fishpi_app/core/manager/toast.dart';
 import 'package:fishpi_app/core/sql/black_list.dart';
+import 'package:fishpi_app/core/sql/user_remark.dart';
 import 'package:fishpi_app/pages/conversation/conversation_logic.dart';
 import 'package:fishpi_app/routers/navigator.dart';
 import 'package:flutter/cupertino.dart';
@@ -25,6 +26,7 @@ class ChatLogic extends GetxController {
   final isLoadingHistory = false.obs;
   final hasMoreHistory = true.obs;
   final historyPage = 0.obs;
+  final remarkVersion = 0.obs;
   final int historyPageSize = 20;
 
   ScrollController chatRoomController = ScrollController();
@@ -40,6 +42,7 @@ class ChatLogic extends GetxController {
   StreamSubscription<ChatRoomData>? _chatRoomSubscription;
   StreamSubscription<PrivateChatEvent>? _privateChatSubscription;
   StreamSubscription<void>? _blackListSubscription;
+  StreamSubscription<void>? _remarkSubscription;
   bool _scrollListenerAttached = false;
 
   ConversationLogic? get _conversationController =>
@@ -63,6 +66,10 @@ class ChatLogic extends GetxController {
     isClose.value = false;
     _blackListSubscription ??= BlackList.changes.listen((_) {
       _reloadBlackUsersAndFilterMessages();
+    });
+    UserRemark.init();
+    _remarkSubscription ??= UserRemark.changes.listen((_) {
+      remarkVersion.value++;
     });
     initChatRoom();
     loadEmojis();
@@ -280,6 +287,12 @@ class ChatLogic extends GetxController {
     AppNavigator.toUserPanel(userName: userName);
   }
 
+  String displayNameFor(String userName, {String? fallback}) {
+    // 让 Obx 感知备注变更，触发当前聊天页的昵称刷新。
+    remarkVersion.value;
+    return UserRemark.displayName(userName, fallback: fallback);
+  }
+
   Future<void> clickSend() async {
     final text = content.value;
     if (text.trim().isEmpty) return;
@@ -330,6 +343,7 @@ class ChatLogic extends GetxController {
     _chatRoomSubscription?.cancel();
     _privateChatSubscription?.cancel();
     _blackListSubscription?.cancel();
+    _remarkSubscription?.cancel();
     if (!isGroup.value) {
       imController.unwatchPrivateChat(userName.value);
     }

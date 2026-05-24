@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:fishpi/fishpi.dart';
 import 'package:fishpi_app/core/controller/im.dart';
 import 'package:fishpi_app/core/sql/black_list.dart';
+import 'package:fishpi_app/core/sql/user_remark.dart';
 import 'package:fishpi_app/routers/navigator.dart';
 import 'package:fishpi_app/widgets/pi_editer.dart';
 import 'package:flutter/material.dart';
@@ -17,12 +18,29 @@ class UserPanelLogic extends GetxController {
   final isLoading = false.obs;
   final userName = ''.obs;
   final userInfo = UserInfo().obs;
+  final remark = ''.obs;
   final tabIndex = 0.obs;
 
   final userArticles = <ArticleDetail>[].obs;
   final userBreezemoons = <BreezemoonContent>[].obs;
   final List<BlackUser> _blackUsers = [];
   StreamSubscription<void>? _blackListSubscription;
+  StreamSubscription<void>? _remarkSubscription;
+
+  String get displayName {
+    final currentRemark = remark.value.trim();
+    if (currentRemark.isNotEmpty) return currentRemark;
+    return UserRemark.displayName(
+      userInfo.value.userName,
+      fallback: userInfo.value.name,
+    );
+  }
+
+  String get routeTitle {
+    final currentRemark = remark.value.trim();
+    if (currentRemark.isNotEmpty) return currentRemark;
+    return UserRemark.displayName(userName.value);
+  }
 
   @override
   void onInit() {
@@ -30,6 +48,10 @@ class UserPanelLogic extends GetxController {
     userName.value = args['userName'] ?? '';
     _blackListSubscription ??= BlackList.changes.listen((_) {
       _reloadBlackUsersAndFilterList();
+    });
+    UserRemark.init().then((_) => _syncRemark());
+    _remarkSubscription ??= UserRemark.changes.listen((_) {
+      _syncRemark();
     });
     getUserInfo();
     BlackList.init();
@@ -39,6 +61,7 @@ class UserPanelLogic extends GetxController {
   void getUserInfo() async {
     isLoading.value = true;
     userInfo.value = await imController.fishpi.getUser(userName.value);
+    _syncRemark();
     isLoading.value = false;
     getUserArticles();
     getUserBreezemoons();
@@ -137,20 +160,33 @@ class UserPanelLogic extends GetxController {
   }
 
   void toSetLabel() {
+    final targetUserName = userInfo.value.userName.isNotEmpty
+        ? userInfo.value.userName
+        : userName.value;
+    final currentRemark = UserRemark.remarkOf(targetUserName);
     Navigator.push(
       Get.context!,
       PopRoute(
         child: PiEditWidget(
           title: '设置备注',
-          hintText: '给${userInfo.value.userName}设置备注',
+          hintText: '给$targetUserName设置备注，留空清除备注',
+          initialText: currentRemark,
           maxLength: 8,
           onEditingCompleteText: (text) async {
-            String context = text;
-            if (context.trim() == '') {
-              return;
+            final context = text.toString().trim();
+            if (context.isEmpty) {
+              await UserRemark.removeRemark(targetUserName);
+              ToastManager.showToast('备注已清除');
             } else {
-              // 备注保存到本地
+              await UserRemark.setRemark(
+                oId: userInfo.value.oId,
+                userName: targetUserName,
+                remark: context,
+                avatarURL: userInfo.value.avatarURL,
+              );
+              ToastManager.showToast('备注已保存');
             }
+            _syncRemark();
           },
         ),
       ),
@@ -199,9 +235,17 @@ class UserPanelLogic extends GetxController {
     userBreezemoons.refresh();
   }
 
+  void _syncRemark() {
+    final targetUserName = userInfo.value.userName.isNotEmpty
+        ? userInfo.value.userName
+        : userName.value;
+    remark.value = UserRemark.remarkOf(targetUserName);
+  }
+
   @override
   void onClose() {
     _blackListSubscription?.cancel();
+    _remarkSubscription?.cancel();
     super.onClose();
   }
 }

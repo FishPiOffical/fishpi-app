@@ -1,4 +1,5 @@
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:fishpi_app/core/sql/user_remark.dart';
 import 'package:fishpi_app/res/styles.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -48,11 +49,13 @@ class PiAvatar extends StatelessWidget {
   }
 
   Widget _buildDefaultAvatar() {
+    final displayName = UserRemark.displayName(userName);
+    final firstLetter = displayName.isEmpty ? '?' : displayName.substring(0, 1);
     return Container(
       color: Styles.primaryColor,
       alignment: Alignment.center,
       child: Text(
-        userName!.substring(0, 1),
+        firstLetter,
         style: TextStyle(
           fontSize: 20.sp,
           color: Styles.primaryTextColor,

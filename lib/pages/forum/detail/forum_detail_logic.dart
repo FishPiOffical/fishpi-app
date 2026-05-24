@@ -1,6 +1,9 @@
+import 'dart:async';
+
 import 'package:fishpi/types/types.dart';
 import 'package:fishpi_app/core/controller/im.dart';
 import 'package:fishpi_app/core/manager/toast.dart';
+import 'package:fishpi_app/core/sql/user_remark.dart';
 import 'package:fishpi_app/widgets/pi_editer.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -11,15 +14,26 @@ class ForumDetailLogic extends GetxController {
   final imController = Get.find<IMController>();
   final oId = ''.obs;
   final article = ArticleDetail().obs;
+  final remarkVersion = 0.obs;
 
   final isLoading = false.obs;
+  StreamSubscription<void>? _remarkSubscription;
 
   @override
   void onInit() {
     var args = Get.arguments;
     oId.value = args['oId'] ?? '';
+    UserRemark.init();
+    _remarkSubscription ??= UserRemark.changes.listen((_) {
+      remarkVersion.value++;
+    });
     initArticleInfo();
     super.onInit();
+  }
+
+  String displayNameFor(String userName, {String? fallback}) {
+    remarkVersion.value;
+    return UserRemark.displayName(userName, fallback: fallback);
   }
 
   void initArticleInfo() async {
@@ -123,5 +137,11 @@ class ForumDetailLogic extends GetxController {
     } else {
       ToastManager.showToast(res.msg);
     }
+  }
+
+  @override
+  void onClose() {
+    _remarkSubscription?.cancel();
+    super.onClose();
   }
 }

@@ -23,7 +23,7 @@ class UserPanelPage extends StatelessWidget {
     return Obx(
       () => Scaffold(
         appBar: PiTitleBar.back(
-          title: logic.userName.value,
+          title: logic.routeTitle,
           showUnderline: false,
         ),
         body: logic.isLoading.value
@@ -130,7 +130,7 @@ class UserPanelPage extends StatelessWidget {
                                 SizedBox(
                                   width: 1.sw - 110.w,
                                   child: Text(
-                                    logic.userInfo.value.name,
+                                    logic.displayName,
                                     style: TextStyle(
                                       color: Styles.primaryTextColor,
                                       fontSize: 24.sp,
@@ -216,7 +216,7 @@ class UserPanelPage extends StatelessWidget {
                             width: 70.w,
                             height: 70.w,
                             child: PiAvatar(
-                              userName: logic.userInfo.value.name,
+                              userName: logic.userInfo.value.userName,
                               avatarURL: logic.userInfo.value.avatarURL,
                               width: 70.w,
                               height: 70.w,
@@ -400,6 +400,9 @@ class UserPanelPage extends StatelessWidget {
                           ),
                           PiMenuItem(
                             title: '备注',
+                            rightText: logic.remark.value.isEmpty
+                                ? '未设置'
+                                : logic.remark.value,
                             image: Image.asset(
                               'assets/images/menu_label.png',
                               width: 24.w,

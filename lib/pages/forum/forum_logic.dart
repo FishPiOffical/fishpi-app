@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:fishpi/fishpi.dart';
 import 'package:fishpi_app/core/controller/im.dart';
 import 'package:fishpi_app/core/sql/black_list.dart';
+import 'package:fishpi_app/core/sql/user_remark.dart';
 import 'package:get/get.dart';
 import 'package:pull_to_refresh/pull_to_refresh.dart';
 
@@ -15,11 +16,16 @@ class ForumLogic extends GetxController {
   final isFinished = false.obs;
   final List<BlackUser> _blackUsers = [];
   StreamSubscription<void>? _blackListSubscription;
+  StreamSubscription<void>? _remarkSubscription;
 
   @override
   void onInit() {
     _blackListSubscription ??= BlackList.changes.listen((_) {
       _reloadBlackUsersAndFilterList();
+    });
+    UserRemark.init();
+    _remarkSubscription ??= UserRemark.changes.listen((_) {
+      list.refresh();
     });
     initArticle();
     super.onInit();
@@ -90,6 +96,7 @@ class ForumLogic extends GetxController {
   @override
   void onClose() {
     _blackListSubscription?.cancel();
+    _remarkSubscription?.cancel();
     super.onClose();
   }
 }

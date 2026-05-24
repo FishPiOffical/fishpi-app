@@ -8,17 +8,20 @@ import '../../core/chat/chat_message_utils.dart';
 import '../../core/controller/im.dart';
 import '../../core/im_event.dart';
 import '../../core/sql/black_list.dart';
+import '../../core/sql/user_remark.dart';
 
 class ConversationLogic extends GetxController {
   final imController = Get.find<IMController>();
   final chatList = <ChatData>[].obs;
   final chatRoomLastMsg = ChatRoomMessage().obs;
+  final remarkVersion = 0.obs;
   final showItem = "";
   final chatRoomMsg = <ChatRoomMessage>[].obs;
   final List<BlackUser> _blackUsers = [];
   StreamSubscription<ChatRoomData>? _chatRoomSubscription;
   StreamSubscription<PrivateChatEvent>? _privateChatSubscription;
   StreamSubscription<void>? _blackListSubscription;
+  StreamSubscription<void>? _remarkSubscription;
 
   @override
   void onInit() {
@@ -59,6 +62,16 @@ class ConversationLogic extends GetxController {
     _blackListSubscription ??= BlackList.changes.listen((_) {
       _reloadBlackUsersAndFilterChatRoom();
     });
+    UserRemark.init();
+    _remarkSubscription ??= UserRemark.changes.listen((_) {
+      remarkVersion.value++;
+    });
+  }
+
+  String displayNameFor(String userName, {String? fallback}) {
+    // 让会话列表在备注变更时刷新显示名。
+    remarkVersion.value;
+    return UserRemark.displayName(userName, fallback: fallback);
   }
 
   void _onChatRoom(ChatRoomData data) {
@@ -151,6 +164,7 @@ class ConversationLogic extends GetxController {
     _chatRoomSubscription?.cancel();
     _privateChatSubscription?.cancel();
     _blackListSubscription?.cancel();
+    _remarkSubscription?.cancel();
     super.onClose();
   }
 }

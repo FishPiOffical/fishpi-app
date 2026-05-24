@@ -49,7 +49,7 @@ class ForumDetailPage extends StatelessWidget {
                           ),
                           SizedBox(height: 10.h),
                           Text(
-                            '${logic.article.value.authorName} · ${logic.article.value.timeAgo} · ${logic.article.value.viewCnt}人看过',
+                            '${logic.displayNameFor(logic.article.value.authorName)} · ${logic.article.value.timeAgo} · ${logic.article.value.viewCnt}人看过',
                             style: TextStyle(
                               fontSize: 14.sp,
                               fontWeight: FontWeight.bold,
@@ -230,6 +230,7 @@ class ForumDetailPage extends StatelessWidget {
                                     PiAvatar(
                                       avatarURL:
                                           logic.article.value.author.avatarURL,
+                                      userName: logic.article.value.authorName,
                                       width: 26.w,
                                       height: 26.w,
                                     ),
@@ -237,7 +238,9 @@ class ForumDetailPage extends StatelessWidget {
                                     SizedBox(
                                       width: 100.w,
                                       child: Text(
-                                        logic.article.value.authorName,
+                                        logic.displayNameFor(
+                                          logic.article.value.authorName,
+                                        ),
                                         style: TextStyle(
                                           fontSize: 16.sp,
                                           color: Styles.secondaryTextColor,
@@ -407,7 +410,7 @@ class ForumDetailPage extends StatelessWidget {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Text(
-                          item.author,
+                          logic.displayNameFor(item.author),
                           style: TextStyle(
                             fontSize: 14.sp,
                             fontWeight: FontWeight.bold,

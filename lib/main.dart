@@ -1,4 +1,5 @@
 import 'package:fishpi_app/core/controller/im.dart';
+import 'package:fishpi_app/core/sql/user_remark.dart';
 import 'package:fishpi_app/routers/pages.dart';
 import 'package:fishpi_app/utils/pi_utils.dart';
 import 'package:flutter/material.dart';
@@ -18,6 +19,7 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await PiUtils.getInstance();
   await Hive.initFlutter();
+  await UserRemark.init();
   runApp(ScreenUtilInit(
     designSize: const Size(360, 812),
     minTextAdapt: true,

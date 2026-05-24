@@ -1,4 +1,5 @@
 import 'package:fishpi/types/breezemoon.dart';
+import 'package:fishpi_app/core/sql/user_remark.dart';
 import 'package:fishpi_app/widgets/pi_avatar.dart';
 import 'package:fishpi_app/widgets/pi_image.dart';
 import 'package:flutter/cupertino.dart';
@@ -14,6 +15,7 @@ class PiBreezemoonItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final authorName = UserRemark.displayName(breezemoon.authorName);
     return Container(
       margin: EdgeInsets.only(bottom: 10.h),
       padding: EdgeInsets.all(10.w),
@@ -34,7 +36,7 @@ class PiBreezemoonItem extends StatelessWidget {
               ),
               20.horizontalSpace,
               Text(
-                breezemoon.authorName,
+                authorName,
                 style: TextStyle(
                   color: Styles.primaryTextColor,
                   fontSize: 16.sp,

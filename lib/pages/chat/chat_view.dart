@@ -21,7 +21,9 @@ class ChatPage extends StatelessWidget {
     return Obx(
       () => Scaffold(
         appBar: PiTitleBar.back(
-          title: logic.isGroup.value ? '聊天室' : logic.userName.value,
+          title: logic.isGroup.value
+              ? '聊天室'
+              : logic.displayNameFor(logic.userName.value),
         ),
         body: Column(
           children: [
@@ -85,7 +87,7 @@ class ChatPage extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 Text(
-                  chat.allName,
+                  logic.displayNameFor(chat.userName, fallback: chat.allName),
                   style: TextStyle(
                     color: Styles.primaryTextColor,
                     fontWeight: FontWeight.bold,
@@ -175,7 +177,7 @@ class ChatPage extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  chat.allName,
+                  logic.displayNameFor(chat.userName, fallback: chat.allName),
                   style: TextStyle(
                     color: Styles.primaryTextColor,
                     fontWeight: FontWeight.bold,
