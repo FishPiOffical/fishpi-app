@@ -21,111 +21,18 @@ class AccountPage extends StatelessWidget {
       appBar: PiTitleBar.back(
         title: '账号与安全',
       ),
-      body: Obx(
-        () => Container(
-          width: 1.sw,
-          constraints: BoxConstraints(minHeight: 1.sh),
-          color: Styles.titleBarColor,
-          child: SingleChildScrollView(
-            padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 20.h),
-            child: Column(
-              children: [
-                _buildUserCard(),
-                16.verticalSpace,
-                _buildMenuCard(context),
-              ],
-            ),
+      body: Container(
+        width: 1.sw,
+        constraints: BoxConstraints(minHeight: 1.sh),
+        color: Styles.titleBarColor,
+        child: SingleChildScrollView(
+          padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 20.h),
+          child: Column(
+            children: [
+              _buildMenuCard(context),
+            ],
           ),
         ),
-      ),
-    );
-  }
-
-  Widget _buildUserCard() {
-    final user = logic.userInfo.value;
-    final name = user.name.isEmpty ? '未获取用户信息' : user.name;
-    final userName = user.userName.isEmpty ? '摸鱼派用户' : '@${user.userName}';
-    final userNo = user.userNo.isEmpty ? '编号待同步' : '# ${user.userNo}';
-
-    return Container(
-      width: 1.sw - 32.w,
-      padding: EdgeInsets.all(14.w),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        border: Styles.commonBorder,
-        borderRadius: BorderRadius.circular(16.r),
-      ),
-      child: Row(
-        children: [
-          PiAvatar(
-            userName: logic.avatarName,
-            avatarURL: user.avatarURL,
-            width: 72.w,
-            height: 72.w,
-          ),
-          14.horizontalSpace,
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        name,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          color: Styles.primaryTextColor,
-                          fontSize: 22.sp,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                    if (logic.isLoading.value)
-                      SizedBox(
-                        width: 18.w,
-                        height: 18.w,
-                        child: const CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: Colors.black,
-                        ),
-                      ),
-                  ],
-                ),
-                8.verticalSpace,
-                Text(
-                  userName,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: Styles.secondaryTextColor,
-                    fontSize: 14.sp,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                8.verticalSpace,
-                Container(
-                  padding:
-                      EdgeInsets.symmetric(horizontal: 10.w, vertical: 4.h),
-                  decoration: BoxDecoration(
-                    color: Styles.primaryColor,
-                    border: Border.all(color: Colors.black, width: 2),
-                    borderRadius: BorderRadius.circular(10.r),
-                  ),
-                  child: Text(
-                    userNo,
-                    style: TextStyle(
-                      color: Styles.primaryTextColor,
-                      fontSize: 13.sp,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
       ),
     );
   }

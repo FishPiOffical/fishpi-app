@@ -160,7 +160,7 @@ void main() {
     });
   });
 
-  testWidgets('账号与安全页能渲染头像区和三项菜单', (tester) async {
+  testWidgets('账号与安全页只渲染三项菜单', (tester) async {
     Get.testMode = true;
     Get.put(IMController());
     Get.put(
@@ -174,7 +174,7 @@ void main() {
     await tester.pump();
 
     expect(find.text('账号与安全'), findsOneWidget);
-    expect(find.text('鱼排'), findsOneWidget);
+    expect(find.text('鱼排'), findsNothing);
     expect(find.text('修改头像'), findsOneWidget);
     expect(find.text('修改用户信息'), findsOneWidget);
     expect(find.text('修改密码'), findsOneWidget);
