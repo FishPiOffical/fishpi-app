@@ -75,48 +75,62 @@ class CollectionListPage extends StatelessWidget {
         borderRadius: BorderRadius.circular(12.r),
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildMedalPreview(medal),
-          if (medal.rawMetal == null) ...[
-            12.verticalSpace,
-            Text(
-              medal.name,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                color: Styles.primaryTextColor,
-                fontSize: 17.sp,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ],
-          8.verticalSpace,
-          Wrap(
-            alignment: WrapAlignment.center,
-            spacing: 8.w,
-            runSpacing: 6.h,
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildStatusChip(medal.display),
-              if (medal.type.isNotEmpty) _buildTypeChip(medal.type),
-              if (medal.expireTime.isNotEmpty)
-                _buildExpireChip(medal.expireTime),
+              _buildMedalPreview(medal),
+              12.horizontalSpace,
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (medal.rawMetal == null)
+                      Text(
+                        medal.name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: Styles.primaryTextColor,
+                          fontSize: 17.sp,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    if (medal.rawMetal == null) 6.verticalSpace,
+                    Wrap(
+                      spacing: 8.w,
+                      runSpacing: 6.h,
+                      children: [
+                        _buildStatusChip(medal.display),
+                        if (medal.type.isNotEmpty) _buildTypeChip(medal.type),
+                        if (medal.expireTime.isNotEmpty)
+                          _buildExpireChip(medal.expireTime),
+                      ],
+                    ),
+                    if (medal.description.isNotEmpty) ...[
+                      8.verticalSpace,
+                      Text(
+                        medal.description,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: Styles.secondaryTextColor,
+                          fontSize: 13.sp,
+                          height: 1.35,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
             ],
           ),
-          if (medal.description.isNotEmpty) ...[
-            12.verticalSpace,
-            Text(
-              medal.description,
-              style: TextStyle(
-                color: Styles.secondaryTextColor,
-                fontSize: 13.sp,
-                height: 1.45,
-              ),
-              textAlign: TextAlign.center,
-            ),
-          ],
-          14.verticalSpace,
-          _buildActionButton(medal, updating),
+          12.verticalSpace,
+          Align(
+            alignment: Alignment.centerRight,
+            child: _buildActionButton(medal, updating),
+          ),
         ],
       ),
     );
@@ -167,8 +181,8 @@ class CollectionListPage extends StatelessWidget {
       child: Opacity(
         opacity: updating ? 0.62 : 1,
         child: Container(
-          width: 1.sw - 60.w,
-          height: 46.h,
+          width: 118.w,
+          height: 38.h,
           alignment: Alignment.center,
           decoration: BoxDecoration(
             color: medal.display ? Colors.white : Colors.black,
@@ -189,14 +203,15 @@ class CollectionListPage extends StatelessWidget {
                   children: [
                     Icon(
                       icon,
+                      size: 18.w,
                       color: medal.display ? Colors.black : Colors.white,
                     ),
-                    8.horizontalSpace,
+                    6.horizontalSpace,
                     Text(
                       text,
                       style: TextStyle(
                         color: medal.display ? Colors.black : Colors.white,
-                        fontSize: 15.sp,
+                        fontSize: 13.sp,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
