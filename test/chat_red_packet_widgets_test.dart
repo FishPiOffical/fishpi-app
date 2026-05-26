@@ -111,13 +111,18 @@ void main() {
 
   testWidgets('话题条显示空态和当前话题，并响应点击', (tester) async {
     var tapCount = 0;
+    var quoteTapCount = 0;
 
     await tester.pumpWidget(
       _wrap(
         Column(
           children: [
             ChatTopicBar(topic: '', onTap: () => tapCount++),
-            ChatTopicBar(topic: '今天吃什么', onTap: () => tapCount++),
+            ChatTopicBar(
+              topic: '今天吃什么',
+              onTap: () => tapCount++,
+              onQuoteTap: () => quoteTapCount++,
+            ),
           ],
         ),
       ),
@@ -129,6 +134,11 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('chat_topic_bar')).first);
     await tester.pump();
     expect(tapCount, 1);
+
+    await tester.tap(find.byKey(const ValueKey('chat_topic_quote_button')));
+    await tester.pump();
+    expect(tapCount, 1);
+    expect(quoteTapCount, 1);
   });
 
   testWidgets('话题弹层会拦截超长话题', (tester) async {

@@ -5,11 +5,13 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 class ChatTopicBar extends StatelessWidget {
   final String topic;
   final VoidCallback? onTap;
+  final VoidCallback? onQuoteTap;
 
   const ChatTopicBar({
     super.key,
     required this.topic,
     this.onTap,
+    this.onQuoteTap,
   });
 
   @override
@@ -64,6 +66,32 @@ class ChatTopicBar extends StatelessWidget {
                 ),
               ),
             ),
+            if (onQuoteTap != null) ...[
+              8.horizontalSpace,
+              GestureDetector(
+                key: const ValueKey('chat_topic_quote_button'),
+                onTap: onQuoteTap,
+                child: Container(
+                  height: 32.h,
+                  padding: EdgeInsets.symmetric(horizontal: 10.w),
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    border: Styles.commonBorder,
+                    borderRadius: BorderRadius.circular(10.r),
+                  ),
+                  child: Text(
+                    '引用',
+                    style: TextStyle(
+                      color: Styles.primaryTextColor,
+                      fontSize: 12.sp,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+            8.horizontalSpace,
             Icon(
               Icons.edit_outlined,
               color: Styles.primaryTextColor,

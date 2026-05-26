@@ -3,6 +3,7 @@ import 'package:fishpi/types/redpacket.dart';
 import 'package:fishpi_app/core/chat/chat_message_utils.dart';
 import 'package:fishpi_app/res/styles.dart';
 import 'package:fishpi_app/utils/pi_utils.dart';
+import 'package:fishpi_app/widgets/chat/chat_message_action_sheet.dart';
 import 'package:fishpi_app/widgets/chat/chat_red_packet_card.dart';
 import 'package:fishpi_app/widgets/chat/chat_red_packet_detail_sheet.dart';
 import 'package:fishpi_app/widgets/chat/chat_red_packet_sheet.dart';
@@ -57,6 +58,9 @@ class ChatPage extends StatelessWidget {
                 ChatTopicBar(
                   topic: logic.currentTopic.value,
                   onTap: _showTopicSheet,
+                  onQuoteTap: logic.currentTopic.value.trim().isEmpty
+                      ? null
+                      : logic.quoteCurrentTopic,
                 ),
               Expanded(
                 child: messageGroups.isEmpty
@@ -99,6 +103,8 @@ class ChatPage extends StatelessWidget {
                 onRedPacketTap:
                     logic.isGroup.value ? _showRedPacketSheet : null,
                 onTopicTap: logic.isGroup.value ? _showTopicSheet : null,
+                quoteDraft: logic.quoteDraft.value,
+                onClearQuote: logic.clearQuote,
               ),
             ],
           ),
@@ -111,9 +117,7 @@ class ChatPage extends StatelessWidget {
     ChatRoomMessage chat = group.message;
     return GestureDetector(
       onTap: () {},
-      onLongPress: logic.canBlockChatRoomUser(chat)
-          ? () => _showChatRoomUserActions(chat)
-          : null,
+      onLongPress: () => _showChatMessageActions(chat),
       child: chat.userName == logic.userInfo.value.userName
           ? _buildRight(group)
           : _buildLeft(group),
@@ -224,7 +228,7 @@ class ChatPage extends StatelessWidget {
               logic.clickUserAvatar(chat.userName);
             },
             onLongPress: logic.canBlockChatRoomUser(chat)
-                ? () => _showChatRoomUserActions(chat)
+                ? () => _showChatMessageActions(chat)
                 : null,
             child: PiAvatar(
               avatarURL: chat.avatarURL,
@@ -313,71 +317,41 @@ class ChatPage extends StatelessWidget {
       isSelf: isSelf,
       onTapUser: logic.clickUserAvatar,
       onLongPressUser: (message) {
-        if (logic.canBlockChatRoomUser(message)) {
-          _showChatRoomUserActions(message);
-        }
+        _showChatMessageActions(message);
       },
     );
   }
 
-  void _showChatRoomUserActions(ChatRoomMessage chat) {
+  void _showChatMessageActions(ChatRoomMessage chat) {
     final displayName = logic.displayNameFor(
       chat.userName,
       fallback: chat.allName,
     );
     Get.bottomSheet(
-      SafeArea(
-        child: Container(
-          width: 1.sw,
-          padding: EdgeInsets.fromLTRB(16.w, 18.h, 16.w, 16.h),
-          decoration: BoxDecoration(
-            color: Styles.titleBarColor,
-            border: Styles.commonBorder,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(16.r)),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                displayName,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  color: Styles.primaryTextColor,
-                  fontSize: 18.sp,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              14.verticalSpace,
-              _buildActionButton(
-                key: const ValueKey('chat_room_view_profile_action'),
-                icon: Icons.person_outline,
-                text: '查看主页',
-                onTap: () {
-                  Get.back();
-                  logic.clickUserAvatar(chat.userName);
-                },
-              ),
-              10.verticalSpace,
-              _buildActionButton(
-                key: const ValueKey('chat_room_block_user_action'),
-                icon: Icons.visibility_off_outlined,
-                text: '仅在聊天室屏蔽',
-                onTap: () {
-                  Get.back();
-                  logic.blockChatRoomUser(chat);
-                },
-              ),
-              10.verticalSpace,
-              _buildActionButton(
-                key: const ValueKey('chat_room_cancel_action'),
-                icon: Icons.close,
-                text: '取消',
-                onTap: () => Get.back(),
-              ),
-            ],
-          ),
-        ),
+      ChatMessageActionSheet(
+        displayName: displayName,
+        canUseUserActions: logic.canUseOtherUserActions(chat),
+        canBlockChatRoomUser: logic.canBlockChatRoomUser(chat),
+        onQuote: () {
+          Get.back();
+          logic.quoteMessage(chat);
+        },
+        onViewProfile: () {
+          Get.back();
+          logic.clickUserAvatar(chat.userName);
+        },
+        onRemark: () {
+          Get.back();
+          logic.quickSetRemark(chat);
+        },
+        onTransfer: () {
+          Get.back();
+          logic.quickTransfer(chat);
+        },
+        onBlock: () {
+          Get.back();
+          logic.blockChatRoomUser(chat);
+        },
       ),
       backgroundColor: Colors.transparent,
       isScrollControlled: true,

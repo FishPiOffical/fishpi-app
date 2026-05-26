@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:fishpi_app/core/chat/chat_quote_utils.dart';
 import 'package:fishpi_app/widgets/chat/chat_input_box.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -252,6 +253,45 @@ void main() {
 
     await tester.tap(_assetImage('assets/images/more_feature.png'));
     await tester.pumpAndSettle();
+
+    focusNode.dispose();
+    controller.dispose();
+  });
+
+  testWidgets('引用预览条显示摘要并支持关闭', (tester) async {
+    final controller = TextEditingController();
+    final focusNode = FocusNode();
+    var clearCount = 0;
+
+    await tester.pumpWidget(
+      _wrap(
+        ChatInputBox(
+          controller: controller,
+          focusNode: focusNode,
+          emojiList: const {},
+          diyEmojiList: const [],
+          onInput: (_) {},
+          clickSend: () async {},
+          scrollToBottom: () {},
+          quoteDraft: const ChatQuoteDraft(
+            type: ChatQuoteType.message,
+            title: '引用消息',
+            preview: '小鱼：你好',
+            markdown: '> 小鱼：你好',
+          ),
+          onClearQuote: () => clearCount++,
+        ),
+      ),
+    );
+
+    expect(find.byKey(const ValueKey('chat_quote_preview')), findsOneWidget);
+    expect(find.text('引用消息'), findsOneWidget);
+    expect(find.text('小鱼：你好'), findsOneWidget);
+
+    await tester.tap(find.byKey(const ValueKey('chat_quote_clear_button')));
+    await tester.pump();
+
+    expect(clearCount, 1);
 
     focusNode.dispose();
     controller.dispose();

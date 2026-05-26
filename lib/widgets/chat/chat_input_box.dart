@@ -1,4 +1,5 @@
 import 'package:animate_do/animate_do.dart';
+import 'package:fishpi_app/core/chat/chat_quote_utils.dart';
 import 'package:fishpi_app/widgets/chat/chat_emoji_box.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -24,6 +25,8 @@ class ChatInputBox extends StatefulWidget {
   final Future<void> Function()? onVoiceRecordCancel;
   final VoidCallback? onRedPacketTap;
   final VoidCallback? onTopicTap;
+  final ChatQuoteDraft? quoteDraft;
+  final VoidCallback? onClearQuote;
 
   const ChatInputBox({
     required this.controller,
@@ -43,6 +46,8 @@ class ChatInputBox extends StatefulWidget {
     this.onVoiceRecordCancel,
     this.onRedPacketTap,
     this.onTopicTap,
+    this.quoteDraft,
+    this.onClearQuote,
     super.key,
   });
 
@@ -86,6 +91,7 @@ class ChatInputBoxState extends State<ChatInputBox> {
       child: SafeArea(
         child: Column(
           children: [
+            if (widget.quoteDraft != null) _buildQuotePreview(),
             Container(
               padding: EdgeInsets.symmetric(
                 horizontal: 16.w,
@@ -261,6 +267,75 @@ class ChatInputBoxState extends State<ChatInputBox> {
             fontSize: 14.sp,
             fontWeight: FontWeight.bold,
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildQuotePreview() {
+    final quote = widget.quoteDraft!;
+    return Container(
+      key: const ValueKey('chat_quote_preview'),
+      width: 1.sw,
+      padding: EdgeInsets.fromLTRB(16.w, 10.h, 16.w, 0),
+      child: Container(
+        padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 8.h),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          border: Styles.commonBorder,
+          borderRadius: BorderRadius.circular(10.r),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 4.w,
+              height: 34.h,
+              decoration: BoxDecoration(
+                color: Styles.primaryColor,
+                borderRadius: BorderRadius.circular(4.r),
+              ),
+            ),
+            8.horizontalSpace,
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    quote.title,
+                    style: TextStyle(
+                      color: const Color(0xFF777777),
+                      fontSize: 11.sp,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  2.verticalSpace,
+                  Text(
+                    quote.preview,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: Styles.primaryTextColor,
+                      fontSize: 13.sp,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            GestureDetector(
+              key: const ValueKey('chat_quote_clear_button'),
+              onTap: widget.onClearQuote,
+              child: SizedBox(
+                width: 32.w,
+                height: 32.w,
+                child: Icon(
+                  Icons.close,
+                  size: 18.w,
+                  color: Styles.primaryTextColor,
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );

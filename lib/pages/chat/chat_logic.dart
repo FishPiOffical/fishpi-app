@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 import 'package:fishpi/fishpi.dart';
 import 'package:fishpi_app/core/chat/chat_message_utils.dart';
+import 'package:fishpi_app/core/chat/chat_quote_utils.dart';
 import 'package:fishpi_app/core/chat/chat_red_packet_utils.dart';
 import 'package:fishpi_app/core/chat/chat_topic_utils.dart';
 import 'package:fishpi_app/core/chat/chat_voice_message_utils.dart';
@@ -12,6 +13,9 @@ import 'package:fishpi_app/core/sql/chat_room_block_list.dart';
 import 'package:fishpi_app/core/sql/user_remark.dart';
 import 'package:fishpi_app/pages/conversation/conversation_logic.dart';
 import 'package:fishpi_app/routers/navigator.dart';
+import 'package:fishpi_app/widgets/pi_editer.dart';
+import 'package:fishpi_app/widgets/pi_transfer.dart';
+import 'package:fishpi_app/widgets/pop_route.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:get/get.dart';
 import 'package:record/record.dart';
@@ -41,6 +45,7 @@ class ChatLogic extends GetxController {
   final isSettingTopic = false.obs;
   final isSendingRedPacket = false.obs;
   final isOpeningRedPacket = false.obs;
+  final quoteDraft = Rxn<ChatQuoteDraft>();
   final int historyPageSize = 20;
 
   ScrollController chatRoomController = ScrollController();
@@ -329,6 +334,10 @@ class ChatLogic extends GetxController {
 
   bool canBlockChatRoomUser(ChatRoomMessage message) {
     if (!isGroup.value) return false;
+    return canUseOtherUserActions(message);
+  }
+
+  bool canUseOtherUserActions(ChatRoomMessage message) {
     if (message.userName.trim().isEmpty && message.userOId <= 0) return false;
     final currentUser = userInfo.value;
     if (currentUser.userName.isNotEmpty &&
@@ -340,6 +349,28 @@ class ChatLogic extends GetxController {
       return false;
     }
     return true;
+  }
+
+  void quoteCurrentTopic() {
+    final quote = ChatQuoteUtils.fromTopic(currentTopic.value);
+    if (quote == null) {
+      ToastManager.showToast('暂无话题可引用');
+      return;
+    }
+    quoteDraft.value = quote;
+    chatRoomFocusNode.requestFocus();
+  }
+
+  void quoteMessage(ChatRoomMessage message) {
+    quoteDraft.value = ChatQuoteUtils.fromMessage(
+      message: message,
+      displayName: displayNameFor(message.userName, fallback: message.allName),
+    );
+    chatRoomFocusNode.requestFocus();
+  }
+
+  void clearQuote() {
+    quoteDraft.value = null;
   }
 
   Future<void> blockChatRoomUser(ChatRoomMessage message) async {
@@ -368,19 +399,87 @@ class ChatLogic extends GetxController {
   Future<void> clickSend() async {
     final text = content.value;
     if (text.trim().isEmpty) return;
+    final sendText = ChatQuoteUtils.composeMessage(
+      quote: quoteDraft.value,
+      text: text,
+    );
 
     try {
       if (isGroup.value) {
-        await imController.fishpi.chatroom.send(text);
+        await imController.fishpi.chatroom.send(sendText);
       } else {
-        await imController.fishpi.chat.send(userName.value, text);
+        await imController.fishpi.chat.send(userName.value, sendText);
       }
       content.value = '';
+      quoteDraft.value = null;
       chatRoomControllerText.clear();
       scrollToBottom(delay: 300);
     } catch (e) {
       ToastManager.showToast('发送失败：$e');
     }
+  }
+
+  void quickSetRemark(ChatRoomMessage message) {
+    if (!canUseOtherUserActions(message)) return;
+    final targetUserName = message.userName.trim();
+    if (targetUserName.isEmpty) return;
+
+    Navigator.push(
+      Get.context!,
+      PopRoute(
+        child: PiEditWidget(
+          title: '设置备注',
+          hintText: '给$targetUserName设置备注，留空清除备注',
+          initialText: UserRemark.remarkOf(targetUserName),
+          maxLength: 8,
+          onEditingCompleteText: (text) async {
+            final remark = text.toString().trim();
+            if (remark.isEmpty) {
+              await UserRemark.removeRemark(targetUserName);
+              ToastManager.showToast('备注已清除');
+            } else {
+              await UserRemark.setRemark(
+                oId: message.userOId > 0 ? message.userOId.toString() : '',
+                userName: targetUserName,
+                remark: remark,
+                avatarURL: message.avatarURL,
+              );
+              ToastManager.showToast('备注已保存');
+            }
+          },
+        ),
+      ),
+    );
+  }
+
+  void quickTransfer(ChatRoomMessage message) {
+    if (!canUseOtherUserActions(message)) return;
+    final targetUserName = message.userName.trim();
+    if (targetUserName.isEmpty) return;
+
+    Navigator.push(
+      Get.context!,
+      PopRoute(
+        child: PiTransferPage(
+          user: displayNameFor(targetUserName, fallback: message.allName),
+          onEditingCompleteText: (text) async {
+            final raw = text.toString().trim();
+            if (raw.isEmpty) return;
+            final point = int.tryParse(raw);
+            if (point == null || point <= 0) {
+              ToastManager.showToast('请输入有效积分');
+              return;
+            }
+            final result = await imController.fishpi.user.transfer(
+              targetUserName,
+              point,
+              '',
+            );
+            ToastManager.showToast(result.success ? '转账成功' : result.msg);
+          },
+        ),
+      ),
+    );
   }
 
   Future<bool> sendRedPacket(RedPacketMessage redpacket) async {
