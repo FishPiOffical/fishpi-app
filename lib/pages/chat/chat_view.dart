@@ -54,14 +54,6 @@ class ChatPage extends StatelessWidget {
           ),
           body: Column(
             children: [
-              if (logic.isGroup.value)
-                ChatTopicBar(
-                  topic: logic.currentTopic.value,
-                  onTap: _showTopicSheet,
-                  onQuoteTap: logic.currentTopic.value.trim().isEmpty
-                      ? null
-                      : logic.quoteCurrentTopic,
-                ),
               Expanded(
                 child: messageGroups.isEmpty
                     ? Container()
@@ -85,6 +77,14 @@ class ChatPage extends StatelessWidget {
                         ),
                       ),
               ),
+              if (logic.isGroup.value)
+                ChatTopicBar(
+                  topic: logic.currentTopic.value,
+                  onTap: _showTopicSheet,
+                  onQuoteTap: logic.currentTopic.value.trim().isEmpty
+                      ? null
+                      : logic.quoteCurrentTopic,
+                ),
               ChatInputBox(
                 emojiList: logic.emojiList,
                 diyEmojiList: logic.diyEmojiList,
@@ -102,7 +102,6 @@ class ChatPage extends StatelessWidget {
                 onVoiceRecordCancel: logic.cancelVoiceRecord,
                 onRedPacketTap:
                     logic.isGroup.value ? _showRedPacketSheet : null,
-                onTopicTap: logic.isGroup.value ? _showTopicSheet : null,
                 quoteDraft: logic.quoteDraft.value,
                 onClearQuote: logic.clearQuote,
               ),

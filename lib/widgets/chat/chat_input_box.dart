@@ -24,7 +24,6 @@ class ChatInputBox extends StatefulWidget {
   final Future<void> Function()? onVoiceRecordFinish;
   final Future<void> Function()? onVoiceRecordCancel;
   final VoidCallback? onRedPacketTap;
-  final VoidCallback? onTopicTap;
   final ChatQuoteDraft? quoteDraft;
   final VoidCallback? onClearQuote;
 
@@ -45,7 +44,6 @@ class ChatInputBox extends StatefulWidget {
     this.onVoiceRecordFinish,
     this.onVoiceRecordCancel,
     this.onRedPacketTap,
-    this.onTopicTap,
     this.quoteDraft,
     this.onClearQuote,
     super.key,
@@ -367,16 +365,6 @@ class ChatInputBoxState extends State<ChatInputBox> {
           onTap: () {
             closeAllTools();
             widget.onRedPacketTap?.call();
-          },
-        ),
-      if (widget.onTopicTap != null)
-        _buildToolItem(
-          key: const ValueKey('chat_tool_topic'),
-          title: '话题',
-          icon: Icon(Icons.tag_outlined, size: 30.w),
-          onTap: () {
-            closeAllTools();
-            widget.onTopicTap?.call();
           },
         ),
     ];

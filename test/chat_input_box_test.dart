@@ -188,11 +188,10 @@ void main() {
     controller.dispose();
   });
 
-  testWidgets('工具栏点击红包和话题会触发对应回调', (tester) async {
+  testWidgets('工具栏点击红包会触发对应回调', (tester) async {
     final controller = TextEditingController();
     final focusNode = FocusNode();
     var redPacketTapCount = 0;
-    var topicTapCount = 0;
 
     await tester.pumpWidget(
       _wrap(
@@ -205,7 +204,6 @@ void main() {
           clickSend: () async {},
           scrollToBottom: () {},
           onRedPacketTap: () => redPacketTapCount++,
-          onTopicTap: () => topicTapCount++,
         ),
       ),
     );
@@ -215,13 +213,8 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('chat_tool_red_packet')));
     await tester.pumpAndSettle();
 
-    await tester.tap(_assetImage('assets/images/more_feature.png'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const ValueKey('chat_tool_topic')));
-    await tester.pumpAndSettle();
-
     expect(redPacketTapCount, 1);
-    expect(topicTapCount, 1);
+    expect(find.byKey(const ValueKey('chat_tool_topic')), findsNothing);
 
     focusNode.dispose();
     controller.dispose();
