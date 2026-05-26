@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:fishpi/types/chat.dart';
 import 'package:fishpi/types/chatroom.dart';
+import 'package:fishpi/types/user.dart';
 import 'package:get/get.dart';
 
 import '../../core/chat/chat_message_utils.dart';
@@ -15,6 +16,7 @@ class ConversationLogic extends GetxController {
   final imController = Get.find<IMController>();
   final chatList = <ChatData>[].obs;
   final chatRoomLastMsg = ChatRoomMessage().obs;
+  final currentUser = UserInfo().obs;
   final remarkVersion = 0.obs;
   final showItem = "";
   final chatRoomMsg = <ChatRoomMessage>[].obs;
@@ -35,6 +37,7 @@ class ConversationLogic extends GetxController {
   void loadHistoryMessage() async {
     await _loadBlackUsers();
     await _loadChatRoomBlockedUsers();
+    await _loadCurrentUser();
     try {
       final list = await imController.fishpi.chat.list();
       chatList.assignAll(list);
@@ -76,6 +79,58 @@ class ConversationLogic extends GetxController {
     // 让会话列表在备注变更时刷新显示名。
     remarkVersion.value;
     return UserRemark.displayName(userName, fallback: fallback);
+  }
+
+  String privatePeerName(ChatData chat) {
+    final currentName = currentUser.value.userName.trim();
+    if (currentName.isNotEmpty) {
+      if (chat.senderUserName == currentName) return chat.receiverUserName;
+      if (chat.receiverUserName == currentName) return chat.senderUserName;
+    }
+
+    final currentId = currentUser.value.oId.trim();
+    if (currentId.isNotEmpty) {
+      if (chat.fromId == currentId) return chat.receiverUserName;
+      if (chat.toId == currentId) return chat.senderUserName;
+    }
+
+    return chat.receiverUserName.isNotEmpty
+        ? chat.receiverUserName
+        : chat.senderUserName;
+  }
+
+  String privatePeerId(ChatData chat) {
+    final currentId = currentUser.value.oId.trim();
+    if (currentId.isNotEmpty) {
+      if (chat.fromId == currentId) return chat.toId;
+      if (chat.toId == currentId) return chat.fromId;
+    }
+
+    final currentName = currentUser.value.userName.trim();
+    if (currentName.isNotEmpty) {
+      if (chat.senderUserName == currentName) return chat.toId;
+      if (chat.receiverUserName == currentName) return chat.fromId;
+    }
+
+    return chat.fromId;
+  }
+
+  String privatePeerAvatar(ChatData chat) {
+    final currentName = currentUser.value.userName.trim();
+    if (currentName.isNotEmpty) {
+      if (chat.senderUserName == currentName) return chat.receiverAvatar;
+      if (chat.receiverUserName == currentName) return chat.senderAvatar;
+    }
+
+    final currentId = currentUser.value.oId.trim();
+    if (currentId.isNotEmpty) {
+      if (chat.fromId == currentId) return chat.receiverAvatar;
+      if (chat.toId == currentId) return chat.senderAvatar;
+    }
+
+    return chat.receiverAvatar.isNotEmpty
+        ? chat.receiverAvatar
+        : chat.senderAvatar;
   }
 
   void _onChatRoom(ChatRoomData data) {
@@ -160,6 +215,12 @@ class ConversationLogic extends GetxController {
     } catch (_) {
       _chatRoomBlockedUsers.clear();
     }
+  }
+
+  Future<void> _loadCurrentUser() async {
+    try {
+      currentUser.value = await imController.fishpi.user.info();
+    } catch (_) {}
   }
 
   bool _isChatRoomMessageBlocked(ChatRoomMessage message) {

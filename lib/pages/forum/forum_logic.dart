@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:fishpi/fishpi.dart';
 import 'package:fishpi_app/core/controller/im.dart';
+import 'package:fishpi_app/core/forum/article_utils.dart';
 import 'package:fishpi_app/core/sql/black_list.dart';
 import 'package:fishpi_app/core/sql/user_remark.dart';
 import 'package:get/get.dart';
@@ -39,7 +40,7 @@ class ForumLogic extends GetxController {
     );
     final visibleList = _visibleArticles(res.list);
     if (page.value == 1) {
-      list.value = visibleList;
+      list.value = ArticleUtils.sortStickyFirst(visibleList);
       list.refresh();
       refresherController.loadComplete();
     } else {

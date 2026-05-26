@@ -152,9 +152,12 @@ class UserPanelLogic extends GetxController {
   }
 
   void toChat() {
+    final targetUserName = userInfo.value.userName.isNotEmpty
+        ? userInfo.value.userName
+        : userName.value;
     AppNavigator.toChat(
       isGroup: false,
-      userName: userInfo.value.userName,
+      userName: targetUserName,
       userID: userInfo.value.oId,
     );
   }

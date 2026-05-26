@@ -1,7 +1,8 @@
 import 'package:fishpi/fishpi.dart';
+import 'package:fishpi_app/core/forum/article_utils.dart';
 import 'package:fishpi_app/widgets/pi_avatar.dart';
 import 'package:fishpi_app/widgets/pi_image.dart';
-import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 import '../res/styles.dart';
@@ -15,6 +16,7 @@ class PiArticleItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isSticky = ArticleUtils.isStickyArticle(article);
     return GestureDetector(
       onTap: () {
         AppNavigator.toForumDetail(oId: article.oId);
@@ -63,6 +65,10 @@ class PiArticleItem extends StatelessWidget {
                                 color: Styles.primaryTextColor,
                               ),
                             ),
+                            if (isSticky) ...[
+                              6.verticalSpace,
+                              _buildStickyBadge(),
+                            ],
                             Text(
                               article.previewContent,
                               style: TextStyle(
@@ -131,6 +137,26 @@ class PiArticleItem extends StatelessWidget {
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStickyBadge() {
+    return Container(
+      key: const ValueKey('article_sticky_badge'),
+      padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 3.h),
+      decoration: BoxDecoration(
+        color: Styles.primaryColor,
+        border: Styles.commonBorder,
+        borderRadius: BorderRadius.circular(10.r),
+      ),
+      child: Text(
+        '置顶',
+        style: TextStyle(
+          color: Styles.primaryTextColor,
+          fontSize: 11.sp,
+          fontWeight: FontWeight.bold,
         ),
       ),
     );

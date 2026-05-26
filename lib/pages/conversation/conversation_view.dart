@@ -29,13 +29,14 @@ class ConversationPage extends StatelessWidget {
 
   Widget _buildItem(BuildContext context, int index) {
     ChatData? chat = index == 0 ? null : logic.chatList[index - 1];
+    final peerName = chat == null ? '聊天室' : logic.privatePeerName(chat);
     return GestureDetector(
       behavior: HitTestBehavior.translucent,
       onTap: () {
         AppNavigator.toChat(
           isGroup: chat == null,
-          userID: chat?.fromId,
-          userName: chat?.receiverUserName ?? '聊天室',
+          userID: chat == null ? null : logic.privatePeerId(chat),
+          userName: peerName,
         );
       },
       child: Column(
@@ -46,8 +47,8 @@ class ConversationPage extends StatelessWidget {
               children: [
                 chat != null
                     ? PiAvatar(
-                        userName: chat.receiverUserName,
-                        avatarURL: chat.receiverAvatar,
+                        userName: peerName,
+                        avatarURL: logic.privatePeerAvatar(chat),
                         width: 48.w,
                         height: 48.w,
                       )
@@ -80,7 +81,7 @@ class ConversationPage extends StatelessWidget {
                           Expanded(
                             child: Text(
                               chat != null
-                                  ? logic.displayNameFor(chat.receiverUserName)
+                                  ? logic.displayNameFor(peerName)
                                   : '聊天室',
                               style: TextStyle(
                                 fontSize: 16.sp,
