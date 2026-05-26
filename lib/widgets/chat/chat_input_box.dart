@@ -24,6 +24,9 @@ class ChatInputBox extends StatefulWidget {
   final Future<void> Function()? onVoiceRecordFinish;
   final Future<void> Function()? onVoiceRecordCancel;
   final VoidCallback? onRedPacketTap;
+  final String? topic;
+  final VoidCallback? onTopicTap;
+  final VoidCallback? onTopicQuoteTap;
   final ChatQuoteDraft? quoteDraft;
   final VoidCallback? onClearQuote;
 
@@ -44,6 +47,9 @@ class ChatInputBox extends StatefulWidget {
     this.onVoiceRecordFinish,
     this.onVoiceRecordCancel,
     this.onRedPacketTap,
+    this.topic,
+    this.onTopicTap,
+    this.onTopicQuoteTap,
     this.quoteDraft,
     this.onClearQuote,
     super.key,
@@ -89,6 +95,7 @@ class ChatInputBoxState extends State<ChatInputBox> {
       child: SafeArea(
         child: Column(
           children: [
+            if (widget.onTopicTap != null) _buildTopicAssistBar(),
             if (widget.quoteDraft != null) _buildQuotePreview(),
             Container(
               padding: EdgeInsets.symmetric(
@@ -335,6 +342,93 @@ class ChatInputBoxState extends State<ChatInputBox> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildTopicAssistBar() {
+    final topic = widget.topic?.trim() ?? '';
+    final hasTopic = topic.isNotEmpty;
+    final isTopicQuoted = widget.quoteDraft?.type == ChatQuoteType.topic;
+    final canQuote =
+        hasTopic && !isTopicQuoted && widget.onTopicQuoteTap != null;
+    final text = hasTopic
+        ? isTopicQuoted
+            ? '# 当前话题已引用'
+            : '# $topic'
+        : '# 设置话题';
+
+    return Container(
+      key: const ValueKey('chat_topic_assist_bar'),
+      width: 1.sw,
+      padding: EdgeInsets.fromLTRB(16.w, 7.h, 16.w, 0),
+      child: Row(
+        children: [
+          Expanded(
+            child: GestureDetector(
+              onTap: widget.onTopicTap,
+              behavior: HitTestBehavior.translucent,
+              child: Container(
+                height: 28.h,
+                padding: EdgeInsets.symmetric(horizontal: 4.w),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.tag_outlined,
+                      color: const Color(0xFF555555),
+                      size: 15.w,
+                    ),
+                    5.horizontalSpace,
+                    Expanded(
+                      child: Text(
+                        text,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: hasTopic
+                              ? Styles.primaryTextColor
+                              : const Color(0xFF777777),
+                          fontSize: 12.sp,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    4.horizontalSpace,
+                    Icon(
+                      Icons.edit_outlined,
+                      color: const Color(0xFF777777),
+                      size: 14.w,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          if (canQuote) ...[
+            8.horizontalSpace,
+            GestureDetector(
+              key: const ValueKey('chat_topic_quote_button'),
+              onTap: widget.onTopicQuoteTap,
+              child: Container(
+                height: 26.h,
+                padding: EdgeInsets.symmetric(horizontal: 9.w),
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: Styles.primaryColor,
+                  borderRadius: BorderRadius.circular(8.r),
+                ),
+                child: Text(
+                  '引用',
+                  style: TextStyle(
+                    color: Styles.primaryTextColor,
+                    fontSize: 11.sp,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ],
       ),
     );
   }

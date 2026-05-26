@@ -251,6 +251,110 @@ void main() {
     controller.dispose();
   });
 
+  testWidgets('话题辅助栏显示在输入区内并支持设置和引用', (tester) async {
+    final controller = TextEditingController();
+    final focusNode = FocusNode();
+    var topicTapCount = 0;
+    var quoteTapCount = 0;
+
+    await tester.pumpWidget(
+      _wrap(
+        ChatInputBox(
+          controller: controller,
+          focusNode: focusNode,
+          emojiList: const {},
+          diyEmojiList: const [],
+          onInput: (_) {},
+          clickSend: () async {},
+          scrollToBottom: () {},
+          topic: '今天吃什么',
+          onTopicTap: () => topicTapCount++,
+          onTopicQuoteTap: () => quoteTapCount++,
+        ),
+      ),
+    );
+
+    expect(find.byKey(const ValueKey('chat_topic_assist_bar')), findsOneWidget);
+    expect(find.text('# 今天吃什么'), findsOneWidget);
+    expect(
+        find.byKey(const ValueKey('chat_topic_quote_button')), findsOneWidget);
+
+    await tester.tap(find.text('# 今天吃什么'));
+    await tester.pump();
+    expect(topicTapCount, 1);
+
+    await tester.tap(find.byKey(const ValueKey('chat_topic_quote_button')));
+    await tester.pump();
+    expect(quoteTapCount, 1);
+
+    focusNode.dispose();
+    controller.dispose();
+  });
+
+  testWidgets('无话题时显示设置入口且不显示引用按钮', (tester) async {
+    final controller = TextEditingController();
+    final focusNode = FocusNode();
+
+    await tester.pumpWidget(
+      _wrap(
+        ChatInputBox(
+          controller: controller,
+          focusNode: focusNode,
+          emojiList: const {},
+          diyEmojiList: const [],
+          onInput: (_) {},
+          clickSend: () async {},
+          scrollToBottom: () {},
+          topic: '',
+          onTopicTap: () {},
+          onTopicQuoteTap: () {},
+        ),
+      ),
+    );
+
+    expect(find.text('# 设置话题'), findsOneWidget);
+    expect(find.byKey(const ValueKey('chat_topic_quote_button')), findsNothing);
+
+    focusNode.dispose();
+    controller.dispose();
+  });
+
+  testWidgets('已引用话题时隐藏话题辅助栏引用按钮', (tester) async {
+    final controller = TextEditingController();
+    final focusNode = FocusNode();
+
+    await tester.pumpWidget(
+      _wrap(
+        ChatInputBox(
+          controller: controller,
+          focusNode: focusNode,
+          emojiList: const {},
+          diyEmojiList: const [],
+          onInput: (_) {},
+          clickSend: () async {},
+          scrollToBottom: () {},
+          topic: '今天吃什么',
+          onTopicTap: () {},
+          onTopicQuoteTap: () {},
+          quoteDraft: const ChatQuoteDraft(
+            type: ChatQuoteType.topic,
+            title: '引用话题',
+            preview: '# 今天吃什么',
+            markdown: '> # 今天吃什么',
+          ),
+        ),
+      ),
+    );
+
+    expect(find.byKey(const ValueKey('chat_topic_assist_bar')), findsOneWidget);
+    expect(find.text('# 当前话题已引用'), findsOneWidget);
+    expect(find.text('# 今天吃什么'), findsOneWidget);
+    expect(find.byKey(const ValueKey('chat_topic_quote_button')), findsNothing);
+
+    focusNode.dispose();
+    controller.dispose();
+  });
+
   testWidgets('引用预览条显示摘要并支持关闭', (tester) async {
     final controller = TextEditingController();
     final focusNode = FocusNode();

@@ -4,7 +4,6 @@ import 'package:fishpi_app/core/chat/chat_red_packet_utils.dart';
 import 'package:fishpi_app/core/chat/chat_topic_utils.dart';
 import 'package:fishpi_app/widgets/chat/chat_red_packet_card.dart';
 import 'package:fishpi_app/widgets/chat/chat_red_packet_sheet.dart';
-import 'package:fishpi_app/widgets/chat/chat_topic_bar.dart';
 import 'package:fishpi_app/widgets/chat/chat_topic_sheet.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -107,38 +106,6 @@ void main() {
 
     expect(find.text('请输入有效积分'), findsOneWidget);
     expect(submitCount, 0);
-  });
-
-  testWidgets('话题条显示空态和当前话题，并响应点击', (tester) async {
-    var tapCount = 0;
-    var quoteTapCount = 0;
-
-    await tester.pumpWidget(
-      _wrap(
-        Column(
-          children: [
-            ChatTopicBar(topic: '', onTap: () => tapCount++),
-            ChatTopicBar(
-              topic: '今天吃什么',
-              onTap: () => tapCount++,
-              onQuoteTap: () => quoteTapCount++,
-            ),
-          ],
-        ),
-      ),
-    );
-
-    expect(find.text('暂无话题'), findsOneWidget);
-    expect(find.text('# 今天吃什么'), findsOneWidget);
-
-    await tester.tap(find.byKey(const ValueKey('chat_topic_bar')).first);
-    await tester.pump();
-    expect(tapCount, 1);
-
-    await tester.tap(find.byKey(const ValueKey('chat_topic_quote_button')));
-    await tester.pump();
-    expect(tapCount, 1);
-    expect(quoteTapCount, 1);
   });
 
   testWidgets('话题弹层会拦截超长话题', (tester) async {
