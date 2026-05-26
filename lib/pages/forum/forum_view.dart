@@ -9,7 +9,7 @@ import '../../widgets/pi_article_item.dart';
 import 'forum_logic.dart';
 
 class ForumPage extends StatelessWidget {
-  final ForumLogic logic = Get.put(ForumLogic());
+  final ForumLogic logic = Get.find<ForumLogic>();
 
   ForumPage({super.key});
 

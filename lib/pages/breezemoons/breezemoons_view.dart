@@ -10,7 +10,7 @@ import '../../widgets/pi_breezemoon_item.dart';
 import 'breezemoons_logic.dart';
 
 class BreezemoonsPage extends StatelessWidget {
-  final BreezemoonsLogic logic = Get.put(BreezemoonsLogic());
+  final BreezemoonsLogic logic = Get.find<BreezemoonsLogic>();
 
   BreezemoonsPage({super.key});
 

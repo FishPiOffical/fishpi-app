@@ -8,7 +8,7 @@ import '../../../widgets/pi_menu_item.dart';
 import 'set_up_logic.dart';
 
 class SetUpPage extends StatelessWidget {
-  final SetUpLogic logic = Get.put(SetUpLogic());
+  final SetUpLogic logic = Get.find<SetUpLogic>();
 
   SetUpPage({super.key});
 
@@ -51,6 +51,12 @@ class SetUpPage extends StatelessWidget {
                         iconColor: Colors.redAccent,
                         icon: Icons.sentiment_dissatisfied_outlined,
                         onTap: logic.toComplaint,
+                      ),
+                      PiMenuItem(
+                        title: '清理图片缓存',
+                        iconColor: Colors.blueGrey,
+                        icon: Icons.cleaning_services_outlined,
+                        onTap: logic.clearImageCache,
                       ),
                     ],
                   ),

@@ -11,7 +11,7 @@ import '../../widgets/pi_input.dart';
 import 'login_logic.dart';
 
 class LoginPage extends StatelessWidget {
-  final LoginLogic logic = Get.put(LoginLogic());
+  final LoginLogic logic = Get.find<LoginLogic>();
 
   LoginPage({super.key});
 

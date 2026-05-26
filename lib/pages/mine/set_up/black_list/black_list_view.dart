@@ -10,7 +10,7 @@ import 'package:get/get.dart';
 import 'black_list_logic.dart';
 
 class BlackListPage extends StatelessWidget {
-  final BlackListLogic logic = Get.put(BlackListLogic());
+  final BlackListLogic logic = Get.find<BlackListLogic>();
 
   BlackListPage({super.key});
 

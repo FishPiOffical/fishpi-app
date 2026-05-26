@@ -33,4 +33,12 @@ class PostLogic extends GetxController {
       Get.back();
     }
   }
+
+  @override
+  void onClose() {
+    controller.dispose();
+    titleController.dispose();
+    tagController.dispose();
+    super.onClose();
+  }
 }

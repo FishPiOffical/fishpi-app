@@ -19,9 +19,13 @@ class ConversationPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Obx(
       () => Scaffold(
-        body: ListView.builder(
-          itemCount: logic.chatList.length + 1,
-          itemBuilder: _buildItem,
+        body: RefreshIndicator(
+          onRefresh: logic.refreshConversations,
+          child: ListView.builder(
+            physics: const AlwaysScrollableScrollPhysics(),
+            itemCount: logic.chatList.length + 1,
+            itemBuilder: _buildItem,
+          ),
         ),
       ),
     );

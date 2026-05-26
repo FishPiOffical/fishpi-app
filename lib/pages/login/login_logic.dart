@@ -39,4 +39,12 @@ class LoginLogic extends GetxController {
       mfaCode: mfaCode.value,
     );
   }
+
+  @override
+  void onClose() {
+    userNameController.dispose();
+    pwdController.dispose();
+    pinEditingController.dispose();
+    super.onClose();
+  }
 }

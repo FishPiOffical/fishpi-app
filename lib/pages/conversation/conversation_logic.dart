@@ -18,6 +18,7 @@ class ConversationLogic extends GetxController {
   final chatRoomLastMsg = ChatRoomMessage().obs;
   final currentUser = UserInfo().obs;
   final remarkVersion = 0.obs;
+  final isLoading = false.obs;
   final showItem = "";
   final chatRoomMsg = <ChatRoomMessage>[].obs;
   final List<BlackUser> _blackUsers = [];
@@ -34,7 +35,9 @@ class ConversationLogic extends GetxController {
     loadHistoryMessage();
   }
 
-  void loadHistoryMessage() async {
+  Future<void> loadHistoryMessage() async {
+    if (isLoading.value) return;
+    isLoading.value = true;
     await _loadBlackUsers();
     await _loadChatRoomBlockedUsers();
     await _loadCurrentUser();
@@ -52,11 +55,17 @@ class ConversationLogic extends GetxController {
     } catch (_) {
       chatRoomMsg.clear();
       chatRoomLastMsg.value = ChatRoomMessage();
+    } finally {
+      isLoading.value = false;
     }
     chatList.refresh();
     chatRoomMsg.refresh();
     chatRoomLastMsg.refresh();
     initChat();
+  }
+
+  Future<void> refreshConversations() async {
+    await loadHistoryMessage();
   }
 
   void initChat() {

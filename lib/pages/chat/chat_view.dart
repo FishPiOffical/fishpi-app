@@ -64,23 +64,39 @@ class ChatPage extends StatelessWidget {
               Expanded(
                 child: Stack(
                   children: [
-                    if (messageGroups.isNotEmpty)
-                      GestureDetector(
-                        onTap: () {
-                          FocusScope.of(Get.context!).requestFocus(FocusNode());
-                        },
-                        child: Container(
-                          width: 1.sw,
-                          height: 1.sh,
-                          padding: EdgeInsets.symmetric(
-                            horizontal: 16.w,
-                          ),
-                          child: ListView.builder(
-                            controller: logic.chatRoomController,
-                            padding: EdgeInsets.symmetric(vertical: 20.h),
-                            itemBuilder: (context, index) =>
-                                _buildChatItem(context, messageGroups[index]),
-                            itemCount: messageGroups.length,
+                    GestureDetector(
+                      onTap: () {
+                        FocusScope.of(Get.context!).requestFocus(FocusNode());
+                      },
+                      child: Container(
+                        width: 1.sw,
+                        height: 1.sh,
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 16.w,
+                        ),
+                        child: ListView.builder(
+                          controller: logic.chatRoomController,
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          padding: EdgeInsets.symmetric(vertical: 20.h),
+                          itemBuilder: (context, index) {
+                            if (index == 0) return _buildHistoryIndicator();
+                            return _buildChatItem(
+                              context,
+                              messageGroups[index - 1],
+                            );
+                          },
+                          itemCount: messageGroups.length + 1,
+                        ),
+                      ),
+                    ),
+                    if (messageGroups.isEmpty && !logic.isLoadingHistory.value)
+                      Center(
+                        child: Text(
+                          '暂无消息',
+                          style: TextStyle(
+                            color: Styles.secondaryTextColor,
+                            fontSize: 14.sp,
+                            fontWeight: FontWeight.bold,
                           ),
                         ),
                       ),
@@ -138,6 +154,47 @@ class ChatPage extends StatelessWidget {
           ? _buildRight(group)
           : _buildLeft(group),
     );
+  }
+
+  Widget _buildHistoryIndicator() {
+    if (logic.isLoadingHistory.value) {
+      return SizedBox(
+        height: 32.h,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            SizedBox(
+              width: 14.w,
+              height: 14.w,
+              child: const CircularProgressIndicator(strokeWidth: 2),
+            ),
+            8.horizontalSpace,
+            Text(
+              '正在加载历史消息',
+              style: TextStyle(
+                color: Styles.secondaryTextColor,
+                fontSize: 12.sp,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+    if (!logic.hasMoreHistory.value && logic.messageList.isNotEmpty) {
+      return SizedBox(
+        height: 28.h,
+        child: Center(
+          child: Text(
+            '没有更早消息了',
+            style: TextStyle(
+              color: Styles.secondaryTextColor,
+              fontSize: 12.sp,
+            ),
+          ),
+        ),
+      );
+    }
+    return SizedBox(height: 8.h);
   }
 
   Widget _buildRight(ChatMessageGroup group) {

@@ -8,7 +8,7 @@ import '../../../widgets/pi_title_bar.dart';
 import 'post_logic.dart';
 
 class PostPage extends StatelessWidget {
-  final PostLogic logic = Get.put(PostLogic());
+  final PostLogic logic = Get.find<PostLogic>();
 
   PostPage({super.key});
 

@@ -32,4 +32,10 @@ class HomeLogic extends GetxController {
     index.value = idx;
     pageController.jumpToPage(idx);
   }
+
+  @override
+  void onClose() {
+    pageController.dispose();
+    super.onClose();
+  }
 }

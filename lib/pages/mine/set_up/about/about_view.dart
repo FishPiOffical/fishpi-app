@@ -7,7 +7,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'about_logic.dart';
 
 class AboutPage extends StatelessWidget {
-  final AboutLogic logic = Get.put(AboutLogic());
+  final AboutLogic logic = Get.find<AboutLogic>();
 
   AboutPage({super.key});
 
