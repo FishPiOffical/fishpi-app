@@ -1,4 +1,5 @@
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:fishpi_app/core/memory/image_decode_utils.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
@@ -19,8 +20,8 @@ class EmojiBox extends StatefulWidget {
 }
 
 class _EmojiBoxState extends State<EmojiBox> {
-  static const int _defaultPrecacheCount = 40;
-  static const int _diyPrecacheCount = 24;
+  static const int _defaultPrecacheCount = 24;
+  static const int _diyPrecacheCount = 12;
 
   int emojiIndex = 0;
   final Set<String> _precachedUrls = {};
@@ -58,6 +59,7 @@ class _EmojiBoxState extends State<EmojiBox> {
                     setState(() {
                       emojiIndex = 0;
                     });
+                    _precacheVisibleEmojis();
                   },
                   child: AnimatedOpacity(
                     opacity: emojiIndex == 0 ? 1 : 0.3,
@@ -79,6 +81,7 @@ class _EmojiBoxState extends State<EmojiBox> {
                     setState(() {
                       emojiIndex = 1;
                     });
+                    _precacheVisibleEmojis();
                   },
                   child: AnimatedOpacity(
                     opacity: emojiIndex == 1 ? 1 : 0.3,
@@ -189,12 +192,24 @@ class _EmojiBoxState extends State<EmojiBox> {
     required double width,
     required double height,
   }) {
+    final resolvedMemCacheWidth = ImageDecodeUtils.resolveDecodeSize(
+      context,
+      width,
+    );
+    final resolvedMemCacheHeight = ImageDecodeUtils.resolveDecodeSize(
+      context,
+      height,
+    );
     return SizedBox(
       width: width,
       height: height,
       child: CachedNetworkImage(
         imageUrl: url,
         fit: BoxFit.contain,
+        memCacheWidth: resolvedMemCacheWidth,
+        memCacheHeight: resolvedMemCacheHeight,
+        maxWidthDiskCache: resolvedMemCacheWidth,
+        maxHeightDiskCache: resolvedMemCacheHeight,
         placeholder: (_, __) => _buildEmojiPlaceholder(width, height),
         errorWidget: (_, __, ___) => _buildEmojiPlaceholder(width, height),
       ),
@@ -216,15 +231,26 @@ class _EmojiBoxState extends State<EmojiBox> {
   void _precacheVisibleEmojis() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      final urls = [
-        ...widget.emojiList.values.take(_defaultPrecacheCount),
-        ...widget.diyEmojiList.take(_diyPrecacheCount),
-      ].where((url) => url.trim().isNotEmpty);
+      final urls = (emojiIndex == 0
+              ? widget.emojiList.values.take(_defaultPrecacheCount)
+              : widget.diyEmojiList.take(_diyPrecacheCount))
+          .where((url) => url.trim().isNotEmpty);
+      final logicalSize = emojiIndex == 0 ? 24.w : 80.w;
+      final decodeSize = ImageDecodeUtils.resolveDecodeSize(
+        context,
+        logicalSize,
+      );
 
       for (final url in urls) {
         if (!_precachedUrls.add(url)) continue;
-        precacheImage(CachedNetworkImageProvider(url), context)
-            .catchError((_) {});
+        precacheImage(
+          CachedNetworkImageProvider(
+            url,
+            maxWidth: decodeSize,
+            maxHeight: decodeSize,
+          ),
+          context,
+        ).catchError((_) {});
       }
     });
   }

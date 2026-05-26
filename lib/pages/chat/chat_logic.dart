@@ -7,8 +7,10 @@ import 'package:fishpi_app/core/chat/chat_quote_utils.dart';
 import 'package:fishpi_app/core/chat/chat_red_packet_utils.dart';
 import 'package:fishpi_app/core/chat/chat_topic_utils.dart';
 import 'package:fishpi_app/core/chat/chat_voice_message_utils.dart';
+import 'package:fishpi_app/core/debug/memory_snapshot.dart';
 import 'package:fishpi_app/core/im_event.dart';
 import 'package:fishpi_app/core/manager/toast.dart';
+import 'package:fishpi_app/core/memory/memory_limits.dart';
 import 'package:fishpi_app/core/sql/black_list.dart';
 import 'package:fishpi_app/core/sql/chat_room_auto_grab_settings.dart';
 import 'package:fishpi_app/core/sql/chat_room_block_list.dart';
@@ -99,7 +101,12 @@ class ChatLogic extends GetxController {
     userName.value = args['userName'] ?? '聊天室';
     userID.value = args['userID'] ?? '';
     if (isGroup.value) {
-      messageList.addAll(_conversationController?.chatRoomMsg ?? []);
+      messageList.assignAll(
+        ChatMessageUtils.trimChatRoomMessages(
+          _conversationController?.chatRoomMsg ?? const <ChatRoomMessage>[],
+          MemoryLimits.chatRealtimeMessages,
+        ),
+      );
       messageList.refresh();
       scrollToBottom(delay: 300);
     }
@@ -205,6 +212,7 @@ class ChatLogic extends GetxController {
       ChatMessageUtils.appendUniqueChatRoomMessage(
         messageList,
         message,
+        maxLength: _messageMemoryLimit,
       ),
     );
     messageList.refresh();
@@ -243,8 +251,14 @@ class ChatLogic extends GetxController {
       if (!hasMoreHistory.value) return;
 
       historyPage.value = 1;
-      messageList.assignAll(result.messages);
+      messageList.assignAll(
+        ChatMessageUtils.trimChatRoomMessages(
+          result.messages,
+          MemoryLimits.chatRealtimeMessages,
+        ),
+      );
       messageList.refresh();
+      _logMemorySnapshot('聊天首屏历史');
     } catch (e) {
       ToastManager.showToast('加载历史消息失败：$e');
     } finally {
@@ -279,9 +293,11 @@ class ChatLogic extends GetxController {
         ChatMessageUtils.prependUniqueChatRoomMessages(
           messageList,
           result.messages,
+          maxLength: MemoryLimits.chatHistoryMessages,
         ),
       );
       messageList.refresh();
+      _logMemorySnapshot('聊天分页历史');
 
       if (messageList.length > beforeLength) {
         _restoreScrollOffsetAfterPrepend(oldMaxScrollExtent, oldPixels);
@@ -964,15 +980,38 @@ class ChatLogic extends GetxController {
     );
   }
 
+  int get _messageMemoryLimit {
+    return historyPage.value > 1
+        ? MemoryLimits.chatHistoryMessages
+        : MemoryLimits.chatRealtimeMessages;
+  }
+
+  void _logMemorySnapshot(String source) {
+    MemorySnapshot.log(
+      source: source,
+      chatMessages: messageList.length,
+    );
+  }
+
   Future<void> _reloadBlackUsersAndFilterMessages() async {
     await _loadBlackUsers();
-    messageList.assignAll(_visibleMessages(messageList));
+    messageList.assignAll(
+      ChatMessageUtils.trimChatRoomMessages(
+        _visibleMessages(messageList),
+        _messageMemoryLimit,
+      ),
+    );
     messageList.refresh();
   }
 
   Future<void> _reloadChatRoomBlockedUsersAndFilterMessages() async {
     await _loadChatRoomBlockedUsers();
-    messageList.assignAll(_visibleMessages(messageList));
+    messageList.assignAll(
+      ChatMessageUtils.trimChatRoomMessages(
+        _visibleMessages(messageList),
+        _messageMemoryLimit,
+      ),
+    );
     messageList.refresh();
   }
 
@@ -1034,6 +1073,7 @@ class ChatLogic extends GetxController {
   @override
   void onClose() {
     isClose.value = true;
+    _logMemorySnapshot('聊天页关闭前');
     _chatRoomSubscription?.cancel();
     _privateChatSubscription?.cancel();
     _blackListSubscription?.cancel();

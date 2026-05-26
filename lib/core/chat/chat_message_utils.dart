@@ -2,6 +2,8 @@ import 'dart:collection';
 
 import 'package:fishpi/types/chat.dart';
 import 'package:fishpi/types/chatroom.dart';
+import 'package:fishpi_app/core/memory/memory_limits.dart';
+import 'package:fishpi_app/core/memory/memory_list_utils.dart';
 import 'package:html/dom.dart' as dom;
 import 'package:html/parser.dart';
 
@@ -38,7 +40,9 @@ class ChatMessageGroup {
 }
 
 class ChatMessageUtils {
-  static const int previewCacheLimit = 200;
+  static const int previewCacheLimit = MemoryLimits.htmlPreviewCacheItems;
+  static const int previewCacheMaxContentLength =
+      MemoryLimits.htmlPreviewCacheMaxContentLength;
   static final LinkedHashMap<String, ParsedChatContent> _contentCache =
       LinkedHashMap<String, ParsedChatContent>();
 
@@ -66,15 +70,16 @@ class ChatMessageUtils {
 
     final next = List<ChatRoomMessage>.from(source)..add(message);
     if (maxLength != null && next.length > maxLength) {
-      return next.sublist(next.length - maxLength);
+      return trimChatRoomMessages(next, maxLength);
     }
     return next;
   }
 
   static List<ChatRoomMessage> prependUniqueChatRoomMessages(
     List<ChatRoomMessage> source,
-    Iterable<ChatRoomMessage> history,
-  ) {
+    Iterable<ChatRoomMessage> history, {
+    int? maxLength,
+  }) {
     final existingKeys = source.map(messageKey).where((key) => key.isNotEmpty);
     final seenKeys = existingKeys.toSet();
     final olderMessages = <ChatRoomMessage>[];
@@ -86,10 +91,28 @@ class ChatMessageUtils {
       olderMessages.add(message);
     }
 
-    return [
+    final next = [
       ...olderMessages,
       ...source,
     ];
+    if (maxLength != null && next.length > maxLength) {
+      return trimChatRoomMessages(
+        next,
+        maxLength,
+        keepLatest: false,
+      );
+    }
+    return next;
+  }
+
+  static List<ChatRoomMessage> trimChatRoomMessages(
+    Iterable<ChatRoomMessage> source,
+    int maxLength, {
+    bool keepLatest = true,
+  }) {
+    return keepLatest
+        ? MemoryListUtils.keepLast(source, maxLength)
+        : MemoryListUtils.keepFirst(source, maxLength);
   }
 
   static List<ChatRoomMessage> visibleMessages(
@@ -257,9 +280,11 @@ class ChatMessageUtils {
       singleImageUrl: _findSingleImageUrl(body),
     );
 
-    _contentCache[content] = parsed;
-    if (_contentCache.length > previewCacheLimit) {
-      _contentCache.remove(_contentCache.keys.first);
+    if (content.length <= previewCacheMaxContentLength) {
+      _contentCache[content] = parsed;
+      if (_contentCache.length > previewCacheLimit) {
+        _contentCache.remove(_contentCache.keys.first);
+      }
     }
     return parsed;
   }
@@ -400,5 +425,13 @@ class ChatMessageUtils {
 
   static void clearPreviewCache() {
     _contentCache.clear();
+  }
+
+  static int debugPreviewCacheSize() {
+    return _contentCache.length;
+  }
+
+  static bool debugIsPreviewCached(String content) {
+    return _contentCache.containsKey(content);
   }
 }

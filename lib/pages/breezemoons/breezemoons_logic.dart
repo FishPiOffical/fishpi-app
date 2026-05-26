@@ -2,7 +2,10 @@ import 'dart:async';
 
 import 'package:fishpi/types/breezemoon.dart';
 import 'package:fishpi_app/core/controller/im.dart';
+import 'package:fishpi_app/core/debug/memory_snapshot.dart';
 import 'package:fishpi_app/core/manager/toast.dart';
+import 'package:fishpi_app/core/memory/memory_limits.dart';
+import 'package:fishpi_app/core/memory/memory_list_utils.dart';
 import 'package:fishpi_app/core/sql/black_list.dart';
 import 'package:fishpi_app/core/sql/user_remark.dart';
 import 'package:flutter/cupertino.dart';
@@ -45,11 +48,20 @@ class BreezemoonsLogic extends GetxController {
     );
     final visibleList = _visibleBreezemoons(res);
     if (page.value == 1) {
-      list.value = visibleList;
+      list.value = MemoryListUtils.keepFirst(
+        visibleList,
+        MemoryLimits.contentListItems,
+      );
       list.refresh();
       refresherController.loadComplete();
     } else {
-      list.addAll(visibleList);
+      list.value = MemoryListUtils.keepFirst(
+        [
+          ...list,
+          ...visibleList,
+        ],
+        MemoryLimits.contentListItems,
+      );
       list.refresh();
       if (res.isNotEmpty) {
         refresherController.loadComplete();
@@ -83,7 +95,12 @@ class BreezemoonsLogic extends GetxController {
 
   Future<void> _reloadBlackUsersAndFilterList() async {
     await _loadBlackUsers();
-    list.assignAll(_visibleBreezemoons(list));
+    list.assignAll(
+      MemoryListUtils.keepFirst(
+        _visibleBreezemoons(list),
+        MemoryLimits.contentListItems,
+      ),
+    );
     list.refresh();
   }
 
@@ -118,6 +135,9 @@ class BreezemoonsLogic extends GetxController {
   void onClose() {
     _blackListSubscription?.cancel();
     _remarkSubscription?.cancel();
+    MemorySnapshot.log(source: '清风明月页关闭前', breezemoons: list.length);
+    textEditingController.dispose();
+    refresherController.dispose();
     super.onClose();
   }
 }

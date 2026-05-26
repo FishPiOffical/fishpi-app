@@ -65,6 +65,37 @@ void main() {
       expect(result.map((item) => item.oId), ['1', '2', '3', '4']);
     });
 
+    test('聊天消息裁剪默认保留最新消息', () {
+      final messages = List.generate(
+        5,
+        (index) => ChatRoomMessage(oId: '$index', content: '<p>$index</p>'),
+      );
+
+      final result = ChatMessageUtils.trimChatRoomMessages(messages, 3);
+
+      expect(result.map((item) => item.oId), ['2', '3', '4']);
+    });
+
+    test('分页历史超出上限时保留顶部历史窗口', () {
+      final current = [
+        ChatRoomMessage(oId: '3', content: '<p>3</p>'),
+        ChatRoomMessage(oId: '4', content: '<p>4</p>'),
+      ];
+      final history = [
+        ChatRoomMessage(oId: '0', content: '<p>0</p>'),
+        ChatRoomMessage(oId: '1', content: '<p>1</p>'),
+        ChatRoomMessage(oId: '2', content: '<p>2</p>'),
+      ];
+
+      final result = ChatMessageUtils.prependUniqueChatRoomMessages(
+        current,
+        history,
+        maxLength: 4,
+      );
+
+      expect(result.map((item) => item.oId), ['0', '1', '2', '3']);
+    });
+
     test('私聊会话更新时同一会话置顶', () {
       final oldMessage = _chatData(oId: 'old', fromId: 'u1');
       final otherMessage = _chatData(oId: 'other', fromId: 'u2');
@@ -231,6 +262,38 @@ void main() {
         '[视频]',
       );
       expect(ChatMessageUtils.conversationPreview(''), '');
+    });
+
+    test('HTML 解析缓存会按条数淘汰旧内容', () {
+      for (var index = 0;
+          index <= ChatMessageUtils.previewCacheLimit;
+          index++) {
+        ChatMessageUtils.conversationPreview('<p>$index</p>');
+      }
+
+      expect(
+        ChatMessageUtils.debugPreviewCacheSize(),
+        ChatMessageUtils.previewCacheLimit,
+      );
+      expect(ChatMessageUtils.debugIsPreviewCached('<p>0</p>'), isFalse);
+      expect(
+        ChatMessageUtils.debugIsPreviewCached(
+          '<p>${ChatMessageUtils.previewCacheLimit}</p>',
+        ),
+        isTrue,
+      );
+    });
+
+    test('超长 HTML 不进入解析缓存', () {
+      final longText =
+          List.filled(ChatMessageUtils.previewCacheMaxContentLength + 1, 'x')
+              .join();
+      final content = '<p>$longText</p>';
+
+      ChatMessageUtils.conversationPreview(content);
+
+      expect(ChatMessageUtils.debugIsPreviewCached(content), isFalse);
+      expect(ChatMessageUtils.debugPreviewCacheSize(), 0);
     });
 
     test('语音 music 消息可生成并解析为会话预览', () {

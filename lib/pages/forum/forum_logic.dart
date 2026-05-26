@@ -2,7 +2,10 @@ import 'dart:async';
 
 import 'package:fishpi/fishpi.dart';
 import 'package:fishpi_app/core/controller/im.dart';
+import 'package:fishpi_app/core/debug/memory_snapshot.dart';
 import 'package:fishpi_app/core/forum/article_utils.dart';
+import 'package:fishpi_app/core/memory/memory_limits.dart';
+import 'package:fishpi_app/core/memory/memory_list_utils.dart';
 import 'package:fishpi_app/core/sql/black_list.dart';
 import 'package:fishpi_app/core/sql/user_remark.dart';
 import 'package:get/get.dart';
@@ -40,11 +43,20 @@ class ForumLogic extends GetxController {
     );
     final visibleList = _visibleArticles(res.list);
     if (page.value == 1) {
-      list.value = ArticleUtils.sortStickyFirst(visibleList);
+      list.value = MemoryListUtils.keepFirst(
+        ArticleUtils.sortStickyFirst(visibleList),
+        MemoryLimits.contentListItems,
+      );
       list.refresh();
       refresherController.loadComplete();
     } else {
-      list.addAll(visibleList);
+      list.value = MemoryListUtils.keepFirst(
+        [
+          ...list,
+          ...visibleList,
+        ],
+        MemoryLimits.contentListItems,
+      );
       list.refresh();
       if (res.list.isNotEmpty) {
         refresherController.loadComplete();
@@ -90,7 +102,12 @@ class ForumLogic extends GetxController {
 
   Future<void> _reloadBlackUsersAndFilterList() async {
     await _loadBlackUsers();
-    list.assignAll(_visibleArticles(list));
+    list.assignAll(
+      MemoryListUtils.keepFirst(
+        _visibleArticles(list),
+        MemoryLimits.contentListItems,
+      ),
+    );
     list.refresh();
   }
 
@@ -98,6 +115,8 @@ class ForumLogic extends GetxController {
   void onClose() {
     _blackListSubscription?.cancel();
     _remarkSubscription?.cancel();
+    MemorySnapshot.log(source: '帖子页关闭前', articles: list.length);
+    refresherController.dispose();
     super.onClose();
   }
 }

@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:fishpi_app/widgets/pi_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -12,6 +13,16 @@ class PiHero extends StatefulWidget {
 }
 
 class _HeroPageState extends State<PiHero> {
+  @override
+  void dispose() {
+    final imageUrl = widget.arguments["imageUrl"]?.toString() ?? '';
+    if (imageUrl.isNotEmpty) {
+      // 大图预览可能解码出高分辨率图片，退出时只释放内存缓存，保留磁盘缓存便于下次查看。
+      CachedNetworkImageProvider(imageUrl).evict();
+    }
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(

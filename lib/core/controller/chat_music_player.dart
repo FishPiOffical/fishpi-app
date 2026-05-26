@@ -1,7 +1,10 @@
 import 'dart:async';
 
 import 'package:fishpi_app/core/chat/chat_music_utils.dart';
+import 'package:fishpi_app/core/debug/memory_snapshot.dart';
 import 'package:fishpi_app/core/manager/toast.dart';
+import 'package:fishpi_app/core/memory/memory_limits.dart';
+import 'package:flutter/foundation.dart';
 import 'package:get/get.dart';
 import 'package:just_audio/just_audio.dart';
 
@@ -83,14 +86,49 @@ class ChatMusicPlayerController extends GetxController {
     queue.clear();
     currentTrack.value = null;
     currentIndex.value = -1;
-    _player.stop();
+    unawaited(_player.stop());
+    _logMemorySnapshot('音乐队列清空');
+  }
+
+  @visibleForTesting
+  int debugEnsureTrackForTest(ChatMusicTrack track) {
+    return _ensureTrack(track);
   }
 
   int _ensureTrack(ChatMusicTrack track) {
     final existingIndex = queue.indexWhere((item) => item.id == track.id);
     if (existingIndex >= 0) return existingIndex;
     queue.add(track);
-    return queue.length - 1;
+    if (_trimQueueForMemory(protectedTrackId: track.id)) {
+      _logMemorySnapshot('音乐队列裁剪');
+    }
+    return queue.indexWhere((item) => item.id == track.id);
+  }
+
+  bool _trimQueueForMemory({String? protectedTrackId}) {
+    var didTrim = false;
+    while (queue.length > MemoryLimits.musicQueueTracks) {
+      final currentId = currentTrack.value?.id;
+      final removeIndex = queue.indexWhere((item) {
+        return item.id != currentId && item.id != protectedTrackId;
+      });
+      if (removeIndex < 0) return didTrim;
+      queue.removeAt(removeIndex);
+      didTrim = true;
+      _syncCurrentIndex();
+    }
+    return didTrim;
+  }
+
+  void _syncCurrentIndex() {
+    final current = currentTrack.value;
+    currentIndex.value = current == null
+        ? -1
+        : queue.indexWhere((item) => item.id == current.id);
+  }
+
+  void _logMemorySnapshot(String source) {
+    MemorySnapshot.log(source: source, musicQueue: queue.length);
   }
 
   Future<void> _playAt(int index) async {

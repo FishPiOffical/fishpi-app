@@ -96,6 +96,37 @@ void main() {
         findsOneWidget);
   });
 
+  test('音乐队列超过上限时保留当前播放项并裁剪旧项', () {
+    final player = ChatMusicPlayerController();
+    const current = ChatMusicTrack(
+      id: 'song-current',
+      type: 'music',
+      source: 'https://example.com/current.mp3',
+      title: '当前播放',
+    );
+    player.debugEnsureTrackForTest(current);
+    player.currentTrack.value = current;
+    player.currentIndex.value = 0;
+
+    for (var index = 0; index < 60; index++) {
+      player.debugEnsureTrackForTest(
+        ChatMusicTrack(
+          id: 'song-$index',
+          type: 'music',
+          source: 'https://example.com/$index.mp3',
+          title: '歌曲 $index',
+        ),
+      );
+    }
+
+    expect(player.queue, hasLength(50));
+    expect(player.queue.any((item) => item.id == current.id), isTrue);
+    expect(player.currentIndex.value, isNonNegative);
+    expect(player.queue.any((item) => item.id == 'song-0'), isFalse);
+
+    player.onClose();
+  });
+
   testWidgets('天气卡片展示城市、描述和今日温度', (tester) async {
     await tester.pumpWidget(
       ScreenUtilInit(
