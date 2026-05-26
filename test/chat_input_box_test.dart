@@ -186,6 +186,76 @@ void main() {
     focusNode.dispose();
     controller.dispose();
   });
+
+  testWidgets('工具栏点击红包和话题会触发对应回调', (tester) async {
+    final controller = TextEditingController();
+    final focusNode = FocusNode();
+    var redPacketTapCount = 0;
+    var topicTapCount = 0;
+
+    await tester.pumpWidget(
+      _wrap(
+        ChatInputBox(
+          controller: controller,
+          focusNode: focusNode,
+          emojiList: const {},
+          diyEmojiList: const [],
+          onInput: (_) {},
+          clickSend: () async {},
+          scrollToBottom: () {},
+          onRedPacketTap: () => redPacketTapCount++,
+          onTopicTap: () => topicTapCount++,
+        ),
+      ),
+    );
+
+    await tester.tap(_assetImage('assets/images/more_feature.png'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('chat_tool_red_packet')));
+    await tester.pumpAndSettle();
+
+    await tester.tap(_assetImage('assets/images/more_feature.png'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('chat_tool_topic')));
+    await tester.pumpAndSettle();
+
+    expect(redPacketTapCount, 1);
+    expect(topicTapCount, 1);
+
+    focusNode.dispose();
+    controller.dispose();
+  });
+
+  testWidgets('没有聊天室回调时工具栏不显示红包和话题', (tester) async {
+    final controller = TextEditingController();
+    final focusNode = FocusNode();
+
+    await tester.pumpWidget(
+      _wrap(
+        ChatInputBox(
+          controller: controller,
+          focusNode: focusNode,
+          emojiList: const {},
+          diyEmojiList: const [],
+          onInput: (_) {},
+          clickSend: () async {},
+          scrollToBottom: () {},
+        ),
+      ),
+    );
+
+    await tester.tap(_assetImage('assets/images/more_feature.png'));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const ValueKey('chat_tool_red_packet')), findsNothing);
+    expect(find.byKey(const ValueKey('chat_tool_topic')), findsNothing);
+
+    await tester.tap(_assetImage('assets/images/more_feature.png'));
+    await tester.pumpAndSettle();
+
+    focusNode.dispose();
+    controller.dispose();
+  });
 }
 
 Widget _wrap(Widget child) {

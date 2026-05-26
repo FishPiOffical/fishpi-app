@@ -22,6 +22,8 @@ class ChatInputBox extends StatefulWidget {
   final Future<void> Function()? onVoiceRecordStart;
   final Future<void> Function()? onVoiceRecordFinish;
   final Future<void> Function()? onVoiceRecordCancel;
+  final VoidCallback? onRedPacketTap;
+  final VoidCallback? onTopicTap;
 
   const ChatInputBox({
     required this.controller,
@@ -39,6 +41,8 @@ class ChatInputBox extends StatefulWidget {
     this.onVoiceRecordStart,
     this.onVoiceRecordFinish,
     this.onVoiceRecordCancel,
+    this.onRedPacketTap,
+    this.onTopicTap,
     super.key,
   });
 
@@ -264,111 +268,42 @@ class ChatInputBoxState extends State<ChatInputBox> {
 
   Widget _buildToolsBox() {
     List<Widget> list = [
-      GestureDetector(
+      _buildToolItem(
+        key: const ValueKey('chat_tool_image'),
+        title: '图片',
+        icon: Icon(Icons.photo, size: 30.w),
         onTap: () {},
-        child: Container(
-          width: 80.w,
-          height: 80.w,
-          alignment: Alignment.center,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 50.w,
-                height: 50.w,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(8.w),
-                ),
-                alignment: Alignment.center,
-                child: Icon(
-                  Icons.photo,
-                  size: 30.w,
-                ),
-              ),
-              5.verticalSpace,
-              Text(
-                '图片',
-                style: TextStyle(
-                  fontSize: 12.sp,
-                  fontWeight: FontWeight.bold,
-                  color: Styles.primaryTextColor,
-                ),
-              ),
-            ],
-          ),
-        ),
       ),
-      GestureDetector(
+      _buildToolItem(
+        key: const ValueKey('chat_tool_camera'),
+        title: '拍摄',
+        icon: Icon(Icons.camera_alt, size: 30.w),
         onTap: () {},
-        child: Container(
-          width: 80.w,
-          height: 80.w,
-          alignment: Alignment.center,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 50.w,
-                height: 50.w,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(8.w),
-                ),
-                alignment: Alignment.center,
-                child: Icon(
-                  Icons.camera_alt,
-                  size: 30.w,
-                ),
-              ),
-              5.verticalSpace,
-              Text(
-                '拍摄',
-                style: TextStyle(
-                  fontSize: 12.sp,
-                  fontWeight: FontWeight.bold,
-                  color: Styles.primaryTextColor,
-                ),
-              ),
-            ],
-          ),
-        ),
       ),
-      GestureDetector(
-        onTap: () {},
-        child: Container(
-          width: 80.w,
-          height: 80.w,
-          alignment: Alignment.center,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 50.w,
-                height: 50.w,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(8.w),
-                ),
-                alignment: Alignment.center,
-                child: Icon(
-                  Icons.shopping_bag,
-                  size: 30.w,
-                ),
-              ),
-              5.verticalSpace,
-              Text(
-                '红包',
-                style: TextStyle(
-                  fontSize: 12.sp,
-                  fontWeight: FontWeight.bold,
-                  color: Styles.primaryTextColor,
-                ),
-              ),
-            ],
+      if (widget.onRedPacketTap != null)
+        _buildToolItem(
+          key: const ValueKey('chat_tool_red_packet'),
+          title: '红包',
+          icon: Image.asset(
+            'assets/images/red-packet.png',
+            width: 30.w,
+            height: 30.w,
           ),
+          onTap: () {
+            closeAllTools();
+            widget.onRedPacketTap?.call();
+          },
         ),
-      ),
+      if (widget.onTopicTap != null)
+        _buildToolItem(
+          key: const ValueKey('chat_tool_topic'),
+          title: '话题',
+          icon: Icon(Icons.tag_outlined, size: 30.w),
+          onTap: () {
+            closeAllTools();
+            widget.onTopicTap?.call();
+          },
+        ),
     ];
     return Container(
       width: 1.sw,
@@ -383,6 +318,47 @@ class ChatInputBoxState extends State<ChatInputBox> {
         //设置主轴间距
         mainAxisSpacing: 4.w,
         children: list,
+      ),
+    );
+  }
+
+  Widget _buildToolItem({
+    required Key key,
+    required String title,
+    required Widget icon,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      key: key,
+      onTap: onTap,
+      child: Container(
+        width: 80.w,
+        height: 80.w,
+        alignment: Alignment.center,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 50.w,
+              height: 50.w,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(8.w),
+              ),
+              alignment: Alignment.center,
+              child: icon,
+            ),
+            5.verticalSpace,
+            Text(
+              title,
+              style: TextStyle(
+                fontSize: 12.sp,
+                fontWeight: FontWeight.bold,
+                color: Styles.primaryTextColor,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

@@ -2,6 +2,8 @@ import 'dart:async';
 import 'dart:io';
 import 'package:fishpi/fishpi.dart';
 import 'package:fishpi_app/core/chat/chat_message_utils.dart';
+import 'package:fishpi_app/core/chat/chat_red_packet_utils.dart';
+import 'package:fishpi_app/core/chat/chat_topic_utils.dart';
 import 'package:fishpi_app/core/chat/chat_voice_message_utils.dart';
 import 'package:fishpi_app/core/im_event.dart';
 import 'package:fishpi_app/core/manager/toast.dart';
@@ -34,6 +36,11 @@ class ChatLogic extends GetxController {
   final isRecordingVoice = false.obs;
   final isSendingVoice = false.obs;
   final voiceRecordSeconds = 0.obs;
+  final currentTopic = ''.obs;
+  final onlineUsers = <OnlineInfo>[].obs;
+  final isSettingTopic = false.obs;
+  final isSendingRedPacket = false.obs;
+  final isOpeningRedPacket = false.obs;
   final int historyPageSize = 20;
 
   ScrollController chatRoomController = ScrollController();
@@ -116,6 +123,7 @@ class ChatLogic extends GetxController {
       }
       _chatRoomSubscription ??=
           imController.chatRoomStream.listen(_onChatRoomData);
+      currentTopic.value = imController.fishpi.chatroom.discusse.toString();
       scrollToBottom(delay: 300);
     } else {
       await _loadInitialHistory(markPrivateRead: true);
@@ -127,8 +135,21 @@ class ChatLogic extends GetxController {
   }
 
   void _onChatRoomData(ChatRoomData data) {
+    if (data.type == ChatRoomMessageType.online) {
+      onlineUsers.assignAll(data.online ?? const []);
+      currentTopic.value = imController.fishpi.chatroom.discusse.toString();
+      return;
+    }
+    if (data.type == ChatRoomMessageType.discussChanged) {
+      currentTopic.value = data.discuss ?? '';
+      return;
+    }
     if (data.type == ChatRoomMessageType.revoke) {
       _removeMessage(data.revoke ?? '');
+      return;
+    }
+    if (data.type == ChatRoomMessageType.redPacketStatus) {
+      _updateRedPacketStatus(data.status);
       return;
     }
     final message = data.msg;
@@ -362,6 +383,82 @@ class ChatLogic extends GetxController {
     }
   }
 
+  Future<bool> sendRedPacket(RedPacketMessage redpacket) async {
+    if (!isGroup.value || isSendingRedPacket.value) return false;
+
+    isSendingRedPacket.value = true;
+    try {
+      final result = redpacket.type == RedPacketType.RockPaperScissors &&
+              redpacket.gesture != null
+          ? await imController.fishpi.chatroom.send(
+              ChatRedPacketUtils.toSendContent(redpacket),
+            )
+          : await imController.fishpi.chatroom.redpacket.send(redpacket);
+      if (result is ResponseResult && !result.success) {
+        throw result.msg.isEmpty ? '发送红包失败' : result.msg;
+      }
+      ToastManager.showToast('红包已发送');
+      scrollToBottom(delay: 300);
+      return true;
+    } catch (e) {
+      ToastManager.showToast('发送红包失败：$e');
+      return false;
+    } finally {
+      isSendingRedPacket.value = false;
+    }
+  }
+
+  Future<RedPacketInfo?> openRedPacket(
+    ChatRoomMessage chat, {
+    GestureType? gesture,
+  }) async {
+    if (!isGroup.value || chat.oId.isEmpty || isOpeningRedPacket.value) {
+      return null;
+    }
+
+    isOpeningRedPacket.value = true;
+    try {
+      return await imController.fishpi.chatroom.redpacket.open(
+        chat.oId,
+        gesture: gesture,
+      );
+    } catch (e) {
+      ToastManager.showToast('领取红包失败：$e');
+      return null;
+    } finally {
+      isOpeningRedPacket.value = false;
+    }
+  }
+
+  Future<bool> setTopic(String topic) async {
+    if (!isGroup.value || isSettingTopic.value) return false;
+
+    final normalized = ChatTopicUtils.normalizeTopic(topic);
+    final error = ChatTopicUtils.validateTopic(normalized);
+    if (error != null) {
+      ToastManager.showToast(error);
+      return false;
+    }
+
+    isSettingTopic.value = true;
+    try {
+      final result = await imController.fishpi.chatroom.send(
+        '[setdiscuss]$normalized[/setdiscuss]',
+      );
+      if (!result.success) {
+        throw result.msg.isEmpty ? '设置话题失败' : result.msg;
+      }
+      currentTopic.value = normalized;
+      ToastManager.showToast(normalized.isEmpty ? '已清空话题' : '话题已更新');
+      return true;
+    } catch (e) {
+      ToastManager.showToast('设置话题失败：$e');
+      return false;
+    } finally {
+      isSettingTopic.value = false;
+    }
+  }
+
   Future<void> startVoiceRecord() async {
     if (!isGroup.value) {
       ToastManager.showToast('私聊暂不支持语音消息');
@@ -588,6 +685,16 @@ class ChatLogic extends GetxController {
   Future<void> _reloadChatRoomBlockedUsersAndFilterMessages() async {
     await _loadChatRoomBlockedUsers();
     messageList.assignAll(_visibleMessages(messageList));
+    messageList.refresh();
+  }
+
+  void _updateRedPacketStatus(RedPacketStatusMsg? status) {
+    if (status == null || status.oId.isEmpty) return;
+    messageList.assignAll(
+      messageList
+          .map((message) => ChatRedPacketUtils.updateStatus(message, status))
+          .toList(),
+    );
     messageList.refresh();
   }
 

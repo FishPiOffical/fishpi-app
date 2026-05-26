@@ -3,7 +3,12 @@ import 'package:fishpi/types/redpacket.dart';
 import 'package:fishpi_app/core/chat/chat_message_utils.dart';
 import 'package:fishpi_app/res/styles.dart';
 import 'package:fishpi_app/utils/pi_utils.dart';
+import 'package:fishpi_app/widgets/chat/chat_red_packet_card.dart';
+import 'package:fishpi_app/widgets/chat/chat_red_packet_detail_sheet.dart';
+import 'package:fishpi_app/widgets/chat/chat_red_packet_sheet.dart';
 import 'package:fishpi_app/widgets/chat/chat_repeat_avatar_strip.dart';
+import 'package:fishpi_app/widgets/chat/chat_topic_bar.dart';
+import 'package:fishpi_app/widgets/chat/chat_topic_sheet.dart';
 import 'package:fishpi_app/widgets/chat/chat_voice_message.dart';
 import 'package:fishpi_app/widgets/pi_avatar.dart';
 import 'package:fishpi_app/widgets/pi_msg_dom.dart';
@@ -48,6 +53,11 @@ class ChatPage extends StatelessWidget {
           ),
           body: Column(
             children: [
+              if (logic.isGroup.value)
+                ChatTopicBar(
+                  topic: logic.currentTopic.value,
+                  onTap: _showTopicSheet,
+                ),
               Expanded(
                 child: messageGroups.isEmpty
                     ? Container()
@@ -86,6 +96,9 @@ class ChatPage extends StatelessWidget {
                 onVoiceRecordStart: logic.startVoiceRecord,
                 onVoiceRecordFinish: logic.finishVoiceRecord,
                 onVoiceRecordCancel: logic.cancelVoiceRecord,
+                onRedPacketTap:
+                    logic.isGroup.value ? _showRedPacketSheet : null,
+                onTopicTap: logic.isGroup.value ? _showTopicSheet : null,
               ),
             ],
           ),
@@ -132,7 +145,7 @@ class ChatPage extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                 ),
                 chat.isRedpacket
-                    ? _buildRedpacket(chat.redpacket!)
+                    ? _buildRedpacket(chat, true)
                     : chat.isMusic
                         ? _buildMusic(chat, true)
                         : singleImageUrl != null
@@ -236,7 +249,7 @@ class ChatPage extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                 ),
                 chat.isRedpacket
-                    ? _buildRedpacket(chat.redpacket!)
+                    ? _buildRedpacket(chat, false)
                     : chat.isMusic
                         ? _buildMusic(chat, false)
                         : singleImageUrl != null
@@ -407,82 +420,118 @@ class ChatPage extends StatelessWidget {
     );
   }
 
-  Widget _buildRedpacket(RedPacketMessage redpacket) {
-    return Container(
-      width: 0.8.sw - 58.w,
-      alignment: Alignment.centerLeft,
-      child: Container(
-        width: 210.w,
-        height: 88.w,
-        padding: EdgeInsets.all(10.w),
-        decoration: BoxDecoration(
-          color: const Color(0xFFFF9900),
-          borderRadius: BorderRadius.circular(8.w),
-          border: Styles.redpacketBorder,
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.start,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Image.asset(
-                  'assets/images/redpack_icon.png',
-                  width: 30.w,
-                  height: 30.h,
+  Widget _buildRedpacket(ChatRoomMessage chat, bool isSelf) {
+    final redpacket = chat.redpacket;
+    if (redpacket == null) return const SizedBox.shrink();
+    return ChatRedPacketCard(
+      redpacket: redpacket,
+      isSelf: isSelf,
+      onTap: () => _handleRedPacketTap(chat),
+    );
+  }
+
+  void _showRedPacketSheet() {
+    Get.bottomSheet(
+      ChatRedPacketSheet(
+        onlineUsers: logic.onlineUsers,
+        senderId: logic.userInfo.value.oId,
+        onSubmit: logic.sendRedPacket,
+      ),
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+    );
+  }
+
+  void _showTopicSheet() {
+    Get.bottomSheet(
+      ChatTopicSheet(
+        initialTopic: logic.currentTopic.value,
+        onSubmit: logic.setTopic,
+      ),
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+    );
+  }
+
+  void _handleRedPacketTap(ChatRoomMessage chat) {
+    if (chat.redpacket?.type == RedPacketType.RockPaperScissors) {
+      _showGestureSheet(chat);
+      return;
+    }
+    _openRedPacket(chat);
+  }
+
+  void _showGestureSheet(ChatRoomMessage chat) {
+    Get.bottomSheet(
+      SafeArea(
+        child: Container(
+          width: 1.sw,
+          padding: EdgeInsets.fromLTRB(16.w, 18.h, 16.w, 16.h),
+          decoration: BoxDecoration(
+            color: Styles.titleBarColor,
+            border: Styles.commonBorder,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(16.r)),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                '选择出拳',
+                style: TextStyle(
+                  color: Styles.primaryTextColor,
+                  fontSize: 20.sp,
+                  fontWeight: FontWeight.bold,
                 ),
-                5.horizontalSpace,
-                Expanded(
-                  child: Text(
-                    redpacket.msg,
-                    style: TextStyle(fontSize: 21.sp, color: Colors.white),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                )
-              ],
-            ),
-            Container(
-              height: 2.h,
-              margin: EdgeInsets.symmetric(vertical: 5.h),
-              color: const Color(0xFFF95A2C),
-            ),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  '${RedPacketType.toName(redpacket.type)}',
-                  style: TextStyle(
-                    fontSize: 12.sp,
-                    color: const Color(0xFFF0D35E),
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Image.asset(
-                      'assets/images/coin_line_white.png',
-                      width: 14.w,
-                      height: 10.w,
-                    ),
-                    5.horizontalSpace,
-                    Text(
-                      '${redpacket.money}',
-                      style: TextStyle(
-                        fontSize: 12.sp,
-                        color: const Color(0xFFF0D35E),
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
-                )
-              ],
-            ),
-          ],
+              ),
+              14.verticalSpace,
+              _buildActionButton(
+                key: const ValueKey('red_packet_open_rock'),
+                icon: Icons.back_hand_outlined,
+                text: '石头',
+                onTap: () {
+                  Get.back();
+                  _openRedPacket(chat, gesture: GestureType.Rock);
+                },
+              ),
+              10.verticalSpace,
+              _buildActionButton(
+                key: const ValueKey('red_packet_open_scissors'),
+                icon: Icons.content_cut,
+                text: '剪刀',
+                onTap: () {
+                  Get.back();
+                  _openRedPacket(chat, gesture: GestureType.Scissors);
+                },
+              ),
+              10.verticalSpace,
+              _buildActionButton(
+                key: const ValueKey('red_packet_open_paper'),
+                icon: Icons.article_outlined,
+                text: '布',
+                onTap: () {
+                  Get.back();
+                  _openRedPacket(chat, gesture: GestureType.Paper);
+                },
+              ),
+            ],
+          ),
         ),
       ),
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+    );
+  }
+
+  Future<void> _openRedPacket(
+    ChatRoomMessage chat, {
+    GestureType? gesture,
+  }) async {
+    final info = await logic.openRedPacket(chat, gesture: gesture);
+    if (info == null) return;
+    Get.bottomSheet(
+      ChatRedPacketDetailSheet(info: info),
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
     );
   }
 
