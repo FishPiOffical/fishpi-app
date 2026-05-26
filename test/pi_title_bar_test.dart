@@ -46,4 +46,36 @@ void main() {
     expect(find.byKey(const ValueKey('chat_room_more_button')), findsNothing);
     expect(find.text('私聊'), findsOneWidget);
   });
+
+  testWidgets('首页标题栏帖子显示发帖入口，其他主页面显示通知入口', (tester) async {
+    await tester.pumpWidget(
+      ScreenUtilInit(
+        designSize: const Size(360, 812),
+        builder: (context, _) => MaterialApp(
+          home: Scaffold(
+            appBar: PiTitleBar.home(title: '帖子'),
+          ),
+        ),
+      ),
+    );
+
+    expect(
+        find.byKey(const ValueKey('home_forum_create_button')), findsOneWidget);
+    expect(find.byKey(const ValueKey('home_notice_button')), findsNothing);
+
+    await tester.pumpWidget(
+      ScreenUtilInit(
+        designSize: const Size(360, 812),
+        builder: (context, _) => MaterialApp(
+          home: Scaffold(
+            appBar: PiTitleBar.home(title: '聊天'),
+          ),
+        ),
+      ),
+    );
+
+    expect(find.byKey(const ValueKey('home_notice_button')), findsOneWidget);
+    expect(
+        find.byKey(const ValueKey('home_forum_create_button')), findsNothing);
+  });
 }

@@ -1,6 +1,9 @@
 import 'dart:async';
 
+import 'package:fishpi/types/redpacket.dart';
+import 'package:fishpi_app/core/chat/chat_red_packet_utils.dart';
 import 'package:fishpi_app/core/manager/toast.dart';
+import 'package:fishpi_app/core/sql/chat_room_auto_grab_settings.dart';
 import 'package:fishpi_app/core/sql/chat_room_block_list.dart';
 import 'package:fishpi_app/core/sql/user_remark.dart';
 import 'package:fishpi_app/pages/chat/chat_logic.dart';
@@ -10,22 +13,31 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 class ChatRoomSettingsLogic extends GetxController {
+  final bool autoLoad;
   final blockedUsers = <ChatRoomBlockedUser>[].obs;
   final recentUsers = <ChatRoomBlockedUser>[].obs;
+  final autoGrabConfig = ChatRoomAutoGrabConfig.defaults().obs;
   final remarkVersion = 0.obs;
 
   StreamSubscription<void>? _blockListSubscription;
+  StreamSubscription<void>? _autoGrabSubscription;
   StreamSubscription<void>? _remarkSubscription;
 
   ChatLogic? get _chatLogic =>
       Get.isRegistered<ChatLogic>() ? Get.find<ChatLogic>() : null;
 
+  ChatRoomSettingsLogic({this.autoLoad = true});
+
   @override
   void onInit() {
     super.onInit();
+    if (!autoLoad) return;
     _loadAll();
     _blockListSubscription ??= ChatRoomBlockList.changes.listen((_) {
       _loadAll();
+    });
+    _autoGrabSubscription ??= ChatRoomAutoGrabSettings.changes.listen((_) {
+      _loadAutoGrabConfig();
     });
     UserRemark.init();
     _remarkSubscription ??= UserRemark.changes.listen((_) {
@@ -63,6 +75,63 @@ class ChatRoomSettingsLogic extends GetxController {
     await _loadAll();
   }
 
+  List<String> get redPacketTypes => ChatRedPacketUtils.types;
+
+  String redPacketTypeName(String type) => ChatRedPacketUtils.typeName(type);
+
+  String gestureName(GestureType gesture) =>
+      ChatRedPacketUtils.gestureName(gesture);
+
+  bool isAutoGrabTypeSelected(String type) {
+    return autoGrabConfig.value.enabledTypes.contains(type);
+  }
+
+  Future<void> toggleAutoGrab(bool enabled) async {
+    await _saveAutoGrabConfig(autoGrabConfig.value.copyWith(enabled: enabled));
+  }
+
+  Future<void> increaseDelay() async {
+    await _saveAutoGrabConfig(
+      autoGrabConfig.value.copyWith(
+        delaySeconds: autoGrabConfig.value.delaySeconds + 1,
+      ),
+    );
+  }
+
+  Future<void> decreaseDelay() async {
+    final next = autoGrabConfig.value.delaySeconds - 1;
+    if (next < ChatRoomAutoGrabSettings.minDelaySeconds) {
+      ToastManager.showToast(
+        '自动抢红包延迟不能少于 ${ChatRoomAutoGrabSettings.minDelaySeconds} 秒',
+      );
+      return;
+    }
+    await _saveAutoGrabConfig(
+        autoGrabConfig.value.copyWith(delaySeconds: next));
+  }
+
+  Future<void> toggleAutoGrabType(String type) async {
+    final types = List<String>.from(autoGrabConfig.value.enabledTypes);
+    if (types.contains(type)) {
+      types.remove(type);
+    } else {
+      types.add(type);
+    }
+    await _saveAutoGrabConfig(
+      autoGrabConfig.value.copyWith(enabledTypes: types),
+    );
+  }
+
+  Future<void> selectAutoGrabGesture(GestureType gesture) async {
+    await _saveAutoGrabConfig(autoGrabConfig.value.copyWith(gesture: gesture));
+  }
+
+  Future<void> resetAutoGrabStats() async {
+    await ChatRoomAutoGrabSettings.resetStats();
+    ToastManager.showToast('自动抢红包统计已重置');
+    await _loadAutoGrabConfig();
+  }
+
   void openManualAddEditor() {
     final context = Get.context;
     if (context == null) return;
@@ -89,6 +158,7 @@ class ChatRoomSettingsLogic extends GetxController {
 
   Future<void> _loadAll() async {
     await _loadBlockedUsers();
+    await _loadAutoGrabConfig();
     _loadRecentUsers();
   }
 
@@ -132,9 +202,29 @@ class ChatRoomSettingsLogic extends GetxController {
     recentUsers.refresh();
   }
 
+  Future<void> _loadAutoGrabConfig() async {
+    try {
+      await ChatRoomAutoGrabSettings.init();
+      autoGrabConfig.value = await ChatRoomAutoGrabSettings.getConfig();
+    } catch (_) {
+      autoGrabConfig.value = ChatRoomAutoGrabConfig.defaults();
+    }
+  }
+
+  Future<void> _saveAutoGrabConfig(ChatRoomAutoGrabConfig config) async {
+    final error = await ChatRoomAutoGrabSettings.saveConfig(config);
+    if (error != null) {
+      ToastManager.showToast(error);
+      return;
+    }
+    autoGrabConfig.value = await ChatRoomAutoGrabSettings.getConfig();
+    ToastManager.showToast('自动抢红包设置已保存');
+  }
+
   @override
   void onClose() {
     _blockListSubscription?.cancel();
+    _autoGrabSubscription?.cancel();
     _remarkSubscription?.cancel();
     super.onClose();
   }

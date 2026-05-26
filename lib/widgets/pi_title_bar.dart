@@ -85,9 +85,16 @@ class PiTitleBar extends StatelessWidget implements PreferredSizeWidget {
         ),
         right = GestureDetector(
           onTap: () {
-            AppNavigator.toForumCreate();
+            if (title == "帖子") {
+              AppNavigator.toForumCreate();
+              return;
+            }
+            AppNavigator.toNotice();
           },
           child: SizedBox(
+            key: ValueKey(
+              title == "帖子" ? 'home_forum_create_button' : 'home_notice_button',
+            ),
             width: 24.w,
             height: 24.w,
             child: title == "帖子"

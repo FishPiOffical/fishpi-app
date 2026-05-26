@@ -9,6 +9,7 @@ import 'package:fishpi_app/core/chat/chat_voice_message_utils.dart';
 import 'package:fishpi_app/core/im_event.dart';
 import 'package:fishpi_app/core/manager/toast.dart';
 import 'package:fishpi_app/core/sql/black_list.dart';
+import 'package:fishpi_app/core/sql/chat_room_auto_grab_settings.dart';
 import 'package:fishpi_app/core/sql/chat_room_block_list.dart';
 import 'package:fishpi_app/core/sql/user_remark.dart';
 import 'package:fishpi_app/pages/conversation/conversation_logic.dart';
@@ -46,6 +47,7 @@ class ChatLogic extends GetxController {
   final isSendingRedPacket = false.obs;
   final isOpeningRedPacket = false.obs;
   final quoteDraft = Rxn<ChatQuoteDraft>();
+  final autoGrabConfig = ChatRoomAutoGrabConfig.defaults().obs;
   final int historyPageSize = 20;
 
   ScrollController chatRoomController = ScrollController();
@@ -63,10 +65,14 @@ class ChatLogic extends GetxController {
   StreamSubscription<PrivateChatEvent>? _privateChatSubscription;
   StreamSubscription<void>? _blackListSubscription;
   StreamSubscription<void>? _chatRoomBlockListSubscription;
+  StreamSubscription<void>? _autoGrabSettingsSubscription;
   StreamSubscription<void>? _remarkSubscription;
   bool _scrollListenerAttached = false;
   final AudioRecorder _voiceRecorder = AudioRecorder();
   Timer? _voiceTimer;
+  final Map<String, Timer> _autoGrabTimers = {};
+  final Set<String> _autoGrabScheduledIds = {};
+  final Set<String> _autoGrabOpenedIds = {};
   DateTime? _voiceStartedAt;
   String? _voiceRecordPath;
   bool _isStoppingVoice = false;
@@ -97,6 +103,10 @@ class ChatLogic extends GetxController {
       _chatRoomBlockListSubscription ??= ChatRoomBlockList.changes.listen((_) {
         _reloadChatRoomBlockedUsersAndFilterMessages();
       });
+      _autoGrabSettingsSubscription ??=
+          ChatRoomAutoGrabSettings.changes.listen((_) {
+        _loadAutoGrabConfig();
+      });
     }
     UserRemark.init();
     _remarkSubscription ??= UserRemark.changes.listen((_) {
@@ -119,6 +129,7 @@ class ChatLogic extends GetxController {
     await _loadBlackUsers();
     if (isGroup.value) {
       await _loadChatRoomBlockedUsers();
+      await _loadAutoGrabConfig();
       messageList.assignAll(_visibleMessages(messageList));
       messageList.refresh();
       if (messageList.isEmpty) {
@@ -184,6 +195,7 @@ class ChatLogic extends GetxController {
       ),
     );
     messageList.refresh();
+    _scheduleAutoGrabRedPacket(message);
     if (shouldScroll) {
       scrollToBottom(delay: 300);
     }
@@ -515,6 +527,8 @@ class ChatLogic extends GetxController {
       return null;
     }
 
+    _cancelScheduledAutoGrab(chat.oId);
+    _autoGrabOpenedIds.add(chat.oId);
     isOpeningRedPacket.value = true;
     try {
       return await imController.fishpi.chatroom.redpacket.open(
@@ -527,6 +541,92 @@ class ChatLogic extends GetxController {
     } finally {
       isOpeningRedPacket.value = false;
     }
+  }
+
+  void _cancelScheduledAutoGrab(String redPacketId) {
+    _autoGrabTimers.remove(redPacketId)?.cancel();
+    _autoGrabScheduledIds.remove(redPacketId);
+  }
+
+  void _scheduleAutoGrabRedPacket(ChatRoomMessage chat) {
+    if (!isGroup.value || !chat.isRedpacket || chat.oId.isEmpty) return;
+
+    final redpacket = chat.redpacket;
+    if (redpacket == null) return;
+
+    final config = autoGrabConfig.value;
+    if (!config.canGrabType(redpacket.type)) return;
+    if (redpacket.type == RedPacketType.RockPaperScissors &&
+        config.gesture == null) {
+      return;
+    }
+    if (_autoGrabScheduledIds.contains(chat.oId) ||
+        _autoGrabOpenedIds.contains(chat.oId)) {
+      return;
+    }
+
+    _autoGrabScheduledIds.add(chat.oId);
+    _autoGrabTimers[chat.oId] = Timer(
+      Duration(seconds: config.delaySeconds),
+      () {
+        _autoGrabTimers.remove(chat.oId);
+        _openRedPacketAutomatically(chat);
+      },
+    );
+  }
+
+  Future<void> _openRedPacketAutomatically(ChatRoomMessage chat) async {
+    if (isClose.value ||
+        !isGroup.value ||
+        chat.oId.isEmpty ||
+        _autoGrabOpenedIds.contains(chat.oId)) {
+      return;
+    }
+
+    _autoGrabOpenedIds.add(chat.oId);
+    try {
+      final redpacket = chat.redpacket;
+      final gesture = redpacket?.type == RedPacketType.RockPaperScissors
+          ? autoGrabConfig.value.gesture
+          : null;
+      final info = await imController.fishpi.chatroom.redpacket.open(
+        chat.oId,
+        gesture: gesture,
+      );
+      final point = await _currentUserGotPoint(info);
+      if (point > 0) {
+        await ChatRoomAutoGrabSettings.recordSuccess(point);
+      }
+    } catch (_) {
+      // 自动抢红包不打断聊天体验，失败时保持静默。
+    }
+  }
+
+  Future<int> _currentUserGotPoint(RedPacketInfo info) async {
+    var current = userInfo.value;
+    if (current.userName.isEmpty) {
+      current = imController.fishpi.user.current;
+    }
+    if (current.userName.isEmpty) {
+      try {
+        current = await imController.fishpi.user.info();
+        userInfo.value = current;
+      } catch (_) {
+        return 0;
+      }
+    }
+
+    final currentId = current.oId.trim();
+    final currentName = current.userName.trim();
+    for (final user in info.who) {
+      final gotId = user.userId.trim();
+      final gotName = user.userName.trim();
+      if ((currentId.isNotEmpty && gotId == currentId) ||
+          (currentName.isNotEmpty && gotName == currentName)) {
+        return user.money;
+      }
+    }
+    return 0;
   }
 
   Future<bool> setTopic(String topic) async {
@@ -787,6 +887,27 @@ class ChatLogic extends GetxController {
     messageList.refresh();
   }
 
+  Future<void> _loadAutoGrabConfig() async {
+    try {
+      await ChatRoomAutoGrabSettings.init();
+      autoGrabConfig.value = await ChatRoomAutoGrabSettings.getConfig();
+      if (!autoGrabConfig.value.enabled) {
+        _cancelAutoGrabTimers();
+      }
+    } catch (_) {
+      autoGrabConfig.value = ChatRoomAutoGrabConfig.defaults();
+      _cancelAutoGrabTimers();
+    }
+  }
+
+  void _cancelAutoGrabTimers() {
+    for (final timer in _autoGrabTimers.values) {
+      timer.cancel();
+    }
+    _autoGrabTimers.clear();
+    _autoGrabScheduledIds.clear();
+  }
+
   void _updateRedPacketStatus(RedPacketStatusMsg? status) {
     if (status == null || status.oId.isEmpty) return;
     messageList.assignAll(
@@ -804,7 +925,9 @@ class ChatLogic extends GetxController {
     _privateChatSubscription?.cancel();
     _blackListSubscription?.cancel();
     _chatRoomBlockListSubscription?.cancel();
+    _autoGrabSettingsSubscription?.cancel();
     _remarkSubscription?.cancel();
+    _cancelAutoGrabTimers();
     _stopVoiceTimer();
     _voiceRecorder.dispose();
     if (!isGroup.value) {

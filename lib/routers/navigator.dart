@@ -18,6 +18,9 @@ class AppNavigator {
     Get.offAllNamed(AppRoutes.home);
   }
 
+  /// 通知中心
+  static void toNotice() => Get.toNamed(AppRoutes.notice);
+
   static void toForumDetail({String? oId}) => Get.toNamed(
         AppRoutes.forumDetail,
         arguments: {

@@ -1,3 +1,4 @@
+import 'package:fishpi/types/redpacket.dart';
 import 'package:fishpi_app/core/sql/chat_room_block_list.dart';
 import 'package:fishpi_app/res/styles.dart';
 import 'package:fishpi_app/widgets/pi_avatar.dart';
@@ -15,7 +16,7 @@ class ChatRoomSettingsPage extends GetView<ChatRoomSettingsLogic> {
   Widget build(BuildContext context) {
     return Obx(
       () => Scaffold(
-        appBar: PiTitleBar.back(title: '聊天室屏蔽'),
+        appBar: PiTitleBar.back(title: '聊天室设置'),
         body: Container(
           width: 1.sw,
           constraints: BoxConstraints(minHeight: 1.sh),
@@ -24,10 +25,233 @@ class ChatRoomSettingsPage extends GetView<ChatRoomSettingsLogic> {
             padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 20.h),
             child: Column(
               children: [
+                _buildAutoGrabSection(),
+                14.verticalSpace,
                 _buildBlockedSection(),
                 14.verticalSpace,
                 _buildRecentSection(),
               ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAutoGrabSection() {
+    final config = controller.autoGrabConfig.value;
+    final hasRockPaperScissors =
+        config.enabledTypes.contains(RedPacketType.RockPaperScissors);
+    return Container(
+      key: const ValueKey('chat_room_auto_grab_section'),
+      width: 1.sw - 32.w,
+      padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 16.h),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: Styles.commonBorder,
+        borderRadius: BorderRadius.circular(16.r),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  '自动抢红包',
+                  style: TextStyle(
+                    color: Styles.primaryTextColor,
+                    fontSize: 18.sp,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              Switch(
+                key: const ValueKey('auto_grab_switch'),
+                value: config.enabled,
+                activeThumbColor: Styles.primaryColor,
+                activeTrackColor: Styles.primaryTextColor,
+                onChanged: controller.toggleAutoGrab,
+              ),
+            ],
+          ),
+          4.verticalSpace,
+          Text(
+            '新红包出现后按设置延迟自动领取，不弹出领取详情。',
+            style: TextStyle(
+              color: Styles.secondaryTextColor,
+              fontSize: 12.sp,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          14.verticalSpace,
+          _buildAutoGrabDelay(config.delaySeconds),
+          14.verticalSpace,
+          Text(
+            '红包类型',
+            style: TextStyle(
+              color: Styles.primaryTextColor,
+              fontSize: 15.sp,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          8.verticalSpace,
+          Wrap(
+            spacing: 8.w,
+            runSpacing: 8.h,
+            children: [
+              for (final type in controller.redPacketTypes)
+                _buildTypeChip(type: type),
+            ],
+          ),
+          if (hasRockPaperScissors) ...[
+            14.verticalSpace,
+            Text(
+              '猜拳手势',
+              style: TextStyle(
+                color: Styles.primaryTextColor,
+                fontSize: 15.sp,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            8.verticalSpace,
+            Row(
+              children: [
+                for (final gesture in GestureType.values) ...[
+                  _buildGestureChip(gesture),
+                  8.horizontalSpace,
+                ],
+              ],
+            ),
+          ],
+          14.verticalSpace,
+          Container(
+            key: const ValueKey('auto_grab_stats'),
+            padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
+            decoration: BoxDecoration(
+              color: Styles.titleBarColor,
+              border: Styles.commonBorder,
+              borderRadius: BorderRadius.circular(12.r),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    '已领 ${config.totalPoint} 积分 / ${config.successCount} 次',
+                    style: TextStyle(
+                      color: Styles.primaryTextColor,
+                      fontSize: 14.sp,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+                _buildOutlineButton(
+                  key: const ValueKey('auto_grab_reset_stats_button'),
+                  text: '重置',
+                  icon: Icons.refresh,
+                  onTap: controller.resetAutoGrabStats,
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAutoGrabDelay(int delaySeconds) {
+    return Row(
+      children: [
+        Expanded(
+          child: Text(
+            '延迟领取',
+            style: TextStyle(
+              color: Styles.primaryTextColor,
+              fontSize: 15.sp,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ),
+        _buildCounterButton(
+          key: const ValueKey('auto_grab_delay_decrease'),
+          icon: Icons.remove,
+          onTap: controller.decreaseDelay,
+        ),
+        Container(
+          key: const ValueKey('auto_grab_delay_value'),
+          width: 72.w,
+          height: 34.w,
+          alignment: Alignment.center,
+          margin: EdgeInsets.symmetric(horizontal: 8.w),
+          decoration: BoxDecoration(
+            color: Styles.titleBarColor,
+            border: Styles.commonBorder,
+            borderRadius: BorderRadius.circular(10.r),
+          ),
+          child: Text(
+            '$delaySeconds 秒',
+            style: TextStyle(
+              color: Styles.primaryTextColor,
+              fontSize: 15.sp,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ),
+        _buildCounterButton(
+          key: const ValueKey('auto_grab_delay_increase'),
+          icon: Icons.add,
+          onTap: controller.increaseDelay,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTypeChip({required String type}) {
+    final selected = controller.isAutoGrabTypeSelected(type);
+    return GestureDetector(
+      key: ValueKey('auto_grab_type_$type'),
+      onTap: () => controller.toggleAutoGrabType(type),
+      child: Container(
+        height: 34.w,
+        padding: EdgeInsets.symmetric(horizontal: 10.w),
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: selected ? Styles.primaryTextColor : Colors.white,
+          border: Styles.commonBorder,
+          borderRadius: BorderRadius.circular(10.r),
+        ),
+        child: Text(
+          controller.redPacketTypeName(type),
+          style: TextStyle(
+            color: selected ? Colors.white : Styles.primaryTextColor,
+            fontSize: 13.sp,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildGestureChip(GestureType gesture) {
+    final selected = controller.autoGrabConfig.value.gesture == gesture;
+    return Expanded(
+      child: GestureDetector(
+        key: ValueKey('auto_grab_gesture_${gesture.name}'),
+        onTap: () => controller.selectAutoGrabGesture(gesture),
+        child: Container(
+          height: 34.w,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: selected ? Styles.primaryTextColor : Colors.white,
+            border: Styles.commonBorder,
+            borderRadius: BorderRadius.circular(10.r),
+          ),
+          child: Text(
+            controller.gestureName(gesture),
+            style: TextStyle(
+              color: selected ? Colors.white : Styles.primaryTextColor,
+              fontSize: 14.sp,
+              fontWeight: FontWeight.bold,
             ),
           ),
         ),
@@ -282,6 +506,32 @@ class ChatRoomSettingsPage extends GetView<ChatRoomSettingsLogic> {
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCounterButton({
+    Key? key,
+    required IconData icon,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      key: key,
+      onTap: onTap,
+      child: Container(
+        width: 34.w,
+        height: 34.w,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          border: Styles.commonBorder,
+          borderRadius: BorderRadius.circular(10.r),
+        ),
+        child: Icon(
+          icon,
+          size: 18.w,
+          color: Styles.primaryTextColor,
         ),
       ),
     );
