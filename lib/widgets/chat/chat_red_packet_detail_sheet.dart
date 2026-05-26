@@ -17,6 +17,9 @@ class ChatRedPacketDetailSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final base = info.info;
+    const packetRed = Color(0xFFC83B28);
+    const packetDarkRed = Color(0xFFA92B22);
+    const packetGold = Color(0xFFFFD36A);
     return SafeArea(
       child: Container(
         width: 1.sw,
@@ -30,50 +33,75 @@ class ChatRedPacketDetailSheet extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Row(
-              children: [
-                Image.asset(
-                  'assets/images/redpack_icon.png',
-                  width: 42.w,
-                  height: 42.w,
+            Container(
+              padding: EdgeInsets.all(12.w),
+              decoration: BoxDecoration(
+                border: Styles.commonBorder,
+                borderRadius: BorderRadius.circular(12.r),
+                gradient: const LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [packetRed, packetDarkRed],
                 ),
-                10.horizontalSpace,
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        base.msg.trim().isEmpty
-                            ? ChatRedPacketUtils.defaultMessage
-                            : base.msg,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          color: Styles.primaryTextColor,
-                          fontSize: 19.sp,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      Text(
-                        '已领 ${base.got}/${base.count}',
-                        style: TextStyle(
-                          color: const Color(0xFF777777),
-                          fontSize: 13.sp,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    width: 42.w,
+                    height: 42.w,
+                    decoration: BoxDecoration(
+                      color: packetGold,
+                      borderRadius: BorderRadius.circular(12.r),
+                    ),
+                    child: Icon(
+                      Icons.card_giftcard,
+                      color: packetDarkRed,
+                      size: 25.w,
+                    ),
                   ),
-                ),
-                GestureDetector(
-                  onTap: () => Get.back(),
-                  child: Icon(
-                    Icons.close,
-                    size: 22.w,
-                    color: Styles.primaryTextColor,
+                  10.horizontalSpace,
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          base.msg.trim().isEmpty
+                              ? ChatRedPacketUtils.defaultMessage
+                              : base.msg,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 18.sp,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        Text(
+                          '已领 ${base.got}/${base.count}',
+                          style: TextStyle(
+                            color: packetGold,
+                            fontSize: 13.sp,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-              ],
+                  GestureDetector(
+                    onTap: () => Get.back(),
+                    child: Container(
+                      width: 32.w,
+                      height: 32.w,
+                      alignment: Alignment.center,
+                      child: Icon(
+                        Icons.close,
+                        size: 22.w,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
             14.verticalSpace,
             Flexible(

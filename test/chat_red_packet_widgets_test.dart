@@ -42,6 +42,10 @@ void main() {
     expect(find.text('平分红包'), findsOneWidget);
     expect(find.text('30'), findsOneWidget);
     expect(find.text('已领 1/3'), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('chat_red_packet_wechat_style')),
+      findsOneWidget,
+    );
 
     await tester.tap(find.byKey(const ValueKey('chat_red_packet_card')));
     await tester.pump();

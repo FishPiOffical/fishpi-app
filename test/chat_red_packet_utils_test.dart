@@ -139,6 +139,32 @@ void main() {
       expect(result.redpacket?.money, 30);
       expect(result.redpacket?.msg, '好运');
     });
+
+    test('红包领取详情缺少字段时不会解析崩溃', () {
+      final info = RedPacketInfo.from({
+        'code': 0,
+        'info': null,
+        'who': null,
+        'recivers': null,
+      });
+
+      expect(info.info.count, 0);
+      expect(info.who, isEmpty);
+      expect(info.recivers, isEmpty);
+    });
+
+    test('红包领取错误会转换成友好文案', () {
+      expect(
+        ChatRedPacketUtils.openErrorMessage(
+          "type 'Null' is not a subtype of type 'List<dynamic>'",
+        ),
+        '红包状态异常，请稍后重试',
+      );
+      expect(
+        ChatRedPacketUtils.openErrorMessage('红包已经被领完啦'),
+        '红包已经被抢完了',
+      );
+    });
   });
 
   group('聊天室话题工具', () {

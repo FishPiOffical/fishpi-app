@@ -28,6 +28,28 @@ class ChatRedPacketUtils {
     }
   }
 
+  static String openErrorMessage(Object error) {
+    final raw = error
+        .toString()
+        .replaceFirst('Exception:', '')
+        .replaceFirst('Invalid argument(s):', '')
+        .trim();
+    if (raw.isEmpty) return '领取红包失败，请稍后重试';
+
+    final lower = raw.toLowerCase();
+    if (lower.contains('null') ||
+        lower.contains('type') ||
+        lower.contains('rangeerror')) {
+      return '红包状态异常，请稍后重试';
+    }
+    if (raw.contains('已领') || raw.contains('领取过')) return '这个红包已经领取过了';
+    if (raw.contains('领完') || raw.contains('抢完') || raw.contains('空了')) {
+      return '红包已经被抢完了';
+    }
+    if (raw.contains('积分') || raw.contains('余额')) return raw;
+    return '领取红包失败：$raw';
+  }
+
   static String? validateForm({
     required String type,
     required String moneyText,

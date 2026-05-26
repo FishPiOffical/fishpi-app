@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 import 'package:fishpi/fishpi.dart';
+import 'package:fishpi_app/core/chat/chat_barrager_utils.dart';
 import 'package:fishpi_app/core/chat/chat_message_utils.dart';
 import 'package:fishpi_app/core/chat/chat_quote_utils.dart';
 import 'package:fishpi_app/core/chat/chat_red_packet_utils.dart';
@@ -11,6 +12,7 @@ import 'package:fishpi_app/core/manager/toast.dart';
 import 'package:fishpi_app/core/sql/black_list.dart';
 import 'package:fishpi_app/core/sql/chat_room_auto_grab_settings.dart';
 import 'package:fishpi_app/core/sql/chat_room_block_list.dart';
+import 'package:fishpi_app/core/sql/chat_emoji_cache.dart';
 import 'package:fishpi_app/core/sql/user_remark.dart';
 import 'package:fishpi_app/pages/conversation/conversation_logic.dart';
 import 'package:fishpi_app/routers/navigator.dart';
@@ -46,8 +48,11 @@ class ChatLogic extends GetxController {
   final isSettingTopic = false.obs;
   final isSendingRedPacket = false.obs;
   final isOpeningRedPacket = false.obs;
+  final isSendingBarrager = false.obs;
   final quoteDraft = Rxn<ChatQuoteDraft>();
   final autoGrabConfig = ChatRoomAutoGrabConfig.defaults().obs;
+  final barrageCost = Rxn<BarrageCost>();
+  final barragers = <ChatBarragerItem>[].obs;
   final int historyPageSize = 20;
 
   ScrollController chatRoomController = ScrollController();
@@ -73,9 +78,12 @@ class ChatLogic extends GetxController {
   final Map<String, Timer> _autoGrabTimers = {};
   final Set<String> _autoGrabScheduledIds = {};
   final Set<String> _autoGrabOpenedIds = {};
+  final Set<String> _openingRedPacketIds = {};
   DateTime? _voiceStartedAt;
   String? _voiceRecordPath;
   bool _isStoppingVoice = false;
+  int _barragerSequence = 0;
+  int _barragerTrack = 0;
 
   ConversationLogic? get _conversationController =>
       Get.isRegistered<ConversationLogic>()
@@ -166,6 +174,10 @@ class ChatLogic extends GetxController {
     }
     if (data.type == ChatRoomMessageType.redPacketStatus) {
       _updateRedPacketStatus(data.status);
+      return;
+    }
+    if (data.type == ChatRoomMessageType.barrager) {
+      _appendBarrager(data.barrager);
       return;
     }
     final message = data.msg;
@@ -523,12 +535,16 @@ class ChatLogic extends GetxController {
     ChatRoomMessage chat, {
     GestureType? gesture,
   }) async {
-    if (!isGroup.value || chat.oId.isEmpty || isOpeningRedPacket.value) {
+    if (!isGroup.value || chat.oId.isEmpty) {
+      return null;
+    }
+    if (_openingRedPacketIds.contains(chat.oId)) {
       return null;
     }
 
     _cancelScheduledAutoGrab(chat.oId);
     _autoGrabOpenedIds.add(chat.oId);
+    _openingRedPacketIds.add(chat.oId);
     isOpeningRedPacket.value = true;
     try {
       return await imController.fishpi.chatroom.redpacket.open(
@@ -536,10 +552,12 @@ class ChatLogic extends GetxController {
         gesture: gesture,
       );
     } catch (e) {
-      ToastManager.showToast('领取红包失败：$e');
+      _autoGrabOpenedIds.remove(chat.oId);
+      ToastManager.showToast(ChatRedPacketUtils.openErrorMessage(e));
       return null;
     } finally {
-      isOpeningRedPacket.value = false;
+      _openingRedPacketIds.remove(chat.oId);
+      isOpeningRedPacket.value = _openingRedPacketIds.isNotEmpty;
     }
   }
 
@@ -656,6 +674,48 @@ class ChatLogic extends GetxController {
     } finally {
       isSettingTopic.value = false;
     }
+  }
+
+  Future<void> loadBarrageCost() async {
+    if (!isGroup.value || barrageCost.value != null) return;
+    try {
+      barrageCost.value = await imController.fishpi.chatroom.barragePay();
+    } catch (_) {
+      barrageCost.value = BarrageCost();
+    }
+  }
+
+  Future<bool> sendBarrager(String content, String color) async {
+    if (!isGroup.value || isSendingBarrager.value) return false;
+
+    final normalizedContent = ChatBarragerUtils.normalizeContent(content);
+    final error = ChatBarragerUtils.validateContent(normalizedContent);
+    if (error != null) {
+      ToastManager.showToast(error);
+      return false;
+    }
+
+    isSendingBarrager.value = true;
+    try {
+      final result = await imController.fishpi.chatroom.barrage(
+        normalizedContent,
+        color: ChatBarragerUtils.normalizeColor(color),
+      );
+      if (!result.success) {
+        throw result.msg.isEmpty ? '发送弹幕失败' : result.msg;
+      }
+      ToastManager.showToast('弹幕已发送');
+      return true;
+    } catch (e) {
+      ToastManager.showToast('发送弹幕失败：$e');
+      return false;
+    } finally {
+      isSendingBarrager.value = false;
+    }
+  }
+
+  void dismissBarrager(String id) {
+    barragers.removeWhere((item) => item.id == id);
   }
 
   Future<void> startVoiceRecord() async {
@@ -820,8 +880,15 @@ class ChatLogic extends GetxController {
 
   void loadEmojis() async {
     try {
-      diyEmojiList.value = await imController.fishpi.emoji.get();
-      diyEmojiList.refresh();
+      await ChatEmojiCache.init();
+      final cached = await ChatEmojiCache.getDiyEmojis();
+      if (cached.isNotEmpty) {
+        diyEmojiList.assignAll(cached);
+      }
+
+      final remote = await imController.fishpi.emoji.get();
+      await ChatEmojiCache.saveDiyEmojis(remote);
+      diyEmojiList.assignAll(remote);
     } catch (_) {}
   }
 
@@ -859,6 +926,14 @@ class ChatLogic extends GetxController {
 
   bool _isMessageBlocked(ChatRoomMessage message) {
     return ChatMessageUtils.isBlockedMessage(
+      message,
+      _blackUsers,
+      chatRoomBlockedUsers: _activeChatRoomBlockedUsers,
+    );
+  }
+
+  bool _isBarragerBlocked(BarragerMsg message) {
+    return ChatBarragerUtils.isBlockedBarrager(
       message,
       _blackUsers,
       chatRoomBlockedUsers: _activeChatRoomBlockedUsers,
@@ -918,6 +993,30 @@ class ChatLogic extends GetxController {
     messageList.refresh();
   }
 
+  void _appendBarrager(BarragerMsg? message) {
+    if (!isGroup.value || message == null) return;
+    if (ChatBarragerUtils.normalizeContent(message.barragerContent).isEmpty) {
+      return;
+    }
+    if (_isBarragerBlocked(message)) return;
+
+    final track = _barragerTrack % 4;
+    _barragerTrack++;
+    _barragerSequence++;
+    barragers.add(
+      ChatBarragerItem(
+        id: '${DateTime.now().microsecondsSinceEpoch}_$_barragerSequence',
+        message: message,
+        track: track,
+      ),
+    );
+
+    // 弹幕是短生命周期 UI，保留最近几条即可，避免极端刷屏时堆积动画对象。
+    if (barragers.length > 12) {
+      barragers.removeRange(0, barragers.length - 12);
+    }
+  }
+
   @override
   void onClose() {
     isClose.value = true;
@@ -928,6 +1027,7 @@ class ChatLogic extends GetxController {
     _autoGrabSettingsSubscription?.cancel();
     _remarkSubscription?.cancel();
     _cancelAutoGrabTimers();
+    barragers.clear();
     _stopVoiceTimer();
     _voiceRecorder.dispose();
     if (!isGroup.value) {

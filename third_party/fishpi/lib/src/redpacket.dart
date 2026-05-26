@@ -24,7 +24,9 @@ class Redpacket {
         },
       );
 
-      if (rsp['code'] != 0) return Future.error(rsp['msg']);
+      if (rsp['code'] != 0) {
+        return Future.error(rsp['msg'] ?? '领取红包失败');
+      }
 
       return RedPacketInfo.from(rsp);
     } catch (e) {

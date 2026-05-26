@@ -74,12 +74,12 @@ class RedPacketGot {
     this.time = '',
   });
 
-  RedPacketGot.from(Map data)
-      : userId = data['userId'] ?? '',
-        userName = data['userName'] ?? '',
-        avatar = data['avatar'] ?? '',
-        money = data['userMoney'] ?? 0,
-        time = data['time'] ?? '';
+  RedPacketGot.from(Map? data)
+      : userId = _readString(data, 'userId'),
+        userName = _readString(data, 'userName'),
+        avatar = _readString(data, 'avatar'),
+        money = _readInt(data, 'userMoney'),
+        time = _readString(data, 'time');
 
   toJson() => {
         'userId': userId,
@@ -136,21 +136,17 @@ class RedPacketMessage {
   });
 
   RedPacketMessage.from(Map data)
-      : type = data['type'] ?? data['interface'] ?? '',
-        count = data['count'] ?? 0,
-        got = data['got'] ?? 0,
-        money = data['money'] ?? 0,
-        msg = data['msg'] ?? '',
-        senderId = data['senderId'] ?? '',
-        recivers = List.from(data['recivers'] is String
-            ? json.decode(data['recivers'])
-            : data['recivers']),
-        who = List.from(data['who'] ?? [])
-            .map((e) => RedPacketGot.from(e))
-            .toList(),
-        gesture = data['gesture'] != null
-            ? GestureType.values[data['gesture']]
-            : null;
+      : type = _readString(data, 'type').isEmpty
+            ? _readString(data, 'interface')
+            : _readString(data, 'type'),
+        count = _readInt(data, 'count'),
+        got = _readInt(data, 'got'),
+        money = _readInt(data, 'money'),
+        msg = _readString(data, 'msg'),
+        senderId = _readString(data, 'senderId'),
+        recivers = _stringList(data['recivers']),
+        who = _mapList(data['who']).map((e) => RedPacketGot.from(e)).toList(),
+        gesture = _gestureFrom(data['gesture']);
 
   toJson() => {
         'type': type,
@@ -198,15 +194,13 @@ class RedPacketBase {
     this.avatarURL = '',
   });
 
-  RedPacketBase.from(Map data)
-      : count = data['count'] ?? 0,
-        gesture = data['gesture'] == null
-            ? null
-            : GestureType.values[data['gesture']],
-        got = data['got'] ?? 0,
-        msg = data['msg'] ?? '',
-        userName = data['userName'] ?? '',
-        avatarURL = data['userAvatarURL'] ?? '';
+  RedPacketBase.from(Map? data)
+      : count = _readInt(data, 'count'),
+        gesture = _gestureFrom(data?['gesture']),
+        got = _readInt(data, 'got'),
+        msg = _readString(data, 'msg'),
+        userName = _readString(data, 'userName'),
+        avatarURL = _readString(data, 'userAvatarURL');
 
   toJson() => {
         'count': count,
@@ -243,11 +237,9 @@ class RedPacketInfo {
   }
 
   RedPacketInfo.from(Map data)
-      : info = RedPacketBase.from(data['info']),
-        recivers = List.from(data['recivers'] is String
-            ? json.decode(data['recivers'])
-            : data['recivers'] ?? []),
-        who = List.from(data['who']).map((e) => RedPacketGot.from(e)).toList();
+      : info = RedPacketBase.from(data['info'] is Map ? data['info'] : null),
+        recivers = _stringList(data['recivers']),
+        who = _mapList(data['who']).map((e) => RedPacketGot.from(e)).toList();
 
   toJson() => {
         'info': info.toJson(),
@@ -259,6 +251,58 @@ class RedPacketInfo {
   String toString() {
     return "RedPacketInfo{ info=$info, recivers=$recivers, who=$who }";
   }
+}
+
+int _readInt(Map? data, String key) {
+  final value = data?[key];
+  if (value is int) return value;
+  if (value is num) return value.toInt();
+  return int.tryParse(value?.toString() ?? '') ?? 0;
+}
+
+String _readString(Map? data, String key) {
+  return data?[key]?.toString() ?? '';
+}
+
+List _decodeList(dynamic value) {
+  if (value == null) return [];
+  if (value is List) return value;
+  if (value is String) {
+    try {
+      final decoded = json.decode(value);
+      return decoded is List ? decoded : [];
+    } catch (_) {
+      return [];
+    }
+  }
+  return [];
+}
+
+List<String> _stringList(dynamic value) {
+  return _decodeList(value)
+      .map((item) => item?.toString() ?? '')
+      .where((item) => item.trim().isNotEmpty)
+      .toList();
+}
+
+List<Map> _mapList(dynamic value) {
+  return _decodeList(value).whereType<Map>().toList();
+}
+
+GestureType? _gestureFrom(dynamic value) {
+  if (value == null) return null;
+  if (value is GestureType) return value;
+
+  final index = value is int ? value : int.tryParse(value.toString());
+  if (index != null && index >= 0 && index < GestureType.values.length) {
+    return GestureType.values[index];
+  }
+
+  final name = value.toString().split('.').last;
+  for (final gesture in GestureType.values) {
+    if (gesture.name == name) return gesture;
+  }
+  return null;
 }
 
 /// 红包状态信息

@@ -3,6 +3,8 @@ import 'package:fishpi/types/redpacket.dart';
 import 'package:fishpi_app/core/chat/chat_message_utils.dart';
 import 'package:fishpi_app/res/styles.dart';
 import 'package:fishpi_app/utils/pi_utils.dart';
+import 'package:fishpi_app/widgets/chat/chat_barrager_overlay.dart';
+import 'package:fishpi_app/widgets/chat/chat_barrager_sheet.dart';
 import 'package:fishpi_app/widgets/chat/chat_message_action_sheet.dart';
 import 'package:fishpi_app/widgets/chat/chat_red_packet_card.dart';
 import 'package:fishpi_app/widgets/chat/chat_red_packet_detail_sheet.dart';
@@ -54,9 +56,10 @@ class ChatPage extends StatelessWidget {
           body: Column(
             children: [
               Expanded(
-                child: messageGroups.isEmpty
-                    ? Container()
-                    : GestureDetector(
+                child: Stack(
+                  children: [
+                    if (messageGroups.isNotEmpty)
+                      GestureDetector(
                         onTap: () {
                           FocusScope.of(Get.context!).requestFocus(FocusNode());
                         },
@@ -75,6 +78,15 @@ class ChatPage extends StatelessWidget {
                           ),
                         ),
                       ),
+                    if (logic.isGroup.value)
+                      Positioned.fill(
+                        child: ChatBarragerOverlay(
+                          barragers: logic.barragers.toList(),
+                          onFinished: logic.dismissBarrager,
+                        ),
+                      ),
+                  ],
+                ),
               ),
               ChatInputBox(
                 emojiList: logic.emojiList,
@@ -93,6 +105,7 @@ class ChatPage extends StatelessWidget {
                 onVoiceRecordCancel: logic.cancelVoiceRecord,
                 onRedPacketTap:
                     logic.isGroup.value ? _showRedPacketSheet : null,
+                onBarragerTap: logic.isGroup.value ? _showBarragerSheet : null,
                 topic: logic.isGroup.value ? logic.currentTopic.value : null,
                 onTopicTap: logic.isGroup.value ? _showTopicSheet : null,
                 onTopicQuoteTap: logic.isGroup.value &&
@@ -417,6 +430,18 @@ class ChatPage extends StatelessWidget {
       ChatTopicSheet(
         initialTopic: logic.currentTopic.value,
         onSubmit: logic.setTopic,
+      ),
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+    );
+  }
+
+  Future<void> _showBarragerSheet() async {
+    await logic.loadBarrageCost();
+    Get.bottomSheet(
+      ChatBarragerSheet(
+        cost: logic.barrageCost.value,
+        onSubmit: logic.sendBarrager,
       ),
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
