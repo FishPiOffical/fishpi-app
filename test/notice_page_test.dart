@@ -48,6 +48,32 @@ void main() {
     expect(find.byKey(const ValueKey('notice_mark_all_read_button')),
         findsOneWidget);
   });
+
+  test('回复通知和未知通知可以转为展示项', () {
+    final reply = NoticeDisplayItem.from(
+      NoticeType.reply,
+      NoticeComment.from({
+        'oId': 'reply-1',
+        'replyArticleTitle': '帖子标题',
+        'replyAuthorName': 'someone',
+        'replyContent': '<p>收到</p>',
+        'commentArticleType': 99,
+      }),
+    );
+    final unknown = NoticeDisplayItem.from(
+      NoticeType.system,
+      NoticeUnknown.from({
+        'oId': 'unknown-1',
+        'title': '新通知',
+        'content': '<p>未知内容</p>',
+      }),
+    );
+
+    expect(reply.title, 'someone 回复了你');
+    expect(reply.content, '帖子标题：收到');
+    expect(unknown.title, '新通知');
+    expect(unknown.content, '未知内容');
+  });
 }
 
 Widget _wrap(Widget child) {

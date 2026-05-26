@@ -1,3 +1,4 @@
+import 'package:fishpi_app/core/controller/chat_music_player.dart';
 import 'package:fishpi_app/core/controller/im.dart';
 import 'package:fishpi_app/core/sql/user_remark.dart';
 import 'package:fishpi_app/routers/pages.dart';
@@ -57,5 +58,9 @@ class InitBinding extends Bindings {
   @override
   void dependencies() {
     Get.put<IMController>(IMController());
+    Get.put<ChatMusicPlayerController>(
+      ChatMusicPlayerController(),
+      permanent: true,
+    );
   }
 }

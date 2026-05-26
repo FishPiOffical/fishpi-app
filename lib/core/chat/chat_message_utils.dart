@@ -5,7 +5,8 @@ import 'package:fishpi/types/chatroom.dart';
 import 'package:html/dom.dart' as dom;
 import 'package:html/parser.dart';
 
-import 'chat_voice_message_utils.dart';
+import 'chat_music_utils.dart';
+import 'chat_weather_utils.dart';
 import '../sql/black_list.dart';
 import '../sql/chat_room_block_list.dart';
 
@@ -179,7 +180,9 @@ class ChatMessageUtils {
     return message.type == ChatRoomMessageType.msg &&
         !message.isRedpacket &&
         !message.isWeather &&
-        !message.isMusic;
+        !message.isMusic &&
+        ChatWeatherUtils.weatherFromContent(message.content) == null &&
+        ChatMusicUtils.trackFromContent(message.content) == null;
   }
 
   static String _senderKey(ChatRoomMessage message) {
@@ -271,9 +274,14 @@ class ChatMessageUtils {
 
   static String _buildPreview(dom.Element? body) {
     if (body == null) return '';
-    final music = ChatVoiceMessageUtils.parseMusicMessage(body.text.trim());
+    final plain = body.text.trim();
+    final weather = ChatWeatherUtils.weatherFromContent(plain);
+    if (weather != null) {
+      return ChatWeatherUtils.previewFor(weather);
+    }
+    final music = ChatMusicUtils.trackFromContent(plain);
     if (music != null) {
-      return ChatVoiceMessageUtils.previewFor(music);
+      return ChatMusicUtils.previewForTrack(music);
     }
 
     final parts = <String>[];
@@ -294,14 +302,13 @@ class ChatMessageUtils {
           parts.add('[视频]');
           return;
         case 'music':
-          final music = MusicMsg(
-            type: node.attributes['type'] ?? 'voice',
-            source: node.attributes['source'] ?? node.attributes['src'] ?? '',
-            coverURL: node.attributes['coverURL'] ?? '',
-            title: node.attributes['title'] ?? '',
-            from: node.attributes['from'] ?? '',
-          );
-          parts.add(ChatVoiceMessageUtils.previewFor(music));
+          final music = ChatMusicUtils.trackFromElement(node);
+          if (music != null) parts.add(ChatMusicUtils.previewForTrack(music));
+          return;
+        case 'weather':
+          final weather = ChatWeatherUtils.weatherFromContent(node.text);
+          parts.add(
+              weather == null ? '[天气]' : ChatWeatherUtils.previewFor(weather));
           return;
         case 'iframe':
           parts.add(_iframePreview(node.attributes['src'] ?? ''));

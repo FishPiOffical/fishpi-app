@@ -165,6 +165,12 @@ void main() {
         '红包已经被抢完了',
       );
     });
+
+    test('已领取错误会被识别为中性状态', () {
+      expect(ChatRedPacketUtils.isAlreadyOpenedError('你已经领取过该红包'), isTrue);
+      expect(ChatRedPacketUtils.isAlreadyOpenedError('红包已经抢过啦'), isTrue);
+      expect(ChatRedPacketUtils.isAlreadyOpenedError('网络错误'), isFalse);
+    });
   });
 
   group('聊天室话题工具', () {

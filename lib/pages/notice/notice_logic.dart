@@ -90,12 +90,26 @@ class NoticeLogic extends GetxController {
             .toList(),
       );
     } catch (e) {
-      notices.clear();
-      errorText.value = e.toString();
+      // 切分类或刷新失败时保留已有通知，避免短暂解析/网络异常把页面打空。
+      // 首次加载失败仍显示空态，已有内容时只在刷新状态里记录错误。
+      errorText.value = _friendlyError(e);
     } finally {
       notices.refresh();
       isLoading.value = false;
     }
+  }
+
+  String _friendlyError(Object error) {
+    final raw = error
+        .toString()
+        .replaceFirst('Exception:', '')
+        .replaceFirst('Invalid argument(s):', '')
+        .trim();
+    if (raw.isEmpty) return '通知加载失败';
+    if (raw.contains('type') || raw.contains('List') || raw.contains('Map')) {
+      return '通知数据解析失败，请下拉重试';
+    }
+    return raw;
   }
 
   @override
@@ -189,9 +203,10 @@ class NoticeDisplayItem {
       );
     }
     if (item is NoticeComment) {
+      final action = type == NoticeType.reply ? '回复了你' : '评论了你';
       return NoticeDisplayItem(
         oId: item.oId,
-        title: item.author.isEmpty ? item.title : '${item.author} 评论了你',
+        title: item.author.isEmpty ? item.title : '${item.author} $action',
         content: _composeContent(item.title, item.content),
         time: item.createTime,
         avatarURL: item.thumbnailURL,
@@ -209,9 +224,10 @@ class NoticeDisplayItem {
       );
     }
     if (item is NoticeFollow) {
+      final defaultTitle = type == NoticeType.broadcast ? '同城通知' : '关注通知';
       return NoticeDisplayItem(
         oId: item.oId,
-        title: item.author.isEmpty ? '关注通知' : item.author,
+        title: item.author.isEmpty ? defaultTitle : item.author,
         content: _composeContent(item.title, item.content),
         time: item.createTime,
         avatarURL: item.thumbnailURL,
@@ -224,6 +240,16 @@ class NoticeDisplayItem {
         title: '系统通知',
         content: item.description,
         time: item.createTime,
+        hasRead: item.hasRead,
+      );
+    }
+    if (item is NoticeUnknown) {
+      return NoticeDisplayItem(
+        oId: item.oId,
+        title: PiUtils.getConversationPreview(item.title),
+        content: PiUtils.getConversationPreview(item.content),
+        time: item.createTime,
+        avatarURL: item.avatarURL,
         hasRead: item.hasRead,
       );
     }

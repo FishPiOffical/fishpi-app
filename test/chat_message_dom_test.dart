@@ -1,12 +1,19 @@
 import 'package:fishpi_app/widgets/pi_msg_dom.dart';
 import 'package:fishpi_app/widgets/pi_image.dart';
+import 'package:fishpi_app/widgets/chat/chat_music_card.dart';
+import 'package:fishpi_app/widgets/chat/chat_weather_card.dart';
 import 'package:fishpi_app/widgets/chat/chat_voice_message.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:get/get.dart';
 import 'package:html/parser.dart' as html_parser;
 
 void main() {
+  tearDown(() {
+    Get.reset();
+  });
+
   group('聊天 HTML 渲染', () {
     testWidgets('嵌套 blockquote 不重复渲染后代文本', (tester) async {
       await tester
@@ -110,6 +117,33 @@ void main() {
 
       expect(find.byType(ChatVoiceMessage), findsOneWidget);
       expect(find.text('语音消息 3s'), findsOneWidget);
+    });
+
+    testWidgets('BBCode music 文本渲染为音乐卡片', (tester) async {
+      await tester.pumpWidget(
+        _wrap(
+          _message(
+            '<p>[music]{"source":"https://example.com/song.mp3","title":"歌名"}[/music]</p>',
+          ),
+        ),
+      );
+
+      expect(find.byType(ChatMusicCard), findsOneWidget);
+      expect(find.text('歌名'), findsOneWidget);
+    });
+
+    testWidgets('BBCode weather 文本渲染为天气卡片', (tester) async {
+      await tester.pumpWidget(
+        _wrap(
+          _message(
+            '<p>[weather]{"city":"杭州","description":"晴","data":[{"date":"今天","code":"sunny","min":10,"max":20}]}[/weather]</p>',
+          ),
+        ),
+      );
+
+      expect(find.byType(ChatWeatherCard), findsOneWidget);
+      expect(find.text('杭州'), findsOneWidget);
+      expect(find.text('晴'), findsOneWidget);
     });
   });
 }

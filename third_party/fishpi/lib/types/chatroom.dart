@@ -179,23 +179,25 @@ class ChatRoomMessage {
     avatarURL = data['userAvatarURL'] ?? '';
     sysMetal = toMetal(data['sysMetal']);
     via = ChatSource.from(data['client']);
-    content = data['content'];
+    content = data['content'] ?? '';
     md = data['md'] ?? data['content'] ?? '';
     try {
       dynamic contentData = json.decode(data['content'] ?? 'null');
-      type = contentData["msgType"];
-      if (type == ChatRoomMessageType.redPacket) {
-        redpacket = RedPacketMessage.from(contentData);
-      } else if (type == ChatRoomMessageType.weather) {
-        weather = WeatherMsg.from(contentData);
-      } else if (type == ChatRoomMessageType.music) {
-        music = MusicMsg.from(contentData);
-      } else {
-        unknown = contentData;
+      if (contentData is Map) {
+        type = contentData["msgType"] ?? type;
+        if (type == ChatRoomMessageType.redPacket) {
+          redpacket = RedPacketMessage.from(contentData);
+        } else if (type == ChatRoomMessageType.weather) {
+          weather = WeatherMsg.from(contentData);
+        } else if (type == ChatRoomMessageType.music) {
+          music = MusicMsg.from(contentData);
+        } else {
+          unknown = contentData;
+        }
       }
       // ignore: empty_catches
     } catch (e) {}
-    time = data['time'];
+    time = data['time'] ?? '';
   }
 
   toJson() => {
@@ -209,7 +211,11 @@ class ChatRoomMessage {
         'content': content,
         'time': time,
         'redpacket': redpacket?.toJson(),
+        'weather': weather?.toJson(),
+        'music': music?.toJson(),
         'isRedpacket': isRedpacket,
+        'isWeather': isWeather,
+        'isMusic': isMusic,
         'via': via.toJson(),
       };
 
@@ -336,7 +342,8 @@ class BarragerMsg {
   /// 用户昵称
   String userNickname;
 
-  String get allName => userNickname.isEmpty ? userName : '$userNickname($userName)';
+  String get allName =>
+      userNickname.isEmpty ? userName : '$userNickname($userName)';
 
   /// 弹幕内容
   String barragerContent;
@@ -515,12 +522,23 @@ class WeatherMsgData {
     this.max = 0,
   });
 
+  WeatherMsgData.from(Map data)
+      : date = (data['date'] ?? '').toString(),
+        code = (data['code'] ?? data['weatherCode'] ?? '').toString(),
+        min = _toDouble(data['min']),
+        max = _toDouble(data['max']);
+
   toJson() => {
         'date': date,
         'code': code,
         'min': min,
         'max': max,
       };
+
+  static double _toDouble(dynamic value) {
+    if (value is num) return value.toDouble();
+    return double.tryParse(value?.toString() ?? '') ?? 0;
+  }
 
   @override
   String toString() {
@@ -540,25 +558,47 @@ class WeatherMsg {
   });
 
   WeatherMsg.from(Map data)
-      : city = data['t'] ?? '',
-        description = data['st'] ?? '',
+      : city = (data['t'] ?? data['city'] ?? '').toString(),
+        description = (data['st'] ?? data['description'] ?? '').toString(),
         data = WeatherMsg.getData(data);
 
   static List<WeatherMsgData> getData(Map data) {
+    if (data['data'] is List) {
+      return List.from(data['data'])
+          .whereType<Map>()
+          .map((item) => WeatherMsgData.from(item))
+          .toList();
+    }
+
     List<WeatherMsgData> dataList = [];
-    List<String> dates = data["date"].split(",");
-    List<String> codes = data["weatherCode"].split(",");
-    List<String> maxs = data["max"].split(",");
-    List<String> mins = data["min"].split(",");
-    for (int i = 0; i < dates.length; i++) {
+    List<String> dates = _splitField(data["date"]);
+    List<String> codes = _splitField(data["weatherCode"]);
+    List<String> maxs = _splitField(data["max"]);
+    List<String> mins = _splitField(data["min"]);
+    final length = [dates.length, codes.length, maxs.length, mins.length]
+        .where((item) => item > 0)
+        .fold<int>(
+            0,
+            (prev, item) => prev == 0
+                ? item
+                : prev < item
+                    ? prev
+                    : item);
+    for (int i = 0; i < length; i++) {
       dataList.add(WeatherMsgData(
-        date: dates[i],
-        code: codes[i],
-        max: double.parse(maxs[i]),
-        min: double.parse(mins[i]),
+        date: i < dates.length ? dates[i] : '',
+        code: i < codes.length ? codes[i] : '',
+        max: i < maxs.length ? WeatherMsgData._toDouble(maxs[i]) : 0,
+        min: i < mins.length ? WeatherMsgData._toDouble(mins[i]) : 0,
       ));
     }
     return dataList;
+  }
+
+  static List<String> _splitField(dynamic value) {
+    final text = value?.toString() ?? '';
+    if (text.trim().isEmpty) return [];
+    return text.split(',').map((item) => item.trim()).toList();
   }
 
   toJson() => {
@@ -639,8 +679,11 @@ class ChatRoomNodeInfo {
       : recommend = ChatRoomNode.from({
           'node': data['data'],
           'name': data['msg'],
-          'online':
-              List.from(data['avaliable']).firstWhere((element) => element['name'] == data['msg'])?['online'] ?? 0,
+          'online': List.from(data['avaliable']).firstWhere(
+                  (element) => element['name'] == data['msg'])?['online'] ??
+              0,
         }),
-        avaliable = List.from(data['avaliable']).map((element) => ChatRoomNode.from(element)).toList();
+        avaliable = List.from(data['avaliable'])
+            .map((element) => ChatRoomNode.from(element))
+            .toList();
 }

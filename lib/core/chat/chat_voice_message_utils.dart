@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:fishpi/types/chatroom.dart';
+import 'package:fishpi_app/core/chat/chat_music_utils.dart';
 
 class ChatVoiceMessageUtils {
   static const int maxRecordSeconds = 60;
@@ -23,24 +24,15 @@ class ChatVoiceMessageUtils {
   }
 
   static MusicMsg? parseMusicMessage(String content) {
-    try {
-      final data = jsonDecode(content);
-      if (data is! Map) return null;
-      if (data['msgType'] != ChatRoomMessageType.music) return null;
-      return MusicMsg.from(data);
-    } catch (_) {
-      return null;
-    }
+    return ChatMusicUtils.parseMusicMessage(content);
   }
 
   static bool isVoiceMusic(MusicMsg music) {
-    return music.type == 'voice' || music.title.startsWith('语音消息');
+    return ChatMusicUtils.isVoiceMusic(music);
   }
 
   static String previewFor(MusicMsg music) {
-    if (isVoiceMusic(music)) return '[语音]';
-    final title = music.title.trim();
-    return title.isEmpty ? '[音乐]' : '[音乐] $title';
+    return ChatMusicUtils.previewFor(music);
   }
 
   static String formatDuration(int seconds) {

@@ -42,12 +42,24 @@ class ChatRedPacketUtils {
         lower.contains('rangeerror')) {
       return '红包状态异常，请稍后重试';
     }
-    if (raw.contains('已领') || raw.contains('领取过')) return '这个红包已经领取过了';
+    if (isAlreadyOpenedError(error)) return '这个红包已经领取过了';
     if (raw.contains('领完') || raw.contains('抢完') || raw.contains('空了')) {
       return '红包已经被抢完了';
     }
     if (raw.contains('积分') || raw.contains('余额')) return raw;
     return '领取红包失败：$raw';
+  }
+
+  static bool isAlreadyOpenedError(Object error) {
+    final raw = error
+        .toString()
+        .replaceFirst('Exception:', '')
+        .replaceFirst('Invalid argument(s):', '')
+        .trim();
+    return raw.contains('已领') ||
+        raw.contains('领取过') ||
+        raw.contains('抢过') ||
+        raw.contains('已经打开');
   }
 
   static String? validateForm({

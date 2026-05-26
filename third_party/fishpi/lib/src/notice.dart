@@ -43,18 +43,29 @@ class Notice {
 
       if (rsp['code'] != 0) return Future.error(rsp['msg']);
 
-      return List.from(rsp).map((e) {
+      // api/getNotifications 返回的是 {code,msg,data}，列表在 data 中。
+      // 旧实现直接 List.from(rsp) 会把 Map 当列表解析，导致通知页加载失败。
+      final items = rsp['data'] is List ? List.from(rsp['data']) : [];
+
+      return items.map((e) {
+        if (e is! Map<String, dynamic>) {
+          return NoticeUnknown.from({'content': e.toString()});
+        }
         switch (type) {
           case NoticeType.point:
             return NoticePoint.from(e);
           case NoticeType.commented:
+          case NoticeType.reply:
             return NoticeComment.from(e);
           case NoticeType.at:
             return NoticeAt.from(e);
           case NoticeType.following:
+          case NoticeType.broadcast:
             return NoticeFollow.from(e);
           case NoticeType.system:
             return NoticeSystem.from(e);
+          default:
+            return NoticeUnknown.from(e);
         }
       }).toList();
     } catch (e) {

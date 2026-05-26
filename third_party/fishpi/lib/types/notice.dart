@@ -307,15 +307,42 @@ class NoticeComment {
 
   NoticeComment.from(Map<String, dynamic> data)
       : oId = data['oId'] ?? '',
-        title = data['commentArticleTitle'] ?? '',
-        author = data['commentAuthorName'] ?? '',
-        thumbnailURL = data['commentAuthorThumbnailURL'] ?? '',
-        type = ArticleType.values[data['commentArticleType'] ?? 0],
+        title = (data['commentArticleTitle'] ??
+                data['replyArticleTitle'] ??
+                data['articleTitle'] ??
+                data['title'] ??
+                '')
+            .toString(),
+        author = (data['commentAuthorName'] ??
+                data['replyAuthorName'] ??
+                data['userName'] ??
+                data['authorName'] ??
+                '')
+            .toString(),
+        thumbnailURL = (data['commentAuthorThumbnailURL'] ??
+                data['replyAuthorThumbnailURL'] ??
+                data['userAvatarURL'] ??
+                data['thumbnailURL'] ??
+                '')
+            .toString(),
+        type = _articleTypeFrom(data['commentArticleType']),
         perfect = (data['commentArticlePerfect'] ?? 0) == 1,
-        content = data['commentContent'] ?? '',
-        sharpURL = data['commentSharpURL'] ?? '',
+        content = (data['commentContent'] ??
+                data['replyContent'] ??
+                data['content'] ??
+                '')
+            .toString(),
+        sharpURL = (data['commentSharpURL'] ??
+                data['replySharpURL'] ??
+                data['url'] ??
+                '')
+            .toString(),
         hasRead = data['hasRead'] ?? false,
-        createTime = data['commentCreateTime'] ?? '';
+        createTime = (data['commentCreateTime'] ??
+                data['replyCreateTime'] ??
+                data['createTime'] ??
+                '')
+            .toString();
 
   Map<String, dynamic> toJson() => {
         'oId': oId,
@@ -333,6 +360,14 @@ class NoticeComment {
   @override
   String toString() {
     return 'NoticeComment{oId: $oId, commentArticleTitle: $title, commentAuthorName: $author, commentAuthorThumbnailURL: $thumbnailURL, commentArticleType: $type, commentArticlePerfect: $perfect, commentContent: $content, commentSharpURL: $sharpURL, hasRead: $hasRead, commentCreateTime: $createTime}';
+  }
+
+  static ArticleType _articleTypeFrom(dynamic value) {
+    final index = value is int ? value : int.tryParse(value?.toString() ?? '');
+    if (index == null || index < 0 || index >= ArticleType.values.length) {
+      return ArticleType.Unknown;
+    }
+    return ArticleType.values[index];
   }
 }
 
@@ -463,11 +498,24 @@ class NoticeFollow {
       : oId = data['oId'] ?? '',
         url = data['url'] ?? '',
         dataType = data['dataType'] ?? 0,
-        title = data['articleTitle'] ?? '',
-        author = data['authorName'] ?? '',
-        content = data['content'] ?? '',
+        title = (data['articleTitle'] ??
+                data['broadcastTitle'] ??
+                data['title'] ??
+                '')
+            .toString(),
+        author = (data['authorName'] ?? data['userName'] ?? data['who'] ?? '')
+            .toString(),
+        content = (data['content'] ??
+                data['broadcastContent'] ??
+                data['description'] ??
+                '')
+            .toString(),
         isComment = data['isComment'] ?? false,
-        thumbnailURL = data['thumbnailURL'] ?? '',
+        thumbnailURL = (data['thumbnailURL'] ??
+                data['userAvatarURL'] ??
+                data['avatarURL'] ??
+                '')
+            .toString(),
         commentCnt = data['articleCommentCount'] ?? 0,
         perfect = (data['articlePerfect'] ?? 0) == 1,
         tagObjs = List.from(data['articleTagObjs'] ?? [])
@@ -559,6 +607,69 @@ class NoticeSystem {
   }
 }
 
+/// 通用通知兜底。
+///
+/// API 偶尔会给某些分类返回新字段，先兜住展示，避免整个通知页因为
+/// 未识别结构加载失败。
+class NoticeUnknown {
+  String oId;
+  String title;
+  String content;
+  String avatarURL;
+  bool hasRead;
+  String createTime;
+
+  NoticeUnknown({
+    this.oId = '',
+    this.title = '通知消息',
+    this.content = '',
+    this.avatarURL = '',
+    this.hasRead = false,
+    this.createTime = '',
+  });
+
+  NoticeUnknown.from(Map<String, dynamic> data)
+      : oId = data['oId']?.toString() ?? '',
+        title = (data['title'] ??
+                data['articleTitle'] ??
+                data['commentArticleTitle'] ??
+                data['description'] ??
+                '通知消息')
+            .toString(),
+        content = (data['content'] ??
+                data['description'] ??
+                data['commentContent'] ??
+                data['data'] ??
+                '')
+            .toString(),
+        avatarURL = (data['avatarURL'] ??
+                data['userAvatarURL'] ??
+                data['thumbnailURL'] ??
+                data['commentAuthorThumbnailURL'] ??
+                '')
+            .toString(),
+        hasRead = data['hasRead'] == true,
+        createTime = (data['createTime'] ??
+                data['commentCreateTime'] ??
+                data['time'] ??
+                '')
+            .toString();
+
+  Map<String, dynamic> toJson() => {
+        'oId': oId,
+        'title': title,
+        'content': content,
+        'avatarURL': avatarURL,
+        'hasRead': hasRead,
+        'createTime': createTime,
+      };
+
+  @override
+  String toString() {
+    return 'NoticeUnknown{oId: $oId, title: $title, content: $content, avatarURL: $avatarURL, hasRead: $hasRead, createTime: $createTime}';
+  }
+}
+
 /// 通知消息类型
 class NoticeMsgType {
   /// 刷新通知数，需调用 Notice.count 获取明细
@@ -610,7 +721,8 @@ class NoticeMsg {
   }
 }
 
-/// NoticePoint | NoticeComment | NoticeAt | NoticeFollow | NoticeSystem 列表，根据 NoticeType 变化
+/// NoticePoint | NoticeComment | NoticeAt | NoticeFollow | NoticeSystem |
+/// NoticeUnknown 列表，根据 NoticeType 变化
 typedef NoticeList = List<dynamic>;
 
 /// 通知监听

@@ -76,6 +76,7 @@ class ChatLogic extends GetxController {
   final AudioRecorder _voiceRecorder = AudioRecorder();
   Timer? _voiceTimer;
   final Map<String, Timer> _autoGrabTimers = {};
+  final Map<String, RedPacketInfo> _redPacketInfoCache = {};
   final Set<String> _autoGrabScheduledIds = {};
   final Set<String> _autoGrabOpenedIds = {};
   final Set<String> _openingRedPacketIds = {};
@@ -538,6 +539,10 @@ class ChatLogic extends GetxController {
     if (!isGroup.value || chat.oId.isEmpty) {
       return null;
     }
+    final cachedInfo = _redPacketInfoCache[chat.oId];
+    if (cachedInfo != null) {
+      return cachedInfo;
+    }
     if (_openingRedPacketIds.contains(chat.oId)) {
       return null;
     }
@@ -547,11 +552,19 @@ class ChatLogic extends GetxController {
     _openingRedPacketIds.add(chat.oId);
     isOpeningRedPacket.value = true;
     try {
-      return await imController.fishpi.chatroom.redpacket.open(
+      final info = await imController.fishpi.chatroom.redpacket.open(
         chat.oId,
         gesture: gesture,
       );
+      _redPacketInfoCache[chat.oId] = info;
+      return info;
     } catch (e) {
+      if (ChatRedPacketUtils.isAlreadyOpenedError(e)) {
+        final cached = _redPacketInfoCache[chat.oId];
+        if (cached != null) return cached;
+        ToastManager.showToast('红包已领取，可稍后查看详情');
+        return null;
+      }
       _autoGrabOpenedIds.remove(chat.oId);
       ToastManager.showToast(ChatRedPacketUtils.openErrorMessage(e));
       return null;
@@ -611,6 +624,7 @@ class ChatLogic extends GetxController {
         chat.oId,
         gesture: gesture,
       );
+      _redPacketInfoCache[chat.oId] = info;
       final point = await _currentUserGotPoint(info);
       if (point > 0) {
         await ChatRoomAutoGrabSettings.recordSuccess(point);

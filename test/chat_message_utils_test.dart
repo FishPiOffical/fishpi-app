@@ -4,6 +4,8 @@ import 'package:fishpi/types/article.dart';
 import 'package:fishpi/types/breezemoon.dart';
 import 'package:fishpi/types/redpacket.dart';
 import 'package:fishpi_app/core/chat/chat_message_utils.dart';
+import 'package:fishpi_app/core/chat/chat_music_utils.dart';
+import 'package:fishpi_app/core/chat/chat_weather_utils.dart';
 import 'package:fishpi_app/core/chat/chat_voice_message_utils.dart';
 import 'package:fishpi_app/core/sql/black_list.dart';
 import 'package:fishpi_app/core/sql/chat_room_block_list.dart';
@@ -260,6 +262,52 @@ void main() {
         ),
         '[语音]',
       );
+    });
+
+    test('音乐解析兼容 JSON、HTML、BBCode 和非法地址', () {
+      final jsonTrack = ChatMusicUtils.trackFromContent(
+        '{"msgType":"music","type":"music","source":"https://example.com/song.mp3","title":"歌名","from":"歌手"}',
+      );
+      final htmlTrack = ChatMusicUtils.trackFromContent(
+        '<music type="music" source="https://example.com/html.mp3" title="HTML歌"></music>',
+      );
+      final bracketTrack = ChatMusicUtils.trackFromContent(
+        '[music]https://example.com/raw.mp3[/music]',
+      );
+      final invalidTrack =
+          ChatMusicUtils.trackFromContent('[music]bad[/music]');
+
+      expect(jsonTrack?.title, '歌名');
+      expect(htmlTrack?.title, 'HTML歌');
+      expect(bracketTrack?.source, 'https://example.com/raw.mp3');
+      expect(invalidTrack?.isValid, isFalse);
+      expect(
+          ChatMessageUtils.conversationPreview(
+            '[music]{"source":"https://example.com/song.mp3","title":"歌名"}[/music]',
+          ),
+          '[音乐] 歌名');
+    });
+
+    test('天气解析兼容 JSON、BBCode 和缺失字段', () {
+      final jsonWeather = ChatWeatherUtils.weatherFromContent(
+        '{"msgType":"weather","t":"杭州","st":"晴","date":"今天,明天","weatherCode":"100,101","min":"10,11","max":"20,21"}',
+      );
+      final bracketWeather = ChatWeatherUtils.weatherFromContent(
+        '[weather]{"city":"上海","description":"多云","data":[{"date":"今天","code":"cloud","min":12,"max":18}]}[/weather]',
+      );
+      final missingWeather = WeatherMsg.from({'t': '北京'});
+
+      expect(jsonWeather?.city, '杭州');
+      expect(jsonWeather?.data, hasLength(2));
+      expect(bracketWeather?.city, '上海');
+      expect(bracketWeather?.data.single.max, 18);
+      expect(missingWeather.city, '北京');
+      expect(missingWeather.data, isEmpty);
+      expect(
+          ChatMessageUtils.conversationPreview(
+            '[weather]{"city":"上海","description":"多云"}[/weather]',
+          ),
+          '[天气] 上海 多云');
     });
 
     test('纯单图消息识别图片地址', () {

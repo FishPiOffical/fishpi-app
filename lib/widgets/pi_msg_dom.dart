@@ -1,5 +1,9 @@
 import 'package:fishpi/types/chatroom.dart';
+import 'package:fishpi_app/core/chat/chat_music_utils.dart';
+import 'package:fishpi_app/core/chat/chat_weather_utils.dart';
 import 'package:fishpi_app/res/styles.dart';
+import 'package:fishpi_app/widgets/chat/chat_music_card.dart';
+import 'package:fishpi_app/widgets/chat/chat_weather_card.dart';
 import 'package:fishpi_app/widgets/chat/chat_voice_message.dart';
 import 'package:fishpi_app/widgets/pi_detail_msg.dart';
 import 'package:fishpi_app/widgets/pi_hero.dart';
@@ -128,6 +132,8 @@ class ChatMessageDomNode extends StatelessWidget {
         return const Text('[视频]');
       case "music":
         return _buildMusic(element);
+      case "weather":
+        return _buildWeather(element.text);
       case "iframe":
         return Text(_iframePreview(element.attributes['src'] ?? ''));
       case "a":
@@ -142,6 +148,14 @@ class ChatMessageDomNode extends StatelessWidget {
   Widget _buildText(String value) {
     final normalized = _normalizeText(value);
     if (normalized.isEmpty) return const SizedBox.shrink();
+    final weather = ChatWeatherUtils.weatherFromContent(normalized.trim());
+    if (weather != null) {
+      return ChatWeatherCard(weather: weather, isSelf: isSelf ?? false);
+    }
+    final music = ChatMusicUtils.trackFromContent(normalized.trim());
+    if (music != null) {
+      return ChatMusicCard(track: music, isSelf: isSelf ?? false);
+    }
     if (normalized.trim().isEmpty) return Text(' ', style: textStyle);
     return Text(normalized, style: textStyle);
   }
@@ -259,17 +273,27 @@ class ChatMessageDomNode extends StatelessWidget {
   }
 
   Widget _buildMusic(dom.Element element) {
-    final music = MusicMsg(
-      type: element.attributes['type'] ?? 'voice',
-      source: element.attributes['source'] ?? element.attributes['src'] ?? '',
-      coverURL: element.attributes['coverURL'] ?? '',
-      title: element.attributes['title'] ?? '语音消息',
-      from: element.attributes['from'] ?? '摸鱼派 App',
-    );
-    return ChatVoiceMessage(
-      music: music,
-      isSelf: isSelf ?? false,
-    );
+    final music = ChatMusicUtils.trackFromElement(element);
+    if (music == null) return const Text('音乐地址无效');
+    if (music.isVoice) {
+      return ChatVoiceMessage(
+        music: MusicMsg(
+          type: music.type,
+          source: music.source,
+          coverURL: music.coverURL,
+          title: music.title,
+          from: music.from,
+        ),
+        isSelf: isSelf ?? false,
+      );
+    }
+    return ChatMusicCard(track: music, isSelf: isSelf ?? false);
+  }
+
+  Widget _buildWeather(String content) {
+    final weather = ChatWeatherUtils.weatherFromContent(content) ??
+        ChatWeatherUtils.unavailable();
+    return ChatWeatherCard(weather: weather, isSelf: isSelf ?? false);
   }
 
   Widget _buildList(dom.Element element, {bool ordered = false}) {
@@ -347,6 +371,7 @@ class ChatMessageDomNode extends StatelessWidget {
       case "details":
       case "pre":
       case "music":
+      case "weather":
         return false;
       default:
         return true;

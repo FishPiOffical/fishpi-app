@@ -1,17 +1,22 @@
 import 'package:fishpi/types/chatroom.dart';
 import 'package:fishpi/types/redpacket.dart';
 import 'package:fishpi_app/core/chat/chat_message_utils.dart';
+import 'package:fishpi_app/core/chat/chat_music_utils.dart';
+import 'package:fishpi_app/core/chat/chat_weather_utils.dart';
 import 'package:fishpi_app/res/styles.dart';
 import 'package:fishpi_app/utils/pi_utils.dart';
 import 'package:fishpi_app/widgets/chat/chat_barrager_overlay.dart';
 import 'package:fishpi_app/widgets/chat/chat_barrager_sheet.dart';
 import 'package:fishpi_app/widgets/chat/chat_message_action_sheet.dart';
+import 'package:fishpi_app/widgets/chat/chat_music_card.dart';
+import 'package:fishpi_app/widgets/chat/chat_music_mini_player.dart';
 import 'package:fishpi_app/widgets/chat/chat_red_packet_card.dart';
 import 'package:fishpi_app/widgets/chat/chat_red_packet_detail_sheet.dart';
 import 'package:fishpi_app/widgets/chat/chat_red_packet_sheet.dart';
 import 'package:fishpi_app/widgets/chat/chat_repeat_avatar_strip.dart';
 import 'package:fishpi_app/widgets/chat/chat_topic_sheet.dart';
 import 'package:fishpi_app/widgets/chat/chat_voice_message.dart';
+import 'package:fishpi_app/widgets/chat/chat_weather_card.dart';
 import 'package:fishpi_app/widgets/pi_avatar.dart';
 import 'package:fishpi_app/widgets/pi_msg_dom.dart';
 import 'package:fishpi_app/widgets/pi_title_bar.dart';
@@ -88,6 +93,7 @@ class ChatPage extends StatelessWidget {
                   ],
                 ),
               ),
+              const ChatMusicMiniPlayer(),
               ChatInputBox(
                 emojiList: logic.emojiList,
                 diyEmojiList: logic.diyEmojiList,
@@ -136,6 +142,8 @@ class ChatPage extends StatelessWidget {
   Widget _buildRight(ChatMessageGroup group) {
     final chat = group.message;
     final singleImageUrl = ChatMessageUtils.singleImageUrl(chat.content);
+    final musicTrack = ChatMusicUtils.trackFromMessage(chat);
+    final weather = ChatWeatherUtils.weatherFromMessage(chat);
     return Container(
       width: 0.8.sw,
       margin: EdgeInsets.only(bottom: 5.h, top: 5.h),
@@ -159,53 +167,56 @@ class ChatPage extends StatelessWidget {
                 ),
                 chat.isRedpacket
                     ? _buildRedpacket(chat, true)
-                    : chat.isMusic
-                        ? _buildMusic(chat, true)
-                        : singleImageUrl != null
-                            ? _buildSingleImage(chat, singleImageUrl, true)
-                            : Container(
-                                width: 0.8.sw - 58.w,
-                                padding: EdgeInsets.all(10.w),
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.only(
-                                    topLeft: Radius.circular(16.w),
-                                    bottomRight: Radius.circular(16.w),
-                                    bottomLeft: Radius.circular(16.w),
-                                  ),
-                                  border: Styles.commonBorder,
-                                  color: Styles.primaryColor,
-                                ),
-                                child: Column(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Column(
-                                      mainAxisSize: MainAxisSize.max,
+                    : musicTrack != null
+                        ? _buildMusic(musicTrack, true)
+                        : weather != null
+                            ? _buildWeather(weather, true)
+                            : singleImageUrl != null
+                                ? _buildSingleImage(chat, singleImageUrl, true)
+                                : Container(
+                                    width: 0.8.sw - 58.w,
+                                    padding: EdgeInsets.all(10.w),
+                                    decoration: BoxDecoration(
+                                      borderRadius: BorderRadius.only(
+                                        topLeft: Radius.circular(16.w),
+                                        bottomRight: Radius.circular(16.w),
+                                        bottomLeft: Radius.circular(16.w),
+                                      ),
+                                      border: Styles.commonBorder,
+                                      color: Styles.primaryColor,
+                                    ),
+                                    child: Column(
                                       mainAxisAlignment:
-                                          MainAxisAlignment.start,
+                                          MainAxisAlignment.spaceBetween,
                                       crossAxisAlignment:
                                           CrossAxisAlignment.start,
                                       children: [
-                                        PiUtils.getChatPreview(chat,
-                                            isSelf: true)
+                                        Column(
+                                          mainAxisSize: MainAxisSize.max,
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.start,
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            PiUtils.getChatPreview(chat,
+                                                isSelf: true)
+                                          ],
+                                        ),
+                                        SizedBox(
+                                          width: 0.8.sw - 58.w,
+                                          child: Text(
+                                            chat.time,
+                                            style: TextStyle(
+                                              color: const Color(0xFF9FA4B4),
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 11.sp,
+                                            ),
+                                            textAlign: TextAlign.right,
+                                          ),
+                                        ),
                                       ],
                                     ),
-                                    SizedBox(
-                                      width: 0.8.sw - 58.w,
-                                      child: Text(
-                                        chat.time,
-                                        style: TextStyle(
-                                          color: const Color(0xFF9FA4B4),
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 11.sp,
-                                        ),
-                                        textAlign: TextAlign.right,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
+                                  ),
                 _buildRepeaters(group, true),
               ],
             ),
@@ -225,6 +236,8 @@ class ChatPage extends StatelessWidget {
   Widget _buildLeft(ChatMessageGroup group) {
     final chat = group.message;
     final singleImageUrl = ChatMessageUtils.singleImageUrl(chat.content);
+    final musicTrack = ChatMusicUtils.trackFromMessage(chat);
+    final weather = ChatWeatherUtils.weatherFromMessage(chat);
     return Container(
       width: 0.8.sw,
       margin: EdgeInsets.only(bottom: 5.h, top: 5.h),
@@ -263,51 +276,54 @@ class ChatPage extends StatelessWidget {
                 ),
                 chat.isRedpacket
                     ? _buildRedpacket(chat, false)
-                    : chat.isMusic
-                        ? _buildMusic(chat, false)
-                        : singleImageUrl != null
-                            ? _buildSingleImage(chat, singleImageUrl, false)
-                            : Container(
-                                width: 0.8.sw - 58.w,
-                                padding: EdgeInsets.all(10.w),
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.only(
-                                    topRight: Radius.circular(16.w),
-                                    bottomRight: Radius.circular(16.w),
-                                    bottomLeft: Radius.circular(16.w),
-                                  ),
-                                  border: Styles.commonBorder,
-                                  color: Colors.white,
-                                ),
-                                child: Column(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Column(
-                                        mainAxisSize: MainAxisSize.max,
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.start,
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          PiUtils.getChatPreview(chat),
-                                        ]),
-                                    SizedBox(
-                                      width: 0.8.sw - 58.w,
-                                      child: Text(
-                                        chat.time,
-                                        style: TextStyle(
-                                          color: const Color(0xFF9FA4B4),
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 11.sp,
-                                        ),
-                                        textAlign: TextAlign.right,
+                    : musicTrack != null
+                        ? _buildMusic(musicTrack, false)
+                        : weather != null
+                            ? _buildWeather(weather, false)
+                            : singleImageUrl != null
+                                ? _buildSingleImage(chat, singleImageUrl, false)
+                                : Container(
+                                    width: 0.8.sw - 58.w,
+                                    padding: EdgeInsets.all(10.w),
+                                    decoration: BoxDecoration(
+                                      borderRadius: BorderRadius.only(
+                                        topRight: Radius.circular(16.w),
+                                        bottomRight: Radius.circular(16.w),
+                                        bottomLeft: Radius.circular(16.w),
                                       ),
+                                      border: Styles.commonBorder,
+                                      color: Colors.white,
                                     ),
-                                  ],
-                                ),
-                              ),
+                                    child: Column(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceBetween,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Column(
+                                            mainAxisSize: MainAxisSize.max,
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.start,
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: [
+                                              PiUtils.getChatPreview(chat),
+                                            ]),
+                                        SizedBox(
+                                          width: 0.8.sw - 58.w,
+                                          child: Text(
+                                            chat.time,
+                                            style: TextStyle(
+                                              color: const Color(0xFF9FA4B4),
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 11.sp,
+                                            ),
+                                            textAlign: TextAlign.right,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
                 _buildRepeaters(group, false),
               ],
             ),
@@ -530,13 +546,24 @@ class ChatPage extends StatelessWidget {
     );
   }
 
-  Widget _buildMusic(ChatRoomMessage chat, bool isSelf) {
-    final music = chat.music;
-    if (music == null) return PiUtils.getChatPreview(chat, isSelf: isSelf);
-    return ChatVoiceMessage(
-      music: music,
-      isSelf: isSelf,
-    );
+  Widget _buildMusic(ChatMusicTrack track, bool isSelf) {
+    if (track.isVoice) {
+      return ChatVoiceMessage(
+        music: MusicMsg(
+          type: track.type,
+          source: track.source,
+          coverURL: track.coverURL,
+          title: track.title,
+          from: track.from,
+        ),
+        isSelf: isSelf,
+      );
+    }
+    return ChatMusicCard(track: track, isSelf: isSelf);
+  }
+
+  Widget _buildWeather(WeatherMsg weather, bool isSelf) {
+    return ChatWeatherCard(weather: weather, isSelf: isSelf);
   }
 
   Widget _buildSingleImage(
