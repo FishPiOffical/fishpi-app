@@ -131,11 +131,38 @@ class ChatRedPacketUtils {
     return '[redpacket]${jsonEncode(toSendJson(message))}[/redpacket]';
   }
 
+  static RedPacketMessage? redPacketFromMessage(ChatRoomMessage message) {
+    return message.redpacket ?? parseContent(message.content);
+  }
+
+  static String previewFor(RedPacketMessage redpacket) {
+    final title = typeName(redpacket.type);
+    final message = redpacket.msg.trim();
+    if (message.isEmpty) return '[红包] $title';
+    return '[红包] $title $message';
+  }
+
+  static RedPacketMessage? parseContent(String content) {
+    final payload = _extractWrappedPayload(content.trim(), 'redpacket');
+    final raw = payload ?? content.trim();
+    if (raw.isEmpty) return null;
+
+    try {
+      final data = jsonDecode(raw);
+      if (data is! Map) return null;
+      final map = Map<String, dynamic>.from(data);
+      if (!_looksLikeRedPacket(map)) return null;
+      return RedPacketMessage.from(map);
+    } catch (_) {
+      return null;
+    }
+  }
+
   static ChatRoomMessage updateStatus(
     ChatRoomMessage message,
     RedPacketStatusMsg status,
   ) {
-    final redpacket = message.redpacket;
+    final redpacket = redPacketFromMessage(message);
     if (redpacket == null || message.oId != status.oId) return message;
 
     final nextRedpacket = RedPacketMessage(
@@ -166,5 +193,20 @@ class ChatRedPacketUtils {
       time: message.time,
       type: message.type,
     );
+  }
+
+  static bool _looksLikeRedPacket(Map<String, dynamic> data) {
+    return data['msgType'] == ChatRoomMessageType.redPacket ||
+        (data.containsKey('money') &&
+            data.containsKey('count') &&
+            (data.containsKey('type') || data.containsKey('interface')));
+  }
+
+  static String? _extractWrappedPayload(String content, String tag) {
+    final match = RegExp(
+      '\\[$tag\\]([\\s\\S]*?)\\[/$tag\\]',
+      caseSensitive: false,
+    ).firstMatch(content);
+    return match?.group(1)?.trim();
   }
 }

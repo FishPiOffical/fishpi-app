@@ -255,6 +255,36 @@ void main() {
       expect(ChatMessageUtils.conversationPreview(content), '[语音]');
     });
 
+    test('红包消息兼容 BBCode 和裸 JSON 格式', () {
+      final bbcodeContent =
+          '[redpacket]{"type":"random","count":2,"got":0,"money":20,"msg":"好运"}[/redpacket]';
+      final jsonContent =
+          '{"type":"average","count":2,"got":0,"money":10,"msg":"平分"}';
+      final bbcodeMessage = ChatRoomMessage.from({
+        'oId': 'packet-1',
+        'userOId': 1,
+        'userName': 'sender',
+        'content': bbcodeContent,
+        'time': '',
+      });
+      final jsonMessage = ChatRoomMessage.from({
+        'oId': 'packet-2',
+        'userOId': 1,
+        'userName': 'sender',
+        'content': jsonContent,
+        'time': '',
+      });
+
+      expect(bbcodeMessage.isRedpacket, isTrue);
+      expect(bbcodeMessage.redpacket?.type, RedPacketType.Random);
+      expect(jsonMessage.isRedpacket, isTrue);
+      expect(jsonMessage.redpacket?.type, RedPacketType.Average);
+      expect(
+        ChatMessageUtils.conversationPreview(bbcodeContent),
+        '[红包] 拼手气红包 好运',
+      );
+    });
+
     test('HTML music 标签会降级为语音预览', () {
       expect(
         ChatMessageUtils.conversationPreview(

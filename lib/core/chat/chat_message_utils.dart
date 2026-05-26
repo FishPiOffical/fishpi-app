@@ -6,6 +6,7 @@ import 'package:html/dom.dart' as dom;
 import 'package:html/parser.dart';
 
 import 'chat_music_utils.dart';
+import 'chat_red_packet_utils.dart';
 import 'chat_weather_utils.dart';
 import '../sql/black_list.dart';
 import '../sql/chat_room_block_list.dart';
@@ -179,6 +180,7 @@ class ChatMessageUtils {
   static bool _canMergeDuplicate(ChatRoomMessage message) {
     return message.type == ChatRoomMessageType.msg &&
         !message.isRedpacket &&
+        ChatRedPacketUtils.parseContent(message.content) == null &&
         !message.isWeather &&
         !message.isMusic &&
         ChatWeatherUtils.weatherFromContent(message.content) == null &&
@@ -275,6 +277,10 @@ class ChatMessageUtils {
   static String _buildPreview(dom.Element? body) {
     if (body == null) return '';
     final plain = body.text.trim();
+    final redpacket = ChatRedPacketUtils.parseContent(plain);
+    if (redpacket != null) {
+      return ChatRedPacketUtils.previewFor(redpacket);
+    }
     final weather = ChatWeatherUtils.weatherFromContent(plain);
     if (weather != null) {
       return ChatWeatherUtils.previewFor(weather);

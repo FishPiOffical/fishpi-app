@@ -2,6 +2,7 @@ import 'package:fishpi/types/chatroom.dart';
 import 'package:fishpi/types/redpacket.dart';
 import 'package:fishpi_app/core/chat/chat_message_utils.dart';
 import 'package:fishpi_app/core/chat/chat_music_utils.dart';
+import 'package:fishpi_app/core/chat/chat_red_packet_utils.dart';
 import 'package:fishpi_app/core/chat/chat_weather_utils.dart';
 import 'package:fishpi_app/res/styles.dart';
 import 'package:fishpi_app/utils/pi_utils.dart';
@@ -142,6 +143,7 @@ class ChatPage extends StatelessWidget {
   Widget _buildRight(ChatMessageGroup group) {
     final chat = group.message;
     final singleImageUrl = ChatMessageUtils.singleImageUrl(chat.content);
+    final redpacket = ChatRedPacketUtils.redPacketFromMessage(chat);
     final musicTrack = ChatMusicUtils.trackFromMessage(chat);
     final weather = ChatWeatherUtils.weatherFromMessage(chat);
     return Container(
@@ -165,8 +167,8 @@ class ChatPage extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
-                chat.isRedpacket
-                    ? _buildRedpacket(chat, true)
+                redpacket != null
+                    ? _buildRedpacket(chat, redpacket, true)
                     : musicTrack != null
                         ? _buildMusic(musicTrack, true)
                         : weather != null
@@ -236,6 +238,7 @@ class ChatPage extends StatelessWidget {
   Widget _buildLeft(ChatMessageGroup group) {
     final chat = group.message;
     final singleImageUrl = ChatMessageUtils.singleImageUrl(chat.content);
+    final redpacket = ChatRedPacketUtils.redPacketFromMessage(chat);
     final musicTrack = ChatMusicUtils.trackFromMessage(chat);
     final weather = ChatWeatherUtils.weatherFromMessage(chat);
     return Container(
@@ -274,8 +277,8 @@ class ChatPage extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
-                chat.isRedpacket
-                    ? _buildRedpacket(chat, false)
+                redpacket != null
+                    ? _buildRedpacket(chat, redpacket, false)
                     : musicTrack != null
                         ? _buildMusic(musicTrack, false)
                         : weather != null
@@ -419,13 +422,15 @@ class ChatPage extends StatelessWidget {
     );
   }
 
-  Widget _buildRedpacket(ChatRoomMessage chat, bool isSelf) {
-    final redpacket = chat.redpacket;
-    if (redpacket == null) return const SizedBox.shrink();
+  Widget _buildRedpacket(
+    ChatRoomMessage chat,
+    RedPacketMessage redpacket,
+    bool isSelf,
+  ) {
     return ChatRedPacketCard(
       redpacket: redpacket,
       isSelf: isSelf,
-      onTap: () => _handleRedPacketTap(chat),
+      onTap: () => _handleRedPacketTap(chat, redpacket),
     );
   }
 
@@ -464,8 +469,8 @@ class ChatPage extends StatelessWidget {
     );
   }
 
-  void _handleRedPacketTap(ChatRoomMessage chat) {
-    if (chat.redpacket?.type == RedPacketType.RockPaperScissors) {
+  void _handleRedPacketTap(ChatRoomMessage chat, RedPacketMessage redpacket) {
+    if (redpacket.type == RedPacketType.RockPaperScissors) {
       _showGestureSheet(chat);
       return;
     }

@@ -177,14 +177,14 @@ class ChatRoomMessage {
     userName = data['userName'] ?? '';
     nickname = data['userNickname'] ?? '';
     avatarURL = data['userAvatarURL'] ?? '';
-    sysMetal = toMetal(data['sysMetal']);
+    sysMetal = toMetal(data['sysMetal'] ?? '{"list":[]}');
     via = ChatSource.from(data['client']);
     content = data['content'] ?? '';
     md = data['md'] ?? data['content'] ?? '';
     try {
-      dynamic contentData = json.decode(data['content'] ?? 'null');
+      dynamic contentData = _decodeSpecialContent(data['content'] ?? '');
       if (contentData is Map) {
-        type = contentData["msgType"] ?? type;
+        type = _messageTypeFrom(contentData);
         if (type == ChatRoomMessageType.redPacket) {
           redpacket = RedPacketMessage.from(contentData);
         } else if (type == ChatRoomMessageType.weather) {
@@ -198,6 +198,64 @@ class ChatRoomMessage {
       // ignore: empty_catches
     } catch (e) {}
     time = data['time'] ?? '';
+  }
+
+  static dynamic _decodeSpecialContent(String rawContent) {
+    final content = rawContent.trim();
+    if (content.isEmpty) return null;
+
+    final redPacketPayload = _extractWrappedPayload(content, 'redpacket');
+    if (redPacketPayload != null) {
+      return json.decode(redPacketPayload);
+    }
+
+    final weatherPayload = _extractWrappedPayload(content, 'weather');
+    if (weatherPayload != null) {
+      return json.decode(weatherPayload);
+    }
+
+    final musicPayload = _extractWrappedPayload(content, 'music');
+    if (musicPayload != null) {
+      return json.decode(musicPayload);
+    }
+
+    return json.decode(content);
+  }
+
+  static String _messageTypeFrom(Map data) {
+    final msgType = data['msgType']?.toString() ?? '';
+    if (msgType.isNotEmpty) return msgType;
+    if (_looksLikeRedPacket(data)) return ChatRoomMessageType.redPacket;
+    if (_looksLikeWeather(data)) return ChatRoomMessageType.weather;
+    if (_looksLikeMusic(data)) return ChatRoomMessageType.music;
+    return ChatRoomMessageType.msg;
+  }
+
+  static bool _looksLikeRedPacket(Map data) {
+    return data.containsKey('money') &&
+        data.containsKey('count') &&
+        (data.containsKey('type') || data.containsKey('interface'));
+  }
+
+  static bool _looksLikeWeather(Map data) {
+    return data.containsKey('weatherCode') ||
+        data.containsKey('city') ||
+        data.containsKey('t') && data.containsKey('st');
+  }
+
+  static bool _looksLikeMusic(Map data) {
+    return data.containsKey('source') &&
+        (data.containsKey('title') ||
+            data.containsKey('coverURL') ||
+            data.containsKey('type'));
+  }
+
+  static String? _extractWrappedPayload(String content, String tag) {
+    final match = RegExp(
+      '\\[$tag\\]([\\s\\S]*?)\\[/$tag\\]',
+      caseSensitive: false,
+    ).firstMatch(content);
+    return match?.group(1)?.trim();
   }
 
   toJson() => {

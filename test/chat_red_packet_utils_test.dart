@@ -118,6 +118,24 @@ void main() {
       expect(data['gesture'], GestureType.Scissors.index);
     });
 
+    test('红包内容解析兼容 BBCode、裸 JSON 和 msgType JSON', () {
+      final bbcode = ChatRedPacketUtils.parseContent(
+        '[redpacket]{"type":"random","count":2,"got":0,"money":20,"msg":"好运"}[/redpacket]',
+      );
+      final plainJson = ChatRedPacketUtils.parseContent(
+        '{"type":"average","count":2,"got":1,"money":10,"msg":"平分"}',
+      );
+      final msgTypeJson = ChatRedPacketUtils.parseContent(
+        '{"msgType":"redPacket","type":"heartbeat","count":1,"money":5,"msg":"心跳"}',
+      );
+
+      expect(bbcode?.type, RedPacketType.Random);
+      expect(bbcode?.money, 20);
+      expect(plainJson?.type, RedPacketType.Average);
+      expect(msgTypeJson?.type, RedPacketType.Heartbeat);
+      expect(ChatRedPacketUtils.parseContent('<p>不是红包</p>'), isNull);
+    });
+
     test('红包状态事件会按 oId 更新领取进度', () {
       final message = ChatRoomMessage(
         oId: 'packet-1',
@@ -138,6 +156,21 @@ void main() {
       expect(result.redpacket?.count, 3);
       expect(result.redpacket?.money, 30);
       expect(result.redpacket?.msg, '好运');
+    });
+
+    test('未结构化红包消息也能按状态事件更新', () {
+      final message = ChatRoomMessage(
+        oId: 'packet-1',
+        content:
+            '[redpacket]{"type":"random","count":3,"got":0,"money":30,"msg":"好运"}[/redpacket]',
+      );
+      final result = ChatRedPacketUtils.updateStatus(
+        message,
+        RedPacketStatusMsg(oId: 'packet-1', count: 3, got: 2),
+      );
+
+      expect(result.redpacket?.got, 2);
+      expect(result.redpacket?.money, 30);
     });
 
     test('红包领取详情缺少字段时不会解析崩溃', () {
