@@ -98,6 +98,9 @@ class ChatPage extends StatelessWidget {
     ChatRoomMessage chat = group.message;
     return GestureDetector(
       onTap: () {},
+      onLongPress: logic.canBlockChatRoomUser(chat)
+          ? () => _showChatRoomUserActions(chat)
+          : null,
       child: chat.userName == logic.userInfo.value.userName
           ? _buildRight(group)
           : _buildLeft(group),
@@ -207,6 +210,9 @@ class ChatPage extends StatelessWidget {
             onTap: () {
               logic.clickUserAvatar(chat.userName);
             },
+            onLongPress: logic.canBlockChatRoomUser(chat)
+                ? () => _showChatRoomUserActions(chat)
+                : null,
             child: PiAvatar(
               avatarURL: chat.avatarURL,
               userName: chat.userName,
@@ -293,6 +299,111 @@ class ChatPage extends StatelessWidget {
       repeaters: group.repeaters,
       isSelf: isSelf,
       onTapUser: logic.clickUserAvatar,
+      onLongPressUser: (message) {
+        if (logic.canBlockChatRoomUser(message)) {
+          _showChatRoomUserActions(message);
+        }
+      },
+    );
+  }
+
+  void _showChatRoomUserActions(ChatRoomMessage chat) {
+    final displayName = logic.displayNameFor(
+      chat.userName,
+      fallback: chat.allName,
+    );
+    Get.bottomSheet(
+      SafeArea(
+        child: Container(
+          width: 1.sw,
+          padding: EdgeInsets.fromLTRB(16.w, 18.h, 16.w, 16.h),
+          decoration: BoxDecoration(
+            color: Styles.titleBarColor,
+            border: Styles.commonBorder,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(16.r)),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                displayName,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: Styles.primaryTextColor,
+                  fontSize: 18.sp,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              14.verticalSpace,
+              _buildActionButton(
+                key: const ValueKey('chat_room_view_profile_action'),
+                icon: Icons.person_outline,
+                text: '查看主页',
+                onTap: () {
+                  Get.back();
+                  logic.clickUserAvatar(chat.userName);
+                },
+              ),
+              10.verticalSpace,
+              _buildActionButton(
+                key: const ValueKey('chat_room_block_user_action'),
+                icon: Icons.visibility_off_outlined,
+                text: '仅在聊天室屏蔽',
+                onTap: () {
+                  Get.back();
+                  logic.blockChatRoomUser(chat);
+                },
+              ),
+              10.verticalSpace,
+              _buildActionButton(
+                key: const ValueKey('chat_room_cancel_action'),
+                icon: Icons.close,
+                text: '取消',
+                onTap: () => Get.back(),
+              ),
+            ],
+          ),
+        ),
+      ),
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+    );
+  }
+
+  Widget _buildActionButton({
+    required Key key,
+    required IconData icon,
+    required String text,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      key: key,
+      onTap: onTap,
+      child: Container(
+        width: 1.sw - 32.w,
+        height: 44.h,
+        padding: EdgeInsets.symmetric(horizontal: 12.w),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          border: Styles.commonBorder,
+          borderRadius: BorderRadius.circular(12.r),
+        ),
+        child: Row(
+          children: [
+            Icon(icon, size: 20.w, color: Styles.primaryTextColor),
+            10.horizontalSpace,
+            Text(
+              text,
+              style: TextStyle(
+                color: Styles.primaryTextColor,
+                fontSize: 16.sp,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 

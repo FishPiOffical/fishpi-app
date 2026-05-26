@@ -45,6 +45,25 @@ void main() {
     await tester.tap(find.byType(PiAvatar));
     expect(tappedUserName, 'follow-user');
   });
+
+  testWidgets('长按重复消息头像会回调对应消息', (tester) async {
+    ChatRoomMessage? pressedMessage;
+
+    await tester.pumpWidget(
+      _wrap(
+        ChatRepeatAvatarStrip(
+          repeaters: [
+            ChatRoomMessage(userOId: 1, userName: 'follow-user'),
+          ],
+          isSelf: false,
+          onLongPressUser: (message) => pressedMessage = message,
+        ),
+      ),
+    );
+
+    await tester.longPress(find.byType(PiAvatar));
+    expect(pressedMessage?.userName, 'follow-user');
+  });
 }
 
 Widget _wrap(Widget child) {

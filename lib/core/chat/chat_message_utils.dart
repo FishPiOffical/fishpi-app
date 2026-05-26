@@ -7,6 +7,7 @@ import 'package:html/parser.dart';
 
 import 'chat_voice_message_utils.dart';
 import '../sql/black_list.dart';
+import '../sql/chat_room_block_list.dart';
 
 class ParsedChatContent {
   final List<dom.Element> elements;
@@ -91,12 +92,19 @@ class ChatMessageUtils {
 
   static List<ChatRoomMessage> visibleMessages(
     Iterable<ChatRoomMessage> messages,
-    Iterable<BlackUser> blackUsers,
-  ) {
-    return BlackList.visibleItems(
+    Iterable<BlackUser> blackUsers, {
+    Iterable<ChatRoomBlockedUser> chatRoomBlockedUsers = const [],
+  }) {
+    final visibleByBlackList = BlackList.visibleItems(
       messages,
       blackUsers,
       oId: (message) => message.userOId.toString(),
+      userName: (message) => message.userName,
+    );
+    return ChatRoomBlockList.visibleItems(
+      visibleByBlackList,
+      chatRoomBlockedUsers,
+      oId: (message) => message.userOId > 0 ? message.userOId.toString() : null,
       userName: (message) => message.userName,
     );
   }
@@ -216,13 +224,19 @@ class ChatMessageUtils {
 
   static bool isBlockedMessage(
     ChatRoomMessage message,
-    Iterable<BlackUser> blackUsers,
-  ) {
+    Iterable<BlackUser> blackUsers, {
+    Iterable<ChatRoomBlockedUser> chatRoomBlockedUsers = const [],
+  }) {
     return BlackList.isBlockedUser(
-      blackUsers,
-      oId: message.userOId.toString(),
-      userName: message.userName,
-    );
+          blackUsers,
+          oId: message.userOId.toString(),
+          userName: message.userName,
+        ) ||
+        ChatRoomBlockList.isBlockedUser(
+          chatRoomBlockedUsers,
+          oId: message.userOId > 0 ? message.userOId.toString() : null,
+          userName: message.userName,
+        );
   }
 
   static ParsedChatContent parseChatContent(String content) {

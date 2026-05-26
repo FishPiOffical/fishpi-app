@@ -6,6 +6,7 @@ import 'package:fishpi_app/core/chat/chat_voice_message_utils.dart';
 import 'package:fishpi_app/core/im_event.dart';
 import 'package:fishpi_app/core/manager/toast.dart';
 import 'package:fishpi_app/core/sql/black_list.dart';
+import 'package:fishpi_app/core/sql/chat_room_block_list.dart';
 import 'package:fishpi_app/core/sql/user_remark.dart';
 import 'package:fishpi_app/pages/conversation/conversation_logic.dart';
 import 'package:fishpi_app/routers/navigator.dart';
@@ -45,9 +46,11 @@ class ChatLogic extends GetxController {
   final diyEmojiList = <String>[].obs;
   final emojiIndex = 0.obs;
   final List<BlackUser> _blackUsers = [];
+  final List<ChatRoomBlockedUser> _chatRoomBlockedUsers = [];
   StreamSubscription<ChatRoomData>? _chatRoomSubscription;
   StreamSubscription<PrivateChatEvent>? _privateChatSubscription;
   StreamSubscription<void>? _blackListSubscription;
+  StreamSubscription<void>? _chatRoomBlockListSubscription;
   StreamSubscription<void>? _remarkSubscription;
   bool _scrollListenerAttached = false;
   final AudioRecorder _voiceRecorder = AudioRecorder();
@@ -78,6 +81,11 @@ class ChatLogic extends GetxController {
     _blackListSubscription ??= BlackList.changes.listen((_) {
       _reloadBlackUsersAndFilterMessages();
     });
+    if (isGroup.value) {
+      _chatRoomBlockListSubscription ??= ChatRoomBlockList.changes.listen((_) {
+        _reloadChatRoomBlockedUsersAndFilterMessages();
+      });
+    }
     UserRemark.init();
     _remarkSubscription ??= UserRemark.changes.listen((_) {
       remarkVersion.value++;
@@ -98,6 +106,9 @@ class ChatLogic extends GetxController {
   void initChatRoom() async {
     await _loadBlackUsers();
     if (isGroup.value) {
+      await _loadChatRoomBlockedUsers();
+      messageList.assignAll(_visibleMessages(messageList));
+      messageList.refresh();
       if (messageList.isEmpty) {
         await _loadInitialHistory();
       } else {
@@ -139,7 +150,7 @@ class ChatLogic extends GetxController {
     ChatRoomMessage message, {
     bool shouldScroll = true,
   }) {
-    if (ChatMessageUtils.isBlockedMessage(message, _blackUsers)) return;
+    if (_isMessageBlocked(message)) return;
     messageList.assignAll(
       ChatMessageUtils.appendUniqueChatRoomMessage(
         messageList,
@@ -237,10 +248,7 @@ class ChatLogic extends GetxController {
   }) async {
     if (isGroup.value) {
       final history = await imController.fishpi.chatroom.more(page);
-      final messages = ChatMessageUtils.visibleMessages(
-        history.reversed,
-        _blackUsers,
-      );
+      final messages = _visibleMessages(history.reversed);
       return _HistoryPageResult(
         rawCount: history.length,
         messages: messages,
@@ -257,7 +265,7 @@ class ChatLogic extends GetxController {
         history.reversed.map(ChatMessageUtils.chatDataToRoomMessage).toList();
     return _HistoryPageResult(
       rawCount: history.length,
-      messages: ChatMessageUtils.visibleMessages(messages, _blackUsers),
+      messages: _visibleMessages(messages),
     );
   }
 
@@ -296,6 +304,33 @@ class ChatLogic extends GetxController {
 
   void clickUserAvatar(String userName) {
     AppNavigator.toUserPanel(userName: userName);
+  }
+
+  bool canBlockChatRoomUser(ChatRoomMessage message) {
+    if (!isGroup.value) return false;
+    if (message.userName.trim().isEmpty && message.userOId <= 0) return false;
+    final currentUser = userInfo.value;
+    if (currentUser.userName.isNotEmpty &&
+        message.userName == currentUser.userName) {
+      return false;
+    }
+    if (currentUser.oId.isNotEmpty &&
+        message.userOId.toString() == currentUser.oId) {
+      return false;
+    }
+    return true;
+  }
+
+  Future<void> blockChatRoomUser(ChatRoomMessage message) async {
+    if (!canBlockChatRoomUser(message)) return;
+
+    await ChatRoomBlockList.addUser(
+      ChatRoomBlockedUser.fromChatRoomMessage(message),
+    );
+    await _reloadChatRoomBlockedUsersAndFilterMessages();
+    final displayName =
+        displayNameFor(message.userName, fallback: message.allName);
+    ToastManager.showToast('已在聊天室屏蔽$displayName');
   }
 
   void toChatRoomSettings() {
@@ -505,11 +540,54 @@ class ChatLogic extends GetxController {
     }
   }
 
+  Future<void> _loadChatRoomBlockedUsers() async {
+    if (!isGroup.value) {
+      _chatRoomBlockedUsers.clear();
+      return;
+    }
+
+    try {
+      await ChatRoomBlockList.init();
+      _chatRoomBlockedUsers
+        ..clear()
+        ..addAll(await ChatRoomBlockList.getAllUser());
+    } catch (_) {
+      _chatRoomBlockedUsers.clear();
+    }
+  }
+
+  Iterable<ChatRoomBlockedUser> get _activeChatRoomBlockedUsers {
+    if (!isGroup.value) return const <ChatRoomBlockedUser>[];
+    return _chatRoomBlockedUsers;
+  }
+
+  bool _isMessageBlocked(ChatRoomMessage message) {
+    return ChatMessageUtils.isBlockedMessage(
+      message,
+      _blackUsers,
+      chatRoomBlockedUsers: _activeChatRoomBlockedUsers,
+    );
+  }
+
+  List<ChatRoomMessage> _visibleMessages(
+    Iterable<ChatRoomMessage> messages,
+  ) {
+    return ChatMessageUtils.visibleMessages(
+      messages,
+      _blackUsers,
+      chatRoomBlockedUsers: _activeChatRoomBlockedUsers,
+    );
+  }
+
   Future<void> _reloadBlackUsersAndFilterMessages() async {
     await _loadBlackUsers();
-    messageList.assignAll(
-      ChatMessageUtils.visibleMessages(messageList, _blackUsers),
-    );
+    messageList.assignAll(_visibleMessages(messageList));
+    messageList.refresh();
+  }
+
+  Future<void> _reloadChatRoomBlockedUsersAndFilterMessages() async {
+    await _loadChatRoomBlockedUsers();
+    messageList.assignAll(_visibleMessages(messageList));
     messageList.refresh();
   }
 
@@ -519,6 +597,7 @@ class ChatLogic extends GetxController {
     _chatRoomSubscription?.cancel();
     _privateChatSubscription?.cancel();
     _blackListSubscription?.cancel();
+    _chatRoomBlockListSubscription?.cancel();
     _remarkSubscription?.cancel();
     _stopVoiceTimer();
     _voiceRecorder.dispose();

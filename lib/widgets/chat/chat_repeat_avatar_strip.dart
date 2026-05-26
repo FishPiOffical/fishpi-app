@@ -11,12 +11,14 @@ class ChatRepeatAvatarStrip extends StatelessWidget {
   final List<ChatRoomMessage> repeaters;
   final bool isSelf;
   final void Function(String userName)? onTapUser;
+  final void Function(ChatRoomMessage message)? onLongPressUser;
 
   const ChatRepeatAvatarStrip({
     super.key,
     required this.repeaters,
     required this.isSelf,
     this.onTapUser,
+    this.onLongPressUser,
   });
 
   @override
@@ -51,6 +53,8 @@ class ChatRepeatAvatarStrip extends StatelessWidget {
         onTap: repeater.userName.isEmpty || onTapUser == null
             ? null
             : () => onTapUser!(repeater.userName),
+        onLongPress:
+            onLongPressUser == null ? null : () => onLongPressUser!(repeater),
         child: PiAvatar(
           key: ValueKey('chat_repeat_avatar_${repeater.userName}'),
           avatarURL: repeater.avatarURL,

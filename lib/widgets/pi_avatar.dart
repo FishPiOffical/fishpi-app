@@ -20,6 +20,7 @@ class PiAvatar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final safeAvatarURL = avatarURL?.trim() ?? '';
     return Container(
       width: width ?? 48.w,
       height: height ?? 48.w,
@@ -34,9 +35,9 @@ class PiAvatar extends StatelessWidget {
         child: SizedBox(
           width: width ?? 48.w,
           height: height ?? 48.w,
-          child: avatarURL != ''
+          child: safeAvatarURL.isNotEmpty
               ? CachedNetworkImage(
-                  imageUrl: avatarURL ?? '',
+                  imageUrl: safeAvatarURL,
                   width: width ?? 48.w,
                   height: height ?? 48.w,
                   fit: BoxFit.cover,

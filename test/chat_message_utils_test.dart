@@ -6,6 +6,7 @@ import 'package:fishpi/types/redpacket.dart';
 import 'package:fishpi_app/core/chat/chat_message_utils.dart';
 import 'package:fishpi_app/core/chat/chat_voice_message_utils.dart';
 import 'package:fishpi_app/core/sql/black_list.dart';
+import 'package:fishpi_app/core/sql/chat_room_block_list.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -164,6 +165,52 @@ void main() {
       final result = ChatMessageUtils.visibleMessages(messages, blackUsers);
 
       expect(result.map((item) => item.oId), ['2']);
+    });
+
+    test('聊天室消息会按黑名单和聊天室屏蔽并集过滤', () {
+      final messages = [
+        ChatRoomMessage(oId: '1', userOId: 100, userName: 'black'),
+        ChatRoomMessage(oId: '2', userOId: 200, userName: 'room-blocked'),
+        ChatRoomMessage(oId: '3', userOId: 300, userName: 'visible'),
+      ];
+      final blackUsers = [
+        BlackUser(oId: '100', userName: 'black'),
+      ];
+      final chatRoomBlockedUsers = [
+        ChatRoomBlockedUser(oId: '200', userName: 'room-blocked'),
+      ];
+
+      final result = ChatMessageUtils.visibleMessages(
+        messages,
+        blackUsers,
+        chatRoomBlockedUsers: chatRoomBlockedUsers,
+      );
+
+      expect(result.map((item) => item.oId), ['3']);
+    });
+
+    test('私聊不传聊天室屏蔽名单时不会被聊天室屏蔽影响', () {
+      final message = ChatRoomMessage(
+        oId: '1',
+        userOId: 200,
+        userName: 'room-blocked',
+      );
+      final chatRoomBlockedUsers = [
+        ChatRoomBlockedUser(oId: '200', userName: 'room-blocked'),
+      ];
+
+      expect(
+        ChatMessageUtils.isBlockedMessage(message, const []),
+        isFalse,
+      );
+      expect(
+        ChatMessageUtils.isBlockedMessage(
+          message,
+          const [],
+          chatRoomBlockedUsers: chatRoomBlockedUsers,
+        ),
+        isTrue,
+      );
     });
 
     test('空历史页会标记为无更多', () {

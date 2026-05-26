@@ -8,6 +8,7 @@ import '../../core/chat/chat_message_utils.dart';
 import '../../core/controller/im.dart';
 import '../../core/im_event.dart';
 import '../../core/sql/black_list.dart';
+import '../../core/sql/chat_room_block_list.dart';
 import '../../core/sql/user_remark.dart';
 
 class ConversationLogic extends GetxController {
@@ -18,9 +19,11 @@ class ConversationLogic extends GetxController {
   final showItem = "";
   final chatRoomMsg = <ChatRoomMessage>[].obs;
   final List<BlackUser> _blackUsers = [];
+  final List<ChatRoomBlockedUser> _chatRoomBlockedUsers = [];
   StreamSubscription<ChatRoomData>? _chatRoomSubscription;
   StreamSubscription<PrivateChatEvent>? _privateChatSubscription;
   StreamSubscription<void>? _blackListSubscription;
+  StreamSubscription<void>? _chatRoomBlockListSubscription;
   StreamSubscription<void>? _remarkSubscription;
 
   @override
@@ -31,6 +34,7 @@ class ConversationLogic extends GetxController {
 
   void loadHistoryMessage() async {
     await _loadBlackUsers();
+    await _loadChatRoomBlockedUsers();
     try {
       final list = await imController.fishpi.chat.list();
       chatList.assignAll(list);
@@ -38,10 +42,7 @@ class ConversationLogic extends GetxController {
 
     try {
       final history = await imController.fishpi.chatroom.more(1);
-      final visibleHistory = ChatMessageUtils.visibleMessages(
-        history.reversed,
-        _blackUsers,
-      );
+      final visibleHistory = _visibleChatRoomMessages(history.reversed);
       chatRoomMsg.assignAll(visibleHistory);
       chatRoomLastMsg.value =
           visibleHistory.isEmpty ? ChatRoomMessage() : visibleHistory.last;
@@ -61,6 +62,9 @@ class ConversationLogic extends GetxController {
         imController.privateChatStream.listen(_onPrivateChat);
     _blackListSubscription ??= BlackList.changes.listen((_) {
       _reloadBlackUsersAndFilterChatRoom();
+    });
+    _chatRoomBlockListSubscription ??= ChatRoomBlockList.changes.listen((_) {
+      _reloadChatRoomBlockedUsersAndFilterChatRoom();
     });
     UserRemark.init();
     _remarkSubscription ??= UserRemark.changes.listen((_) {
@@ -87,8 +91,7 @@ class ConversationLogic extends GetxController {
     }
 
     final message = data.msg;
-    if (message == null ||
-        ChatMessageUtils.isBlockedMessage(message, _blackUsers)) {
+    if (message == null || _isChatRoomMessageBlocked(message)) {
       return;
     }
 
@@ -148,11 +151,47 @@ class ConversationLogic extends GetxController {
     }
   }
 
+  Future<void> _loadChatRoomBlockedUsers() async {
+    try {
+      await ChatRoomBlockList.init();
+      _chatRoomBlockedUsers
+        ..clear()
+        ..addAll(await ChatRoomBlockList.getAllUser());
+    } catch (_) {
+      _chatRoomBlockedUsers.clear();
+    }
+  }
+
+  bool _isChatRoomMessageBlocked(ChatRoomMessage message) {
+    return ChatMessageUtils.isBlockedMessage(
+      message,
+      _blackUsers,
+      chatRoomBlockedUsers: _chatRoomBlockedUsers,
+    );
+  }
+
+  List<ChatRoomMessage> _visibleChatRoomMessages(
+    Iterable<ChatRoomMessage> messages,
+  ) {
+    return ChatMessageUtils.visibleMessages(
+      messages,
+      _blackUsers,
+      chatRoomBlockedUsers: _chatRoomBlockedUsers,
+    );
+  }
+
   Future<void> _reloadBlackUsersAndFilterChatRoom() async {
     await _loadBlackUsers();
-    chatRoomMsg.assignAll(
-      ChatMessageUtils.visibleMessages(chatRoomMsg, _blackUsers),
-    );
+    chatRoomMsg.assignAll(_visibleChatRoomMessages(chatRoomMsg));
+    chatRoomLastMsg.value =
+        chatRoomMsg.isEmpty ? ChatRoomMessage() : chatRoomMsg.last;
+    chatRoomMsg.refresh();
+    chatRoomLastMsg.refresh();
+  }
+
+  Future<void> _reloadChatRoomBlockedUsersAndFilterChatRoom() async {
+    await _loadChatRoomBlockedUsers();
+    chatRoomMsg.assignAll(_visibleChatRoomMessages(chatRoomMsg));
     chatRoomLastMsg.value =
         chatRoomMsg.isEmpty ? ChatRoomMessage() : chatRoomMsg.last;
     chatRoomMsg.refresh();
@@ -164,6 +203,7 @@ class ConversationLogic extends GetxController {
     _chatRoomSubscription?.cancel();
     _privateChatSubscription?.cancel();
     _blackListSubscription?.cancel();
+    _chatRoomBlockListSubscription?.cancel();
     _remarkSubscription?.cancel();
     super.onClose();
   }
