@@ -2,6 +2,8 @@ import 'package:fishpi/fishpi.dart';
 import 'package:fishpi_app/core/forum/article_utils.dart';
 import 'package:fishpi_app/widgets/pi_avatar.dart';
 import 'package:fishpi_app/widgets/pi_image.dart';
+import 'package:fishpi_app/widgets/vip_badge.dart';
+import 'package:fishpi_app/widgets/vip_name_text.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
@@ -89,14 +91,50 @@ class PiArticleItem extends StatelessWidget {
                   ),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
-                      Text(
-                        article.tags.replaceAll(",", " "),
-                        style: TextStyle(
-                          fontSize: 12.sp,
-                          color: Styles.c4Color,
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Flexible(
+                                  child: VipNameText(
+                                    userId: article.authorId,
+                                    userName: article.authorName,
+                                    style: TextStyle(
+                                      fontSize: 12.sp,
+                                      color: Styles.primaryTextColor,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                                6.horizontalSpace,
+                                VipBadge(
+                                  userId: article.authorId,
+                                  userName: article.authorName,
+                                ),
+                              ],
+                            ),
+                            if (article.tags.trim().isNotEmpty) ...[
+                              3.verticalSpace,
+                              Text(
+                                article.tags.replaceAll(",", " "),
+                                style: TextStyle(
+                                  fontSize: 12.sp,
+                                  color: Styles.c4Color,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
+                          ],
                         ),
                       ),
+                      10.horizontalSpace,
                       Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [

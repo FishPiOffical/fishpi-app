@@ -1,6 +1,7 @@
 import 'package:fishpi_app/res/styles.dart';
 import 'package:fishpi_app/utils/pi_utils.dart';
 import 'package:fishpi_app/widgets/pi_avatar.dart';
+import 'package:fishpi_app/widgets/vip_badge.dart';
 import 'package:fishpi_app/widgets/vip_name_text.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -91,7 +92,6 @@ class MinePage extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                       ),
                       Row(
-                        mainAxisSize: MainAxisSize.min,
                         children: [
                           Text(
                             '# ${logic.userInfo.value.userNo}',
@@ -103,6 +103,14 @@ class MinePage extends StatelessWidget {
                           ),
                           10.horizontalSpace,
                           PiUtils.roleWidget(logic.userInfo.value.role),
+                          10.horizontalSpace,
+                          Flexible(
+                            child: VipBadge(
+                              userId: logic.userInfo.value.oId,
+                              userName: logic.userInfo.value.userName,
+                              showExpires: true,
+                            ),
+                          ),
                         ],
                       ),
                     ],

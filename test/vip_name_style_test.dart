@@ -3,8 +3,10 @@ import 'dart:io';
 import 'package:fishpi/fishpi.dart';
 import 'package:fishpi_app/core/sql/user_remark.dart';
 import 'package:fishpi_app/core/vip/vip_style_service.dart';
+import 'package:fishpi_app/widgets/vip_badge.dart';
 import 'package:fishpi_app/widgets/vip_name_text.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hive/hive.dart';
 
@@ -123,6 +125,24 @@ void main() {
     expect(vipRequestCount, 1);
   });
 
+  test('VIP 资料会提供等级名称和到期日期', () async {
+    final expiresAt = DateTime(2026, 8, 9).millisecondsSinceEpoch;
+    final service = VipStyleService(
+      vipInfoLoader: (_) async => UserVipInfo(
+        state: true,
+        lvCode: 'SVIP_YEAR',
+        expiresAt: expiresAt,
+        color: '#FFAA00',
+      ),
+    );
+
+    final profile = await service.loadProfile(userId: 'u1');
+
+    expect(profile?.levelName, 'SVIP(包年)');
+    expect(profile?.expiresText, '2026-08-09');
+    expect(profile?.nameStyle.color, const Color(0xFFFFAA00));
+  });
+
   testWidgets('VipNameText 保留备注优先，并应用 VIP 样式', (tester) async {
     await tester.runAsync(
       () => UserRemark.setRemark(userName: 'fishpi', remark: '摸鱼搭子'),
@@ -143,15 +163,13 @@ void main() {
     );
 
     await tester.pumpWidget(
-      MaterialApp(
-        home: Scaffold(
-          body: VipNameText(
-            userId: 'u1',
-            userName: 'fishpi',
-            fallback: '鱼排(fishpi)',
-            vipService: service,
-            style: const TextStyle(color: Colors.black),
-          ),
+      _wrap(
+        VipNameText(
+          userId: 'u1',
+          userName: 'fishpi',
+          fallback: '鱼排(fishpi)',
+          vipService: service,
+          style: const TextStyle(color: Colors.black),
         ),
       ),
     );
@@ -170,15 +188,13 @@ void main() {
     );
 
     await tester.pumpWidget(
-      MaterialApp(
-        home: Scaffold(
-          body: VipNameText(
-            userId: 'u1',
-            userName: 'fishpi',
-            fallback: '鱼排(fishpi)',
-            vipService: service,
-            style: const TextStyle(color: Colors.black),
-          ),
+      _wrap(
+        VipNameText(
+          userId: 'u1',
+          userName: 'fishpi',
+          fallback: '鱼排(fishpi)',
+          vipService: service,
+          style: const TextStyle(color: Colors.black),
         ),
       ),
     );
@@ -189,4 +205,56 @@ void main() {
     expect(text.style?.color, Colors.black);
     expect(text.style?.decoration, isNull);
   });
+
+  testWidgets('VipBadge 只在有效会员时展示等级和到期时间', (tester) async {
+    final service = VipStyleService(
+      vipInfoLoader: (_) async => UserVipInfo(
+        state: true,
+        lvCode: 'VIP_MONTH',
+        expiresAt: DateTime(2026, 9, 10).millisecondsSinceEpoch,
+      ),
+    );
+
+    await tester.pumpWidget(
+      _wrap(
+        VipBadge(
+          userId: 'u1',
+          vipService: service,
+          showExpires: true,
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 1));
+
+    expect(find.byKey(const ValueKey('vip_badge')), findsOneWidget);
+    expect(find.text('VIP(包月) · 2026-09-10到期'), findsOneWidget);
+  });
+
+  testWidgets('VipBadge 非会员时不展示', (tester) async {
+    final service = VipStyleService(
+      vipInfoLoader: (_) async => UserVipInfo(state: false),
+    );
+
+    await tester.pumpWidget(
+      _wrap(
+        VipBadge(userId: 'u1', vipService: service),
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 1));
+
+    expect(find.byKey(const ValueKey('vip_badge')), findsNothing);
+  });
+}
+
+Widget _wrap(Widget child) {
+  return ScreenUtilInit(
+    designSize: const Size(375, 812),
+    builder: (_, __) {
+      return MaterialApp(
+        home: Scaffold(body: child),
+      );
+    },
+  );
 }

@@ -5,6 +5,7 @@ import 'package:fishpi_app/widgets/pi_avatar.dart';
 import 'package:fishpi_app/widgets/pi_breezemoon_item.dart';
 import 'package:fishpi_app/widgets/pi_image.dart';
 import 'package:fishpi_app/widgets/pi_title_bar.dart';
+import 'package:fishpi_app/widgets/vip_badge.dart';
 import 'package:fishpi_app/widgets/vip_name_text.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -157,55 +158,79 @@ class UserPanelPage extends StatelessWidget {
                                   mainAxisAlignment:
                                       MainAxisAlignment.spaceBetween,
                                   children: [
+                                    Flexible(
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              Image.asset(
+                                                'assets/images/location.png',
+                                                width: 24.w,
+                                                height: 24.w,
+                                              ),
+                                              2.horizontalSpace,
+                                              Flexible(
+                                                child: Text(
+                                                  logic.userInfo.value.city ==
+                                                          ''
+                                                      ? '未知'
+                                                      : logic
+                                                          .userInfo.value.city,
+                                                  style: TextStyle(
+                                                    color:
+                                                        Styles.primaryTextColor,
+                                                    fontSize: 16.sp,
+                                                    fontWeight: FontWeight.bold,
+                                                  ),
+                                                  maxLines: 1,
+                                                  overflow:
+                                                      TextOverflow.ellipsis,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                          10.horizontalSpace,
+                                          Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              Image.asset(
+                                                'assets/images/coin_line.png',
+                                                width: 24.w,
+                                                height: 24.w,
+                                              ),
+                                              2.horizontalSpace,
+                                              Text(
+                                                logic.userInfo.value.point
+                                                    .toString(),
+                                                style: TextStyle(
+                                                  color:
+                                                      Styles.primaryTextColor,
+                                                  fontSize: 16.sp,
+                                                  fontWeight: FontWeight.bold,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    8.horizontalSpace,
                                     Row(
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
-                                        Row(
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            Image.asset(
-                                              'assets/images/location.png',
-                                              width: 24.w,
-                                              height: 24.w,
-                                            ),
-                                            2.horizontalSpace,
-                                            Text(
-                                              logic.userInfo.value.city == ''
-                                                  ? '未知'
-                                                  : logic.userInfo.value.city,
-                                              style: TextStyle(
-                                                color: Styles.primaryTextColor,
-                                                fontSize: 16.sp,
-                                                fontWeight: FontWeight.bold,
-                                              ),
-                                            ),
-                                          ],
+                                        VipBadge(
+                                          userId: logic.userInfo.value.oId,
+                                          userName:
+                                              logic.userInfo.value.userName,
                                         ),
-                                        10.horizontalSpace,
-                                        Row(
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            Image.asset(
-                                              'assets/images/coin_line.png',
-                                              width: 24.w,
-                                              height: 24.w,
-                                            ),
-                                            2.horizontalSpace,
-                                            Text(
-                                              logic.userInfo.value.point
-                                                  .toString(),
-                                              style: TextStyle(
-                                                color: Styles.primaryTextColor,
-                                                fontSize: 16.sp,
-                                                fontWeight: FontWeight.bold,
-                                              ),
-                                            ),
-                                          ],
+                                        8.horizontalSpace,
+                                        PiUtils.roleWidget(
+                                          logic.userInfo.value.role,
                                         ),
                                       ],
                                     ),
-                                    PiUtils.roleWidget(
-                                        logic.userInfo.value.role),
                                   ],
                                 ),
                               ],

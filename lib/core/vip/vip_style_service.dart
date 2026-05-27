@@ -4,6 +4,41 @@ import 'package:flutter/material.dart';
 typedef VipInfoLoader = Future<UserVipInfo> Function(String userId);
 typedef VipUserLoader = Future<UserInfo> Function(String userName);
 
+class VipProfile {
+  final UserVipInfo info;
+  final VipNameStyle nameStyle;
+
+  const VipProfile({
+    required this.info,
+    required this.nameStyle,
+  });
+
+  String get levelName {
+    final rawName = info.VipName.toString().trim();
+    return rawName.isEmpty ? 'VIP' : rawName;
+  }
+
+  DateTime? get expiresDate {
+    if (info.expiresAt <= 0) return null;
+    return DateTime.fromMillisecondsSinceEpoch(info.expiresAt);
+  }
+
+  String get expiresText {
+    final date = expiresDate;
+    if (date == null) return '';
+    return '${date.year}-${_twoDigits(date.month)}-${_twoDigits(date.day)}';
+  }
+
+  factory VipProfile.fromVipInfo(UserVipInfo info) {
+    return VipProfile(
+      info: info,
+      nameStyle: VipNameStyle.fromVipInfo(info),
+    );
+  }
+
+  static String _twoDigits(int value) => value.toString().padLeft(2, '0');
+}
+
 class VipNameStyle {
   final bool isActive;
   final Color? color;
@@ -80,8 +115,8 @@ class VipStyleService {
 
   final Map<String, _VipCacheEntry> _userIdCache = {};
   final Map<String, _VipCacheEntry> _userNameCache = {};
-  final Map<String, Future<VipNameStyle?>> _pendingByUserId = {};
-  final Map<String, Future<VipNameStyle?>> _pendingByUserName = {};
+  final Map<String, Future<VipProfile?>> _pendingByUserId = {};
+  final Map<String, Future<VipProfile?>> _pendingByUserName = {};
 
   VipStyleService({
     required this.vipInfoLoader,
@@ -112,6 +147,13 @@ class VipStyleService {
   Future<VipNameStyle?> load({
     String? userId,
     String? userName,
+  }) async {
+    return (await loadProfile(userId: userId, userName: userName))?.nameStyle;
+  }
+
+  Future<VipProfile?> loadProfile({
+    String? userId,
+    String? userName,
   }) {
     final normalizedUserId = _normalizeUserId(userId);
     if (normalizedUserId.isNotEmpty) {
@@ -130,7 +172,7 @@ class VipStyleService {
     _pendingByUserName.clear();
   }
 
-  Future<VipNameStyle?> _loadByUserId(String userId) {
+  Future<VipProfile?> _loadByUserId(String userId) {
     final cached = _readCache(_userIdCache, userId);
     if (cached != null || _userIdCache.containsKey(userId)) {
       return Future.value(cached);
@@ -146,7 +188,7 @@ class VipStyleService {
     return request;
   }
 
-  Future<VipNameStyle?> _loadByUserName(String userName) {
+  Future<VipProfile?> _loadByUserName(String userName) {
     final cached = _readCache(_userNameCache, userName);
     if (cached != null || _userNameCache.containsKey(userName)) {
       return Future.value(cached);
@@ -162,12 +204,17 @@ class VipStyleService {
     return request;
   }
 
-  Future<VipNameStyle?> _requestVipStyle(String userId) async {
+  Future<VipProfile?> _requestVipStyle(String userId) async {
     try {
       final info = await vipInfoLoader(userId);
-      final style = VipNameStyle.fromVipInfo(info);
-      final result = style.isActive ? style : null;
-      _writeCache(_userIdCache, userId, result, successTtl);
+      final profile = VipProfile.fromVipInfo(info);
+      final result = profile.nameStyle.isActive ? profile : null;
+      _writeCache(
+        _userIdCache,
+        userId,
+        result,
+        result == null ? failureTtl : successTtl,
+      );
       return result;
     } catch (_) {
       _writeCache(_userIdCache, userId, null, failureTtl);
@@ -175,7 +222,7 @@ class VipStyleService {
     }
   }
 
-  Future<VipNameStyle?> _requestVipStyleByUserName(String userName) async {
+  Future<VipProfile?> _requestVipStyleByUserName(String userName) async {
     try {
       final loader = userLoader;
       if (loader == null) {
@@ -190,27 +237,27 @@ class VipStyleService {
         return null;
       }
 
-      final style = await _loadByUserId(userId);
+      final profile = await _loadByUserId(userId);
       _writeCache(
         _userNameCache,
         userName,
-        style,
-        style == null ? failureTtl : successTtl,
+        profile,
+        profile == null ? failureTtl : successTtl,
       );
-      return style;
+      return profile;
     } catch (_) {
       _writeCache(_userNameCache, userName, null, failureTtl);
       return null;
     }
   }
 
-  VipNameStyle? _readCache(
+  VipProfile? _readCache(
     Map<String, _VipCacheEntry> cache,
     String key,
   ) {
     final entry = cache[key];
     if (entry == null) return null;
-    if (entry.expiresAt.isAfter(DateTime.now())) return entry.style;
+    if (entry.expiresAt.isAfter(DateTime.now())) return entry.profile;
     cache.remove(key);
     return null;
   }
@@ -218,11 +265,11 @@ class VipStyleService {
   void _writeCache(
     Map<String, _VipCacheEntry> cache,
     String key,
-    VipNameStyle? style,
+    VipProfile? profile,
     Duration ttl,
   ) {
     cache[key] = _VipCacheEntry(
-      style: style,
+      profile: profile,
       expiresAt: DateTime.now().add(ttl),
     );
   }
@@ -236,11 +283,11 @@ class VipStyleService {
 }
 
 class _VipCacheEntry {
-  final VipNameStyle? style;
+  final VipProfile? profile;
   final DateTime expiresAt;
 
   _VipCacheEntry({
-    required this.style,
+    required this.profile,
     required this.expiresAt,
   });
 }
