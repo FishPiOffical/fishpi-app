@@ -52,6 +52,27 @@ void main() {
     expect(saved!.triggerAction, ChatRoomExtensionTriggerAction.insert);
     expect(saved!.cooldownSeconds, 12);
   });
+
+  testWidgets('扩展编辑器展示发消息时触发器和小尾巴变量说明', (tester) async {
+    await tester.pumpWidget(
+      _wrap(
+        ChatRoomExtensionEditorSheet(
+          extension: const ChatRoomExtension(
+            id: 'tail',
+            name: '小尾巴',
+            template: r'${message.content}\n-- 来自摸鱼派',
+          ),
+          onSave: (_) async => null,
+        ),
+      ),
+    );
+
+    expect(find.text('发消息时'), findsOneWidget);
+    expect(
+      find.textContaining(r'${message.content} 是输入框里准备发送的内容'),
+      findsOneWidget,
+    );
+  });
 }
 
 Widget _wrap(Widget child) {

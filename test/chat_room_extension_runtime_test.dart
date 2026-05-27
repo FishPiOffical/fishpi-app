@@ -58,6 +58,29 @@ void main() {
     );
   });
 
+  test('发消息时触发器可以读取准备发送的内容用于小尾巴', () async {
+    final runtime = ChatRoomExtensionRuntime(
+      userLoader: () async => UserInfo(userName: 'fish'),
+      livenessLoader: () async => 0,
+      topicProvider: () => '',
+    );
+    const extension = ChatRoomExtension(
+      name: '小尾巴',
+      template: r'${message.content}\n\n-- 来自摸鱼派',
+      triggers: [ChatRoomExtensionTrigger.beforeSend],
+    );
+
+    final result = await runtime.renderForTrigger(
+      extension: extension,
+      trigger: ChatRoomExtensionTrigger.beforeSend,
+      message: ChatRoomMessage(content: '今天也要摸鱼'),
+      respectCooldown: false,
+    );
+
+    expect(result, isNotNull);
+    expect(result!.text, '今天也要摸鱼\\n\\n-- 来自摸鱼派');
+  });
+
   test('活跃度缓存 60 秒内不会重复请求', () async {
     var livenessCalls = 0;
     var now = DateTime(2026, 5, 27, 12, 0);

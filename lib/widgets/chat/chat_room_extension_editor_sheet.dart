@@ -328,6 +328,15 @@ class _ChatRoomExtensionEditorSheetState
               fontWeight: FontWeight.bold,
             ),
           ),
+          6.verticalSpace,
+          Text(
+            r'勾选“发消息时”后，${message.content} 是输入框里准备发送的内容，模板输出会替换本次发送正文。',
+            style: TextStyle(
+              color: const Color(0xFF777777),
+              fontSize: 12.sp,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
           10.verticalSpace,
           Wrap(
             spacing: 8.w,

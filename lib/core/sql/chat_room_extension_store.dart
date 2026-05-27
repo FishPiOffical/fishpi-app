@@ -500,12 +500,14 @@ class ChatRoomExtensionFieldType {
 
 class ChatRoomExtensionTrigger {
   static const manual = 'manual';
+  static const beforeSend = 'beforeSend';
   static const afterSend = 'afterSend';
   static const receiveText = 'receiveText';
   static const receiveSingleImage = 'receiveSingleImage';
 
   static const values = [
     manual,
+    beforeSend,
     afterSend,
     receiveText,
     receiveSingleImage,
@@ -513,6 +515,8 @@ class ChatRoomExtensionTrigger {
 
   static String labelOf(String trigger) {
     switch (trigger) {
+      case beforeSend:
+        return '发消息时';
       case afterSend:
         return '发消息后';
       case receiveText:

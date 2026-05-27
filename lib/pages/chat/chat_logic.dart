@@ -488,9 +488,12 @@ class ChatLogic extends GetxController {
     required bool triggerExtensions,
   }) async {
     if (text.trim().isEmpty) return false;
+    final bodyText = triggerExtensions && isGroup.value
+        ? await _applyBeforeSendExtensions(text)
+        : text;
     final sendText = ChatQuoteUtils.composeMessage(
       quote: quoteDraft.value,
-      text: text,
+      text: bodyText,
     );
 
     try {
@@ -784,6 +787,23 @@ class ChatLogic extends GetxController {
     } catch (_) {
       extensions.clear();
     }
+  }
+
+  Future<String> _applyBeforeSendExtensions(String text) async {
+    var nextText = text;
+    for (final extension in extensions.toList()) {
+      if (!extension.canTrigger(ChatRoomExtensionTrigger.beforeSend)) continue;
+      final result = await _extensionRuntime.renderForTrigger(
+        extension: extension,
+        trigger: ChatRoomExtensionTrigger.beforeSend,
+        message: _localSentMessage(nextText),
+        // 发送前小尾巴应当每次发送都生效，冷却只用于事件自动响应。
+        respectCooldown: false,
+      );
+      if (result == null || result.text.trim().isEmpty) continue;
+      nextText = result.text;
+    }
+    return nextText;
   }
 
   Future<Map<String, String>> extensionContextValues() {
