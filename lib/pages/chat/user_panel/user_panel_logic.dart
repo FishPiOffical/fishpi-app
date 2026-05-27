@@ -105,7 +105,9 @@ class UserPanelLogic extends GetxController {
       Get.context!,
       PopRoute(
         child: PiTransferPage(
-            user: userInfo.value.userName,
+            user: displayName,
+            userId: userInfo.value.oId,
+            userName: userInfo.value.userName,
             onEditingCompleteText: (text) async {
               String context = text;
               if (context.trim() == '') {

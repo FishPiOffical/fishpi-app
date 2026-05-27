@@ -1,4 +1,5 @@
 import 'package:fishpi_app/res/styles.dart';
+import 'package:fishpi_app/widgets/vip_name_text.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
@@ -6,6 +7,8 @@ class PiTransferPage extends StatelessWidget {
   final ValueChanged onEditingCompleteText;
   final TextEditingController controller = TextEditingController();
   final String user;
+  final String? userId;
+  final String? userName;
   final OutlineInputBorder border = const OutlineInputBorder(
     borderSide: BorderSide(
       color: Colors.black,
@@ -20,6 +23,8 @@ class PiTransferPage extends StatelessWidget {
     super.key,
     required this.onEditingCompleteText,
     required this.user,
+    this.userId,
+    this.userName,
   });
 
   @override
@@ -54,26 +59,31 @@ class PiTransferPage extends StatelessWidget {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        RichText(
-                          text: TextSpan(
-                              text: '转账给',
+                        Row(
+                          children: [
+                            Text(
+                              '转账给',
                               style: TextStyle(
                                 color: Styles.primaryTextColor,
                                 fontSize: 20.sp,
                                 fontWeight: FontWeight.bold,
                               ),
-                              children: [
-                                TextSpan(
-                                  text: user,
-                                  style: TextStyle(
-                                    color: const Color(0xFFEB3805),
-                                    fontSize: 20.sp,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                )
-                              ]),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
+                            ),
+                            Flexible(
+                              child: VipNameText(
+                                userId: userId,
+                                userName: userName ?? user,
+                                fallback: user,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  color: const Color(0xFFEB3805),
+                                  fontSize: 20.sp,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                         Text(
                           '转账后积分即时到账，请谨慎交易！',

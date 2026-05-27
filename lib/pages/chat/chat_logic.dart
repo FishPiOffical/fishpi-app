@@ -564,6 +564,8 @@ class ChatLogic extends GetxController {
       PopRoute(
         child: PiTransferPage(
           user: displayNameFor(targetUserName, fallback: message.allName),
+          userId: message.userOId > 0 ? message.userOId.toString() : '',
+          userName: targetUserName,
           onEditingCompleteText: (text) async {
             final raw = text.toString().trim();
             if (raw.isEmpty) return;

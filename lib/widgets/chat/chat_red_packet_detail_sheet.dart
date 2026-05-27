@@ -2,6 +2,7 @@ import 'package:fishpi/types/redpacket.dart';
 import 'package:fishpi_app/core/chat/chat_red_packet_utils.dart';
 import 'package:fishpi_app/res/styles.dart';
 import 'package:fishpi_app/widgets/pi_avatar.dart';
+import 'package:fishpi_app/widgets/vip_name_text.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
@@ -154,8 +155,10 @@ class ChatRedPacketDetailSheet extends StatelessWidget {
           ),
           10.horizontalSpace,
           Expanded(
-            child: Text(
-              item.userName,
+            child: VipNameText(
+              userId: item.userId,
+              userName: item.userName,
+              fallback: item.userName,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
