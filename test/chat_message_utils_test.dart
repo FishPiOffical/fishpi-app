@@ -358,6 +358,8 @@ void main() {
     });
 
     test('音乐解析兼容 JSON、HTML、BBCode 和非法地址', () {
+      const neteaseOuterUrl =
+          'https://music.163.com/song/media/outer/url?id=123456';
       final jsonTrack = ChatMusicUtils.trackFromContent(
         '{"msgType":"music","type":"music","source":"https://example.com/song.mp3","title":"歌名","from":"歌手"}',
       );
@@ -367,12 +369,31 @@ void main() {
       final bracketTrack = ChatMusicUtils.trackFromContent(
         '[music]https://example.com/raw.mp3[/music]',
       );
+      final neteaseIdTrack = ChatMusicUtils.trackFromContent(
+        '[music]{"source":"123456","title":"网易云歌曲","artist":"歌手"}[/music]',
+      );
+      final neteasePageTrack = ChatMusicUtils.trackFromContent(
+        'https://music.163.com/#/song?id=123456',
+      );
+      final dataAttributeTrack = ChatMusicUtils.trackFromContent(
+        '<music data-source="123456" data-title="属性歌曲" data-cover-url="https://example.com/c.jpg"></music>',
+      );
+      final songIdTrack = ChatMusicUtils.trackFromContent(
+        '{"songId":"123456","name":"字段歌曲","picUrl":"https://example.com/p.jpg"}',
+      );
       final invalidTrack =
           ChatMusicUtils.trackFromContent('[music]bad[/music]');
 
       expect(jsonTrack?.title, '歌名');
       expect(htmlTrack?.title, 'HTML歌');
       expect(bracketTrack?.source, 'https://example.com/raw.mp3');
+      expect(neteaseIdTrack?.source, neteaseOuterUrl);
+      expect(neteaseIdTrack?.from, '歌手');
+      expect(neteasePageTrack?.source, neteaseOuterUrl);
+      expect(dataAttributeTrack?.source, neteaseOuterUrl);
+      expect(dataAttributeTrack?.coverURL, 'https://example.com/c.jpg');
+      expect(songIdTrack?.source, neteaseOuterUrl);
+      expect(songIdTrack?.coverURL, 'https://example.com/p.jpg');
       expect(invalidTrack?.isValid, isFalse);
       expect(
           ChatMessageUtils.conversationPreview(
