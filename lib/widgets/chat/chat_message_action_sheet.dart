@@ -1,10 +1,13 @@
 import 'package:fishpi_app/res/styles.dart';
+import 'package:fishpi_app/widgets/vip_name_text.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
 class ChatMessageActionSheet extends StatelessWidget {
   final String displayName;
+  final String? userId;
+  final String? userName;
   final bool canUseUserActions;
   final bool canBlockChatRoomUser;
   final VoidCallback onQuote;
@@ -16,6 +19,8 @@ class ChatMessageActionSheet extends StatelessWidget {
   const ChatMessageActionSheet({
     super.key,
     required this.displayName,
+    this.userId,
+    this.userName,
     required this.canUseUserActions,
     required this.canBlockChatRoomUser,
     required this.onQuote,
@@ -39,8 +44,10 @@ class ChatMessageActionSheet extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(
-              displayName,
+            VipNameText(
+              userId: userId,
+              userName: userName,
+              fallback: displayName,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(

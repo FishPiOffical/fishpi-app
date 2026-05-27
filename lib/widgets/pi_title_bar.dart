@@ -115,6 +115,7 @@ class PiTitleBar extends StatelessWidget implements PreferredSizeWidget {
   PiTitleBar.back({
     super.key,
     String? title,
+    Widget? titleWidget,
     bool? showUnderline,
     Widget? rightWidget,
     VoidCallback? onRightTap,
@@ -122,10 +123,13 @@ class PiTitleBar extends StatelessWidget implements PreferredSizeWidget {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Text(
-                title!,
-                textAlign: TextAlign.center,
-                style: Styles.titleBarStyle,
+              Flexible(
+                child: titleWidget ??
+                    Text(
+                      title ?? '',
+                      textAlign: TextAlign.center,
+                      style: Styles.titleBarStyle,
+                    ),
               ),
             ],
           ),

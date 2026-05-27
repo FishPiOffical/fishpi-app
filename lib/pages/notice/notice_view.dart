@@ -2,6 +2,7 @@ import 'package:fishpi_app/res/styles.dart';
 import 'package:fishpi_app/res/view.dart';
 import 'package:fishpi_app/utils/pi_utils.dart';
 import 'package:fishpi_app/widgets/pi_title_bar.dart';
+import 'package:fishpi_app/widgets/vip_name_text.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
@@ -215,16 +216,7 @@ class NoticePage extends GetView<NoticeLogic> {
                 Row(
                   children: [
                     Expanded(
-                      child: Text(
-                        item.title,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          color: Styles.primaryTextColor,
-                          fontSize: 16.sp,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
+                      child: _buildNoticeTitle(item),
                     ),
                     if (!item.hasRead)
                       Container(
@@ -264,6 +256,44 @@ class NoticePage extends GetView<NoticeLogic> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildNoticeTitle(NoticeDisplayItem item) {
+    final style = TextStyle(
+      color: Styles.primaryTextColor,
+      fontSize: 16.sp,
+      fontWeight: FontWeight.bold,
+    );
+    final vipUserName = item.vipUserName.trim();
+    if (vipUserName.isEmpty) {
+      return Text(
+        item.title,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: style,
+      );
+    }
+
+    return Row(
+      children: [
+        Flexible(
+          child: VipNameText(
+            userId: item.vipUserId,
+            userName: vipUserName,
+            style: style,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+        if (item.titleAction.trim().isNotEmpty)
+          Text(
+            ' ${item.titleAction}',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: style,
+          ),
+      ],
     );
   }
 

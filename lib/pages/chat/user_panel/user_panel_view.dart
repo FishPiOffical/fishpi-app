@@ -26,6 +26,15 @@ class UserPanelPage extends StatelessWidget {
       () => Scaffold(
         appBar: PiTitleBar.back(
           title: logic.routeTitle,
+          titleWidget: VipNameText(
+            userId: logic.userInfo.value.oId,
+            userName: logic.userName.value,
+            fallback: logic.routeTitle,
+            style: Styles.titleBarStyle,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.center,
+          ),
           showUnderline: false,
         ),
         body: logic.isLoading.value

@@ -70,8 +70,11 @@ void main() {
     );
 
     expect(reply.title, 'someone 回复了你');
+    expect(reply.vipUserName, 'someone');
+    expect(reply.titleAction, '回复了你');
     expect(reply.content, '帖子标题：收到');
     expect(unknown.title, '新通知');
+    expect(unknown.vipUserName, isEmpty);
     expect(unknown.content, '未知内容');
   });
 }

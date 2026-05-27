@@ -182,6 +182,9 @@ class NoticeDisplayItem {
   final String time;
   final String avatarURL;
   final bool hasRead;
+  final String vipUserId;
+  final String vipUserName;
+  final String titleAction;
 
   const NoticeDisplayItem({
     this.oId = '',
@@ -190,6 +193,9 @@ class NoticeDisplayItem {
     this.time = '',
     this.avatarURL = '',
     this.hasRead = false,
+    this.vipUserId = '',
+    this.vipUserName = '',
+    this.titleAction = '',
   });
 
   factory NoticeDisplayItem.from(String type, dynamic item) {
@@ -211,6 +217,8 @@ class NoticeDisplayItem {
         time: item.createTime,
         avatarURL: item.thumbnailURL,
         hasRead: item.hasRead,
+        vipUserName: item.author,
+        titleAction: action,
       );
     }
     if (item is NoticeAt) {
@@ -221,6 +229,8 @@ class NoticeDisplayItem {
         time: item.createTime,
         avatarURL: item.avatarURL,
         hasRead: item.hasRead,
+        vipUserName: item.userName,
+        titleAction: '提到了你',
       );
     }
     if (item is NoticeFollow) {
@@ -232,6 +242,7 @@ class NoticeDisplayItem {
         time: item.createTime,
         avatarURL: item.thumbnailURL,
         hasRead: item.hasRead,
+        vipUserName: item.author,
       );
     }
     if (item is NoticeSystem) {

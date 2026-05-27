@@ -4,6 +4,8 @@ import 'package:fishpi_app/core/sql/chat_room_extension_store.dart';
 import 'package:fishpi_app/res/styles.dart';
 import 'package:fishpi_app/widgets/pi_avatar.dart';
 import 'package:fishpi_app/widgets/pi_title_bar.dart';
+import 'package:fishpi_app/widgets/vip_badge.dart';
+import 'package:fishpi_app/widgets/vip_name_text.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
@@ -593,8 +595,10 @@ class ChatRoomSettingsPage extends GetView<ChatRoomSettingsLogic> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  displayName,
+                VipNameText(
+                  userId: user.oId,
+                  userName: user.userName,
+                  fallback: displayName,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
@@ -602,6 +606,11 @@ class ChatRoomSettingsPage extends GetView<ChatRoomSettingsLogic> {
                     fontSize: 16.sp,
                     fontWeight: FontWeight.bold,
                   ),
+                ),
+                4.verticalSpace,
+                VipBadge(
+                  userId: user.oId,
+                  userName: user.userName,
                 ),
                 if (userName.isNotEmpty && userName != displayName)
                   Text(

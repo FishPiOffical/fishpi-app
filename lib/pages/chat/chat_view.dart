@@ -53,6 +53,16 @@ class ChatPage extends StatelessWidget {
             title: logic.isGroup.value
                 ? '聊天室'
                 : logic.displayNameFor(logic.userName.value),
+            titleWidget: logic.isGroup.value
+                ? null
+                : VipNameText(
+                    userId: logic.userID.value,
+                    userName: logic.userName.value,
+                    style: Styles.titleBarStyle,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.center,
+                  ),
             rightWidget: logic.isGroup.value
                 ? const Icon(
                     Icons.more_horiz,
@@ -424,6 +434,8 @@ class ChatPage extends StatelessWidget {
     Get.bottomSheet(
       ChatMessageActionSheet(
         displayName: displayName,
+        userId: _chatVipUserId(chat),
+        userName: chat.userName,
         canUseUserActions: logic.canUseOtherUserActions(chat),
         canBlockChatRoomUser: logic.canBlockChatRoomUser(chat),
         onQuote: () {

@@ -47,6 +47,28 @@ void main() {
     expect(find.text('私聊'), findsOneWidget);
   });
 
+  testWidgets('返回标题栏支持自定义标题组件', (tester) async {
+    await tester.pumpWidget(
+      ScreenUtilInit(
+        designSize: const Size(360, 812),
+        builder: (context, _) => MaterialApp(
+          home: Scaffold(
+            appBar: PiTitleBar.back(
+              title: '备用标题',
+              titleWidget: const Text(
+                'VIP标题',
+                key: ValueKey('custom_title_widget'),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    expect(find.byKey(const ValueKey('custom_title_widget')), findsOneWidget);
+    expect(find.text('备用标题'), findsNothing);
+  });
+
   testWidgets('首页标题栏帖子显示发帖入口，其他主页面显示通知入口', (tester) async {
     await tester.pumpWidget(
       ScreenUtilInit(

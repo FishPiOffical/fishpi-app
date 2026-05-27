@@ -256,10 +256,10 @@ class ForumDetailPage extends StatelessWidget {
                                     10.horizontalSpace,
                                     SizedBox(
                                       width: 100.w,
-                                      child: Text(
-                                        logic.displayNameFor(
-                                          logic.article.value.authorName,
-                                        ),
+                                      child: VipNameText(
+                                        userId: logic.article.value.authorId,
+                                        userName:
+                                            logic.article.value.authorName,
                                         style: TextStyle(
                                           fontSize: 16.sp,
                                           color: Styles.secondaryTextColor,
