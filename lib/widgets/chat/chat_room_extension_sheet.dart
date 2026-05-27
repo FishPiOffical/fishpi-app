@@ -5,6 +5,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class ChatRoomExtensionSheet extends StatefulWidget {
   final List<ChatRoomExtension> extensions;
+  final Map<String, String> contextValues;
   final void Function(String text) onInsert;
   final Future<bool> Function(String text) onSend;
 
@@ -12,6 +13,7 @@ class ChatRoomExtensionSheet extends StatefulWidget {
     required this.extensions,
     required this.onInsert,
     required this.onSend,
+    this.contextValues = const {},
     super.key,
   });
 
@@ -443,7 +445,14 @@ class _ChatRoomExtensionSheetState extends State<ChatRoomExtensionSheet> {
   }
 
   String _renderPreview(ChatRoomExtension extension) {
-    return ChatRoomExtensionStore.render(extension, _values());
+    return ChatRoomExtensionStore.render(extension, _renderValues());
+  }
+
+  Map<String, String> _renderValues() {
+    return {
+      ..._values(),
+      ...widget.contextValues,
+    };
   }
 
   String? _validate() {
@@ -454,7 +463,9 @@ class _ChatRoomExtensionSheetState extends State<ChatRoomExtensionSheet> {
       _values(),
     );
     if (valueError != null) return valueError;
-    if (ChatRoomExtensionStore.render(extension, _values()).trim().isEmpty) {
+    if (ChatRoomExtensionStore.render(extension, _renderValues())
+        .trim()
+        .isEmpty) {
       return '生成内容不能为空';
     }
     return null;
@@ -466,7 +477,7 @@ class _ChatRoomExtensionSheetState extends State<ChatRoomExtensionSheet> {
       setState(() => _error = error);
       return;
     }
-    widget.onInsert(ChatRoomExtensionStore.render(_selected!, _values()));
+    widget.onInsert(ChatRoomExtensionStore.render(_selected!, _renderValues()));
     Navigator.pop(context);
   }
 
@@ -481,7 +492,7 @@ class _ChatRoomExtensionSheetState extends State<ChatRoomExtensionSheet> {
       _error = null;
     });
     final success = await widget.onSend(
-      ChatRoomExtensionStore.render(_selected!, _values()),
+      ChatRoomExtensionStore.render(_selected!, _renderValues()),
     );
     if (!mounted) return;
     setState(() => _sending = false);

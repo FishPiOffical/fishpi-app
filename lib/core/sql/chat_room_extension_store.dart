@@ -86,7 +86,7 @@ class ChatRoomExtensionStore {
 
   static String exportJson(List<ChatRoomExtension> extensions) {
     return const JsonEncoder.withIndent('  ').convert({
-      'version': 1,
+      'version': 2,
       'extensions': extensions.map((item) => item.toJson()).toList(),
     });
   }
@@ -155,6 +155,27 @@ class ChatRoomExtensionStore {
     }
     if (normalized.fields.length > maxFields) {
       return '单个扩展最多 $maxFields 个字段';
+    }
+    if (normalized.triggers.isEmpty) return '请至少选择一个触发时间';
+    if (!normalized.triggers.every(ChatRoomExtensionTrigger.values.contains)) {
+      return '触发时间不支持';
+    }
+    if (!ChatRoomExtensionTriggerAction.values
+        .contains(normalized.triggerAction)) {
+      return '触发后动作不支持';
+    }
+    if (normalized.triggerAction == ChatRoomExtensionTriggerAction.autoSend &&
+        !normalized.autoSendEnabled) {
+      return '自动发送需要先开启自动发送开关';
+    }
+    if (normalized.triggerAction == ChatRoomExtensionTriggerAction.autoSend &&
+        normalized.cooldownSeconds <
+            ChatRoomExtensionTriggerAction.minAutoSendCooldownSeconds) {
+      return '自动发送冷却不能少于 ${ChatRoomExtensionTriggerAction.minAutoSendCooldownSeconds} 秒';
+    }
+    if (!normalized.dataScopes
+        .every(ChatRoomExtensionDataScope.values.contains)) {
+      return '可读取数据范围不支持';
     }
 
     final keys = <String>{};
@@ -241,6 +262,11 @@ class ChatRoomExtension {
   final bool enabled;
   final String template;
   final List<ChatRoomExtensionField> fields;
+  final List<String> triggers;
+  final String triggerAction;
+  final int cooldownSeconds;
+  final bool autoSendEnabled;
+  final List<String> dataScopes;
   final int createdAt;
   final int updatedAt;
 
@@ -251,6 +277,12 @@ class ChatRoomExtension {
     this.enabled = true,
     required this.template,
     this.fields = const [],
+    this.triggers = const [ChatRoomExtensionTrigger.manual],
+    this.triggerAction = ChatRoomExtensionTriggerAction.preview,
+    this.cooldownSeconds =
+        ChatRoomExtensionTriggerAction.defaultCooldownSeconds,
+    this.autoSendEnabled = false,
+    this.dataScopes = ChatRoomExtensionDataScope.defaults,
     this.createdAt = 0,
     this.updatedAt = 0,
   });
@@ -268,17 +300,60 @@ class ChatRoomExtension {
                 Map<String, dynamic>.from(item),
               ))
           .toList(),
+      triggers: List.from(json['triggers'] ??
+              // 旧版扩展没有触发器字段，迁移时只允许手动触发，避免升级后自动响应消息。
+              const [ChatRoomExtensionTrigger.manual])
+          .map((item) => item.toString())
+          .where((item) => item.trim().isNotEmpty)
+          .toList(),
+      triggerAction: json['triggerAction']?.toString() ??
+          ChatRoomExtensionTriggerAction.preview,
+      cooldownSeconds:
+          int.tryParse(json['cooldownSeconds']?.toString() ?? '') ??
+              ChatRoomExtensionTriggerAction.defaultCooldownSeconds,
+      autoSendEnabled: json['autoSendEnabled'] == true,
+      dataScopes: List.from(
+        json['dataScopes'] ?? ChatRoomExtensionDataScope.defaults,
+      )
+          .map((item) => item.toString())
+          .where((item) => item.trim().isNotEmpty)
+          .toList(),
       createdAt: int.tryParse(json['createdAt']?.toString() ?? '') ?? 0,
       updatedAt: int.tryParse(json['updatedAt']?.toString() ?? '') ?? 0,
     );
   }
 
+  bool canTrigger(String trigger) => triggers.contains(trigger);
+
   ChatRoomExtension normalized() {
+    final normalizedTriggers = triggers
+        .map((item) => item.trim())
+        .where(ChatRoomExtensionTrigger.values.contains)
+        .toSet()
+        .toList();
+    final normalizedScopes = dataScopes
+        .map((item) => item.trim())
+        .where(ChatRoomExtensionDataScope.values.contains)
+        .toSet()
+        .toList();
     return copyWith(
       name: name.trim(),
       icon: icon.trim().isEmpty ? '扩' : icon.trim(),
       template: template.trim(),
       fields: fields.map((field) => field.normalized()).toList(),
+      triggers: normalizedTriggers.isEmpty
+          ? const [ChatRoomExtensionTrigger.manual]
+          : normalizedTriggers,
+      triggerAction:
+          ChatRoomExtensionTriggerAction.values.contains(triggerAction)
+              ? triggerAction
+              : ChatRoomExtensionTriggerAction.preview,
+      cooldownSeconds: cooldownSeconds < 0
+          ? ChatRoomExtensionTriggerAction.defaultCooldownSeconds
+          : cooldownSeconds,
+      dataScopes: normalizedScopes.isEmpty
+          ? ChatRoomExtensionDataScope.defaults
+          : normalizedScopes,
     );
   }
 
@@ -289,6 +364,11 @@ class ChatRoomExtension {
     bool? enabled,
     String? template,
     List<ChatRoomExtensionField>? fields,
+    List<String>? triggers,
+    String? triggerAction,
+    int? cooldownSeconds,
+    bool? autoSendEnabled,
+    List<String>? dataScopes,
     int? createdAt,
     int? updatedAt,
   }) {
@@ -299,6 +379,11 @@ class ChatRoomExtension {
       enabled: enabled ?? this.enabled,
       template: template ?? this.template,
       fields: fields ?? List<ChatRoomExtensionField>.from(this.fields),
+      triggers: triggers ?? List<String>.from(this.triggers),
+      triggerAction: triggerAction ?? this.triggerAction,
+      cooldownSeconds: cooldownSeconds ?? this.cooldownSeconds,
+      autoSendEnabled: autoSendEnabled ?? this.autoSendEnabled,
+      dataScopes: dataScopes ?? List<String>.from(this.dataScopes),
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );
@@ -312,6 +397,11 @@ class ChatRoomExtension {
       'enabled': enabled,
       'template': template,
       'fields': fields.map((item) => item.toJson()).toList(),
+      'triggers': triggers,
+      'triggerAction': triggerAction,
+      'cooldownSeconds': cooldownSeconds,
+      'autoSendEnabled': autoSendEnabled,
+      'dataScopes': dataScopes,
       'createdAt': createdAt,
       'updatedAt': updatedAt,
     };
@@ -406,4 +496,74 @@ class ChatRoomExtensionFieldType {
         return '短文本';
     }
   }
+}
+
+class ChatRoomExtensionTrigger {
+  static const manual = 'manual';
+  static const afterSend = 'afterSend';
+  static const receiveText = 'receiveText';
+  static const receiveSingleImage = 'receiveSingleImage';
+
+  static const values = [
+    manual,
+    afterSend,
+    receiveText,
+    receiveSingleImage,
+  ];
+
+  static String labelOf(String trigger) {
+    switch (trigger) {
+      case afterSend:
+        return '发消息后';
+      case receiveText:
+        return '收到文字';
+      case receiveSingleImage:
+        return '收到图片';
+      case manual:
+      default:
+        return '手动使用';
+    }
+  }
+}
+
+class ChatRoomExtensionTriggerAction {
+  static const preview = 'preview';
+  static const insert = 'insert';
+  static const autoSend = 'autoSend';
+  static const defaultCooldownSeconds = 10;
+  static const minAutoSendCooldownSeconds = 10;
+
+  static const values = [
+    preview,
+    insert,
+    autoSend,
+  ];
+
+  static String labelOf(String action) {
+    switch (action) {
+      case insert:
+        return '填入输入框';
+      case autoSend:
+        return '自动发送';
+      case preview:
+      default:
+        return '预览确认';
+    }
+  }
+}
+
+class ChatRoomExtensionDataScope {
+  static const me = 'me';
+  static const message = 'message';
+  static const room = 'room';
+  static const time = 'time';
+
+  static const defaults = [
+    me,
+    message,
+    room,
+    time,
+  ];
+
+  static const values = defaults;
 }

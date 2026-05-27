@@ -5,6 +5,7 @@ import 'package:fishpi_app/core/chat/chat_barrager_utils.dart';
 import 'package:fishpi_app/core/chat/chat_message_utils.dart';
 import 'package:fishpi_app/core/chat/chat_quote_utils.dart';
 import 'package:fishpi_app/core/chat/chat_red_packet_utils.dart';
+import 'package:fishpi_app/core/chat/chat_room_extension_runtime.dart';
 import 'package:fishpi_app/core/chat/chat_topic_utils.dart';
 import 'package:fishpi_app/core/chat/chat_voice_message_utils.dart';
 import 'package:fishpi_app/core/debug/memory_snapshot.dart';
@@ -22,6 +23,7 @@ import 'package:fishpi_app/routers/navigator.dart';
 import 'package:fishpi_app/widgets/pi_editer.dart';
 import 'package:fishpi_app/widgets/pi_transfer.dart';
 import 'package:fishpi_app/widgets/pop_route.dart';
+import 'package:fishpi_app/widgets/chat/chat_room_extension_trigger_sheet.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:get/get.dart';
 import 'package:record/record.dart';
@@ -90,6 +92,7 @@ class ChatLogic extends GetxController {
   bool _isStoppingVoice = false;
   int _barragerSequence = 0;
   int _barragerTrack = 0;
+  late final ChatRoomExtensionRuntime _extensionRuntime;
 
   ConversationLogic? get _conversationController =>
       Get.isRegistered<ConversationLogic>()
@@ -99,6 +102,11 @@ class ChatLogic extends GetxController {
   @override
   void onInit() {
     super.onInit();
+    _extensionRuntime = ChatRoomExtensionRuntime(
+      userLoader: _loadCurrentUserForExtension,
+      livenessLoader: () => imController.fishpi.user.liveness(),
+      topicProvider: () => currentTopic.value,
+    );
     final args = Get.arguments ?? {};
     isGroup.value = args['isGroup'] ?? false;
     userName.value = args['userName'] ?? '聊天室';
@@ -224,6 +232,7 @@ class ChatLogic extends GetxController {
     );
     messageList.refresh();
     _scheduleAutoGrabRedPacket(message);
+    _triggerReceiveExtensions(message);
     if (shouldScroll) {
       scrollToBottom(delay: 300);
     }
@@ -448,6 +457,7 @@ class ChatLogic extends GetxController {
     await _sendComposedText(
       content.value,
       clearComposerOnSuccess: true,
+      triggerExtensions: true,
     );
   }
 
@@ -456,6 +466,7 @@ class ChatLogic extends GetxController {
     return _sendComposedText(
       text,
       clearComposerOnSuccess: false,
+      triggerExtensions: false,
     );
   }
 
@@ -474,6 +485,7 @@ class ChatLogic extends GetxController {
   Future<bool> _sendComposedText(
     String text, {
     required bool clearComposerOnSuccess,
+    required bool triggerExtensions,
   }) async {
     if (text.trim().isEmpty) return false;
     final sendText = ChatQuoteUtils.composeMessage(
@@ -493,6 +505,12 @@ class ChatLogic extends GetxController {
       }
       quoteDraft.value = null;
       scrollToBottom(delay: 300);
+      if (triggerExtensions && isGroup.value) {
+        await _runExtensionTriggers(
+          ChatRoomExtensionTrigger.afterSend,
+          message: _localSentMessage(sendText),
+        );
+      }
       return true;
     } catch (e) {
       ToastManager.showToast('发送失败：$e');
@@ -766,6 +784,112 @@ class ChatLogic extends GetxController {
     } catch (_) {
       extensions.clear();
     }
+  }
+
+  Future<Map<String, String>> extensionContextValues() {
+    return _extensionRuntime.contextValues(
+      extension: const ChatRoomExtension(
+        name: '上下文',
+        template: r'${me.liveness}',
+      ),
+    );
+  }
+
+  Future<UserInfo> _loadCurrentUserForExtension() async {
+    var current = userInfo.value;
+    if (current.userName.isNotEmpty) return current;
+    current = imController.fishpi.user.current;
+    if (current.userName.isNotEmpty) {
+      userInfo.value = current;
+      return current;
+    }
+    current = await imController.fishpi.user.info();
+    userInfo.value = current;
+    return current;
+  }
+
+  void _triggerReceiveExtensions(ChatRoomMessage message) {
+    if (!isGroup.value || _isOwnMessage(message)) return;
+    final trigger = ChatRoomExtensionRuntime.triggerForReceivedMessage(message);
+    if (trigger == null) return;
+    _runExtensionTriggers(trigger, message: message);
+  }
+
+  Future<void> _runExtensionTriggers(
+    String trigger, {
+    ChatRoomMessage? message,
+  }) async {
+    if (!isGroup.value || extensions.isEmpty) return;
+    for (final extension in extensions.toList()) {
+      final result = await _extensionRuntime.renderForTrigger(
+        extension: extension,
+        trigger: trigger,
+        message: message,
+      );
+      if (result == null) continue;
+      await _handleExtensionTriggerResult(result);
+    }
+  }
+
+  Future<void> _handleExtensionTriggerResult(
+    ChatRoomExtensionRenderResult result,
+  ) async {
+    switch (result.extension.triggerAction) {
+      case ChatRoomExtensionTriggerAction.insert:
+        insertExtensionResult(result.text);
+        return;
+      case ChatRoomExtensionTriggerAction.autoSend:
+        if (!ChatRoomExtensionRuntime.canAutoSend(result.extension)) {
+          _showExtensionTriggerPreview(result);
+          return;
+        }
+        await _sendComposedText(
+          result.text,
+          clearComposerOnSuccess: false,
+          triggerExtensions: false,
+        );
+        return;
+      case ChatRoomExtensionTriggerAction.preview:
+      default:
+        _showExtensionTriggerPreview(result);
+        return;
+    }
+  }
+
+  void _showExtensionTriggerPreview(ChatRoomExtensionRenderResult result) {
+    if (Get.context == null) return;
+    Get.bottomSheet(
+      ChatRoomExtensionTriggerSheet(
+        result: result,
+        onInsert: insertExtensionResult,
+        onSend: sendExtensionResult,
+      ),
+      backgroundColor: CupertinoColors.transparent,
+      isScrollControlled: true,
+    );
+  }
+
+  ChatRoomMessage _localSentMessage(String text) {
+    final current = userInfo.value;
+    return ChatRoomMessage(
+      content: text,
+      md: text,
+      userName: current.userName,
+      nickname: current.nickname,
+      userOId: int.tryParse(current.oId) ?? 0,
+      avatarURL: current.avatarURL,
+      time: DateTime.now().toLocal().toString().split('.').first,
+    );
+  }
+
+  bool _isOwnMessage(ChatRoomMessage message) {
+    final current = userInfo.value.userName.isNotEmpty
+        ? userInfo.value
+        : imController.fishpi.user.current;
+    final currentName = current.userName.trim();
+    final currentId = current.oId.trim();
+    return (currentName.isNotEmpty && message.userName == currentName) ||
+        (currentId.isNotEmpty && message.userOId.toString() == currentId);
   }
 
   Future<bool> sendBarrager(String content, String color) async {

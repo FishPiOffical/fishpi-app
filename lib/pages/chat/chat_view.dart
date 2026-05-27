@@ -4,6 +4,7 @@ import 'package:fishpi_app/core/chat/chat_message_utils.dart';
 import 'package:fishpi_app/core/chat/chat_music_utils.dart';
 import 'package:fishpi_app/core/chat/chat_red_packet_utils.dart';
 import 'package:fishpi_app/core/chat/chat_weather_utils.dart';
+import 'package:fishpi_app/core/sql/chat_room_extension_store.dart';
 import 'package:fishpi_app/res/styles.dart';
 import 'package:fishpi_app/utils/pi_utils.dart';
 import 'package:fishpi_app/widgets/chat/chat_barrager_overlay.dart';
@@ -529,10 +530,15 @@ class ChatPage extends StatelessWidget {
     );
   }
 
-  void _showExtensionSheet() {
+  Future<void> _showExtensionSheet() async {
+    final contextValues = await logic.extensionContextValues();
     Get.bottomSheet(
       ChatRoomExtensionSheet(
-        extensions: logic.extensions.toList(),
+        extensions: logic.extensions
+            .where((extension) =>
+                extension.canTrigger(ChatRoomExtensionTrigger.manual))
+            .toList(),
+        contextValues: contextValues,
         onInsert: logic.insertExtensionResult,
         onSend: logic.sendExtensionResult,
       ),

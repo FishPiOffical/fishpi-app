@@ -23,7 +23,12 @@ class _ChatRoomExtensionEditorSheetState
   late final TextEditingController _nameController;
   late final TextEditingController _iconController;
   late final TextEditingController _templateController;
+  late final TextEditingController _cooldownController;
   late bool _enabled;
+  late bool _autoSendEnabled;
+  late String _triggerAction;
+  late Set<String> _triggers;
+  late Set<String> _dataScopes;
   final List<_EditableExtensionField> _fields = [];
   String? _error;
   bool _saving = false;
@@ -36,7 +41,19 @@ class _ChatRoomExtensionEditorSheetState
     _iconController = TextEditingController(text: extension?.icon ?? '扩');
     _templateController =
         TextEditingController(text: extension?.template ?? '');
+    _cooldownController = TextEditingController(
+      text: (extension?.cooldownSeconds ??
+              ChatRoomExtensionTriggerAction.defaultCooldownSeconds)
+          .toString(),
+    );
     _enabled = extension?.enabled ?? true;
+    _autoSendEnabled = extension?.autoSendEnabled ?? false;
+    _triggerAction =
+        extension?.triggerAction ?? ChatRoomExtensionTriggerAction.preview;
+    _triggers = (extension?.triggers ?? const [ChatRoomExtensionTrigger.manual])
+        .toSet();
+    _dataScopes =
+        (extension?.dataScopes ?? ChatRoomExtensionDataScope.defaults).toSet();
     for (final field in extension?.fields ?? const <ChatRoomExtensionField>[]) {
       _fields.add(_EditableExtensionField.fromField(field));
     }
@@ -47,6 +64,7 @@ class _ChatRoomExtensionEditorSheetState
     _nameController.dispose();
     _iconController.dispose();
     _templateController.dispose();
+    _cooldownController.dispose();
     for (final field in _fields) {
       field.dispose();
     }
@@ -87,6 +105,12 @@ class _ChatRoomExtensionEditorSheetState
               ),
               10.verticalSpace,
               _buildSwitch(),
+              12.verticalSpace,
+              _buildTriggerSection(),
+              12.verticalSpace,
+              _buildTriggerActionSection(),
+              12.verticalSpace,
+              _buildDataScopeSection(),
               12.verticalSpace,
               _buildInput(
                 controller: _templateController,
@@ -201,6 +225,143 @@ class _ChatRoomExtensionEditorSheetState
           },
         ),
       ],
+    );
+  }
+
+  Widget _buildTriggerSection() {
+    return _buildPanel(
+      title: '触发时间',
+      child: Wrap(
+        spacing: 8.w,
+        runSpacing: 8.h,
+        children: [
+          for (final trigger in ChatRoomExtensionTrigger.values)
+            _buildToggleChip(
+              key: ValueKey('chat_room_extension_trigger_$trigger'),
+              text: ChatRoomExtensionTrigger.labelOf(trigger),
+              selected: _triggers.contains(trigger),
+              onTap: () {
+                setState(() {
+                  if (_triggers.contains(trigger)) {
+                    _triggers.remove(trigger);
+                  } else {
+                    _triggers.add(trigger);
+                  }
+                });
+              },
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTriggerActionSection() {
+    return _buildPanel(
+      title: '触发后动作',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Wrap(
+            spacing: 8.w,
+            runSpacing: 8.h,
+            children: [
+              for (final action in ChatRoomExtensionTriggerAction.values)
+                _buildToggleChip(
+                  key: ValueKey('chat_room_extension_action_$action'),
+                  text: ChatRoomExtensionTriggerAction.labelOf(action),
+                  selected: _triggerAction == action,
+                  onTap: () {
+                    setState(() => _triggerAction = action);
+                  },
+                ),
+            ],
+          ),
+          10.verticalSpace,
+          GestureDetector(
+            onTap: () => setState(() => _autoSendEnabled = !_autoSendEnabled),
+            child: Row(
+              children: [
+                Checkbox(
+                  key: const ValueKey('chat_room_extension_auto_send_switch'),
+                  value: _autoSendEnabled,
+                  onChanged: (value) {
+                    setState(() => _autoSendEnabled = value == true);
+                  },
+                ),
+                Expanded(
+                  child: Text(
+                    '允许这个扩展自动发送消息',
+                    style: TextStyle(
+                      color: Styles.primaryTextColor,
+                      fontSize: 14.sp,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          8.verticalSpace,
+          _buildInput(
+            controller: _cooldownController,
+            label: '冷却时间（秒）',
+            hintText: '自动发送不少于 10 秒',
+            keyboardType: TextInputType.number,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDataScopeSection() {
+    return _buildPanel(
+      title: '可读取数据',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            '模板可使用当前用户、触发消息、聊天室话题和当前时间变量，例如 '
+            r'${me.point}、${me.liveness}、${message.preview}、${room.topic}。',
+            style: TextStyle(
+              color: const Color(0xFF777777),
+              fontSize: 12.sp,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          10.verticalSpace,
+          Wrap(
+            spacing: 8.w,
+            runSpacing: 8.h,
+            children: [
+              _buildToggleChip(
+                key: const ValueKey('chat_room_extension_scope_me'),
+                text: '我的数据',
+                selected: _dataScopes.contains(ChatRoomExtensionDataScope.me),
+                onTap: () => _toggleScope(ChatRoomExtensionDataScope.me),
+              ),
+              _buildToggleChip(
+                key: const ValueKey('chat_room_extension_scope_message'),
+                text: '消息数据',
+                selected:
+                    _dataScopes.contains(ChatRoomExtensionDataScope.message),
+                onTap: () => _toggleScope(ChatRoomExtensionDataScope.message),
+              ),
+              _buildToggleChip(
+                key: const ValueKey('chat_room_extension_scope_room'),
+                text: '聊天室数据',
+                selected: _dataScopes.contains(ChatRoomExtensionDataScope.room),
+                onTap: () => _toggleScope(ChatRoomExtensionDataScope.room),
+              ),
+              _buildToggleChip(
+                key: const ValueKey('chat_room_extension_scope_time'),
+                text: '当前时间',
+                selected: _dataScopes.contains(ChatRoomExtensionDataScope.time),
+                onTap: () => _toggleScope(ChatRoomExtensionDataScope.time),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 
@@ -351,6 +512,7 @@ class _ChatRoomExtensionEditorSheetState
     required String hintText,
     int maxLines = 1,
     int? maxLength,
+    TextInputType? keyboardType,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -368,6 +530,7 @@ class _ChatRoomExtensionEditorSheetState
           controller: controller,
           maxLines: maxLines,
           maxLength: maxLength,
+          keyboardType: keyboardType,
           decoration: InputDecoration(
             hintText: hintText,
             counterText: '',
@@ -433,6 +596,66 @@ class _ChatRoomExtensionEditorSheetState
     );
   }
 
+  Widget _buildPanel({
+    required String title,
+    required Widget child,
+  }) {
+    return Container(
+      width: 1.sw - 32.w,
+      padding: EdgeInsets.all(12.w),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: Styles.commonBorder,
+        borderRadius: BorderRadius.circular(14.r),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: TextStyle(
+              color: Styles.primaryTextColor,
+              fontSize: 15.sp,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          10.verticalSpace,
+          child,
+        ],
+      ),
+    );
+  }
+
+  Widget _buildToggleChip({
+    required Key key,
+    required String text,
+    required bool selected,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      key: key,
+      onTap: onTap,
+      child: Container(
+        height: 34.w,
+        padding: EdgeInsets.symmetric(horizontal: 10.w),
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: selected ? Styles.primaryTextColor : Styles.titleBarColor,
+          border: Styles.commonBorder,
+          borderRadius: BorderRadius.circular(10.r),
+        ),
+        child: Text(
+          text,
+          style: TextStyle(
+            color: selected ? Colors.white : Styles.primaryTextColor,
+            fontSize: 13.sp,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildSaveButton() {
     return GestureDetector(
       key: const ValueKey('chat_room_extension_save_button'),
@@ -465,6 +688,12 @@ class _ChatRoomExtensionEditorSheetState
       enabled: _enabled,
       template: _templateController.text,
       fields: _fields.map((field) => field.toField()).toList(),
+      triggers: _triggers.toList(),
+      triggerAction: _triggerAction,
+      cooldownSeconds: int.tryParse(_cooldownController.text.trim()) ??
+          ChatRoomExtensionTriggerAction.defaultCooldownSeconds,
+      autoSendEnabled: _autoSendEnabled,
+      dataScopes: _dataScopes.toList(),
       createdAt: widget.extension?.createdAt ?? 0,
       updatedAt: widget.extension?.updatedAt ?? 0,
     );
@@ -488,6 +717,16 @@ class _ChatRoomExtensionEditorSheetState
       return;
     }
     Navigator.pop(context);
+  }
+
+  void _toggleScope(String scope) {
+    setState(() {
+      if (_dataScopes.contains(scope)) {
+        _dataScopes.remove(scope);
+      } else {
+        _dataScopes.add(scope);
+      }
+    });
   }
 }
 
