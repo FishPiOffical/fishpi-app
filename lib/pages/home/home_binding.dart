@@ -9,10 +9,17 @@ import 'home_logic.dart';
 class HomeBinding extends Bindings {
   @override
   void dependencies() {
-    Get.lazyPut(() => HomeLogic());
-    Get.lazyPut(() => ConversationLogic());
-    Get.lazyPut(() => ForumLogic());
-    Get.lazyPut(() => BreezemoonsLogic());
-    Get.lazyPut(() => MineLogic());
+    _putOnce(() => HomeLogic());
+    _putOnce(() => ConversationLogic());
+    _putOnce(() => ForumLogic());
+    _putOnce(() => BreezemoonsLogic());
+    _putOnce(() => MineLogic());
+  }
+
+  T _putOnce<T extends Object>(T Function() builder) {
+    if (Get.isRegistered<T>()) {
+      return Get.find<T>();
+    }
+    return Get.put<T>(builder());
   }
 }

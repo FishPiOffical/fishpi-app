@@ -11,7 +11,20 @@ import '../forum/forum_view.dart';
 import 'home_logic.dart';
 
 class HomePage extends StatelessWidget {
+  static const List<String> _titles = [
+    '聊天',
+    '帖子',
+    '清风明月',
+    '我的',
+  ];
+
   final HomeLogic logic = Get.find<HomeLogic>();
+  late final List<Widget> _pages = [
+    ConversationPage(),
+    ForumPage(),
+    BreezemoonsPage(),
+    MinePage(),
+  ];
 
   HomePage({super.key});
 
@@ -20,23 +33,13 @@ class HomePage extends StatelessWidget {
     return Obx(
       () => Scaffold(
         appBar: PiTitleBar.home(
-          title: [
-            '聊天',
-            '帖子',
-            '清风明月',
-            '我的',
-          ][logic.index.value],
+          title: _titles[logic.index.value],
         ),
         body: PageView(
           controller: logic.pageController,
           onPageChanged: logic.onPageChanged,
           physics: const NeverScrollableScrollPhysics(),
-          children: [
-            ConversationPage(),
-            ForumPage(),
-            BreezemoonsPage(),
-            MinePage(),
-          ],
+          children: _pages,
         ),
         bottomNavigationBar: Container(
           color: Styles.primaryColor,
