@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:dio/dio.dart';
 import 'package:web_socket_channel/io.dart';
@@ -11,8 +12,22 @@ class WebsocketInfo {
 }
 
 class Request {
+  static const connectTimeout = Duration(seconds: 8);
+  static const sendTimeout = Duration(seconds: 10);
+  static const receiveTimeout = Duration(seconds: 15);
+  static const websocketMaxRetryTimes = 10;
+  static const websocketMaxRetryDelay = Duration(seconds: 30);
+
   static String _domain = 'fishpi.cn';
   static String _protocol = 'https';
+  static final Dio _dio = Dio(
+    BaseOptions(
+      connectTimeout: connectTimeout,
+      sendTimeout: sendTimeout,
+      receiveTimeout: receiveTimeout,
+    ),
+  );
+
   static String _parseUrl(String url, Map<String, dynamic>? params) {
     if (params != null) {
       url = '$url?';
@@ -45,9 +60,14 @@ class Request {
 
   static Future<T> request<T>(String url, {method, data}) async {
     try {
-      var dio = Dio();
-      var response = await dio.request('$_protocol://$_domain/$url',
-          data: data, options: Options(method: method));
+      var response = await _dio.request(
+        '$_protocol://$_domain/$url',
+        data: data,
+        options: Options(
+          method: method,
+          validateStatus: (_) => true,
+        ),
+      );
       if (response.statusCode == 200 || response.statusCode == 201) {
         try {
           if (response.data is Map) {
@@ -65,11 +85,68 @@ class Request {
       } else if (response.statusCode == 401) {
         return Future.error('401');
       } else {
-        return Future.error('HTTP错误');
+        return Future.error('服务器响应异常(${response.statusCode ?? '未知'})');
       }
+    } on DioException catch (e) {
+      return Future.error(friendlyError(e));
     } catch (e) {
-      return Future.error(e);
+      return Future.error(friendlyError(e));
     }
+  }
+
+  static String friendlyError(Object error) {
+    if (error is DioException) {
+      switch (error.type) {
+        case DioExceptionType.connectionTimeout:
+        case DioExceptionType.sendTimeout:
+        case DioExceptionType.receiveTimeout:
+          return '网络连接超时，请检查网络后重试';
+        case DioExceptionType.connectionError:
+          return '网络连接失败，请检查网络后重试';
+        case DioExceptionType.badCertificate:
+          return '网络证书异常，请稍后重试';
+        case DioExceptionType.badResponse:
+          final statusCode = error.response?.statusCode;
+          if (statusCode == 401) return '401';
+          return '服务器响应异常(${statusCode ?? '未知'})';
+        case DioExceptionType.cancel:
+          return '请求已取消';
+        case DioExceptionType.unknown:
+          return _friendlyUnknownError(error.error ?? error);
+      }
+    }
+    return _friendlyUnknownError(error);
+  }
+
+  static String _friendlyUnknownError(Object error) {
+    if (error is SocketException) {
+      return '网络连接失败，请检查网络后重试';
+    }
+    if (error is TimeoutException) {
+      return '网络连接超时，请检查网络后重试';
+    }
+    final raw = error.toString();
+    if (raw.contains('Failed host lookup') ||
+        raw.contains('SocketException') ||
+        raw.contains('Network is unreachable') ||
+        raw.contains('Connection refused')) {
+      return '网络连接失败，请检查网络后重试';
+    }
+    if (raw.contains('timed out') || raw.contains('TimeoutException')) {
+      return '网络连接超时，请检查网络后重试';
+    }
+    return raw;
+  }
+
+  static Duration websocketRetryDelay(
+    int retryTimes, {
+    Duration baseDelay = const Duration(seconds: 1),
+    Duration maxDelay = websocketMaxRetryDelay,
+  }) {
+    final safeRetryTimes = retryTimes < 0 ? 0 : retryTimes;
+    final multiplier = 1 << safeRetryTimes.clamp(0, 5);
+    final delay = baseDelay * multiplier;
+    return delay > maxDelay ? maxDelay : delay;
   }
 
   static WebsocketInfo connect(
@@ -91,11 +168,15 @@ class Request {
         ? url
         : '${_protocol == 'https' ? 'wss' : 'ws'}://$_domain/$url';
 
-    var ws = IOWebSocketChannel.connect(url);
+    var ws = IOWebSocketChannel.connect(
+      url,
+      connectTimeout: connectTimeout,
+    );
     // 连接失败时 web_socket_channel 会同时让 ready Future 进入 error。
     // SDK 以前只监听了 stream.onError，ready 的错误会变成未捕获异常。
     ws.ready.catchError((error) {
       if (onError != null) onError(error, ws);
+      ws.sink.close();
     });
     return WebsocketInfo(
       steam: ws.stream.listen(
@@ -107,12 +188,8 @@ class Request {
           } catch (e) {}
           onMessage(msg);
         },
-        onDone: onClose == null
-            ? () => print('WebSocket disconnected')
-            : () => onClose(ws),
-        onError: onError == null
-            ? (error) => print('WebSocket error: $error')
-            : (error) => onError(error, ws),
+        onDone: onClose == null ? null : () => onClose(ws),
+        onError: onError == null ? null : (error) => onError(error, ws),
       ),
       ws: ws,
     );

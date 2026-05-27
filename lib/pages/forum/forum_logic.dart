@@ -18,6 +18,7 @@ class ForumLogic extends GetxController {
   final list = <ArticleDetail>[].obs;
   final page = 1.obs;
   final isFinished = false.obs;
+  final isLoading = false.obs;
   final List<BlackUser> _blackUsers = [];
   StreamSubscription<void>? _blackListSubscription;
   StreamSubscription<void>? _remarkSubscription;
@@ -36,34 +37,49 @@ class ForumLogic extends GetxController {
   }
 
   void initArticle() async {
-    await _loadBlackUsers();
-    ArticleList res = await imController.fishpi.article.list(
-      type: ArticleListType.Reply,
-      page: page.value,
-    );
-    final visibleList = _visibleArticles(res.list);
-    if (page.value == 1) {
-      list.value = MemoryListUtils.keepFirst(
-        ArticleUtils.sortStickyFirst(visibleList),
-        MemoryLimits.contentListItems,
+    if (isLoading.value) return;
+    isLoading.value = true;
+    final requestPage = page.value;
+    try {
+      await _loadBlackUsers();
+      ArticleList res = await imController.fishpi.article.list(
+        type: ArticleListType.Reply,
+        page: requestPage,
       );
-      list.refresh();
-      refresherController.loadComplete();
-    } else {
-      list.value = MemoryListUtils.keepFirst(
-        [
-          ...list,
-          ...visibleList,
-        ],
-        MemoryLimits.contentListItems,
-      );
-      list.refresh();
-      if (res.list.isNotEmpty) {
+      final visibleList = _visibleArticles(res.list);
+      if (requestPage == 1) {
+        list.value = MemoryListUtils.keepFirst(
+          ArticleUtils.sortStickyFirst(visibleList),
+          MemoryLimits.contentListItems,
+        );
+        list.refresh();
+        refresherController.refreshCompleted();
         refresherController.loadComplete();
       } else {
-        refresherController.loadNoData();
-        isFinished.value = true;
+        list.value = MemoryListUtils.keepFirst(
+          [
+            ...list,
+            ...visibleList,
+          ],
+          MemoryLimits.contentListItems,
+        );
+        list.refresh();
+        if (res.list.isNotEmpty) {
+          refresherController.loadComplete();
+        } else {
+          refresherController.loadNoData();
+          isFinished.value = true;
+        }
       }
+    } catch (_) {
+      if (requestPage > 1 && page.value == requestPage) {
+        page.value = requestPage - 1;
+      }
+      requestPage == 1
+          ? refresherController.refreshFailed()
+          : refresherController.loadFailed();
+    } finally {
+      isLoading.value = false;
     }
   }
 
@@ -71,7 +87,6 @@ class ForumLogic extends GetxController {
     isFinished.value = false;
     page.value = 1;
     initArticle();
-    refresherController.refreshCompleted();
   }
 
   void onLoading() {

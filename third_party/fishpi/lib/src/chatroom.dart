@@ -14,6 +14,8 @@ class Chatroom {
   WebsocketInfo? _ws;
   final List<ChatroomListener> _wsCallbacks = [];
   int _retryTimes = 0;
+  Timer? _reconnectTimer;
+  Timer? _retryResetTimer;
 
   /// 消息小尾巴
   final ChatSource client = ChatSource(version: packageVersion);
@@ -254,6 +256,7 @@ class Chatroom {
     _ws = Request.connect(
       url,
       onMessage: (msg) {
+        _retryTimes = 0;
         dynamic data;
         switch (msg['type']) {
           case ChatRoomMessageType.online:
@@ -308,27 +311,49 @@ class Chatroom {
           call(ChatRoomData(msg['type'], data));
         }
       },
-      onClose: (IOWebSocketChannel ws) => {
-        Timer(Duration(milliseconds: timeout), () {
-          ws.sink.close();
-          _ws?.steam.cancel();
-          _ws = null;
-          if (close != null) close();
-          if (_retryTimes >= 10) return;
-          reconnect(url: url, timeout: timeout, error: error, close: close)
-              .catchError((err) {
-            if (error != null) error(err);
-          });
-          _retryTimes++;
-        }),
-        Timer(Duration(milliseconds: timeout * 100), () {
-          _retryTimes = 0;
-        })
+      onClose: (IOWebSocketChannel ws) {
+        if (_ws?.ws != ws) return;
+        _scheduleReconnect(
+          url: url,
+          timeout: timeout,
+          error: error,
+          close: close,
+        );
       },
       onError: (err, ws) {
         if (error != null) error(err);
       },
     );
+  }
+
+  void _scheduleReconnect({
+    required String url,
+    required int timeout,
+    Function(dynamic)? error,
+    Function? close,
+  }) {
+    _reconnectTimer?.cancel();
+    if (_wsCallbacks.isEmpty || _retryTimes >= Request.websocketMaxRetryTimes) {
+      return;
+    }
+
+    final delay = Request.websocketRetryDelay(_retryTimes);
+    _retryTimes++;
+    _reconnectTimer = Timer(delay, () {
+      _ws?.steam.cancel();
+      _ws?.ws.sink.close();
+      _ws = null;
+      if (_wsCallbacks.isEmpty) return;
+      if (close != null) close();
+      reconnect(url: url, timeout: timeout, error: error, close: close)
+          .catchError((err) {
+        if (error != null) error(err);
+      });
+    });
+    _retryResetTimer?.cancel();
+    _retryResetTimer = Timer(const Duration(minutes: 1), () {
+      _retryTimes = 0;
+    });
   }
 
   /// 移除消息监听函数
@@ -337,9 +362,11 @@ class Chatroom {
   void removeListener(ChatroomListener? wsCallback) {
     if (wsCallback == null) {
       _wsCallbacks.clear();
+      _closeConnection();
       return;
     }
     _wsCallbacks.remove(wsCallback);
+    if (_wsCallbacks.isEmpty) _closeConnection();
   }
 
   /// 添加消息监听函数
@@ -356,4 +383,13 @@ class Chatroom {
   }
 
   bool get isConnected => _ws != null;
+
+  void _closeConnection() {
+    _reconnectTimer?.cancel();
+    _retryResetTimer?.cancel();
+    _retryTimes = 0;
+    _ws?.steam.cancel();
+    _ws?.ws.sink.close();
+    _ws = null;
+  }
 }

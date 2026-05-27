@@ -11,6 +11,8 @@ class Chat {
   final Map<String, WebsocketInfo> _wss = {};
   final Map<String, List<ChatListener>> _wsCallbacks = {};
   final Map<String, int> _retryTimes = {};
+  final Map<String, Timer> _reconnectTimers = {};
+  final Map<String, Timer> _retryResetTimers = {};
 
   Chat([String? token]) {
     this.token = token ?? this.token;
@@ -147,12 +149,14 @@ class Chat {
       _wss[user]?.steam.cancel();
       _wss[user]?.ws.sink.close();
     }
+    _retryTimes[user] = _retryTimes[user] ?? 0;
 
     var channel = user != '_user-channel_' ? 'chat-channel' : 'user-channel';
     _wss[user] = Request.connect(
       channel,
       params: {'apiKey': token, 'toUser': user},
       onMessage: (msg) {
+        _retryTimes[user] = 0;
         for (ChatListener call in _wsCallbacks[user] ?? []) {
           var type = ChatMsgType.data;
           if (['chatUnreadCountRefresh', 'newIdleChatMessage']
@@ -174,22 +178,14 @@ class Chat {
           }
         }
       },
-      onClose: (IOWebSocketChannel ws) => {
-        Timer(Duration(milliseconds: timeout), () {
-          ws.sink.close();
-          _wss[user]?.steam.cancel();
-          _wss.remove(user);
-          if (close != null) close();
-          if (_retryTimes[user]! >= 10) return;
-          connect(user: user, timeout: timeout, error: error, close: close)
-              .catchError((err) {
-            if (error != null) error(err);
-          });
-          _retryTimes[user] = (_retryTimes[user] ?? 0) + 1;
-        }),
-        Timer(Duration(milliseconds: timeout * 100), () {
-          _retryTimes[user] = 0;
-        })
+      onClose: (IOWebSocketChannel ws) {
+        if (_wss[user]?.ws != ws) return;
+        _scheduleReconnect(
+          user: user,
+          timeout: timeout,
+          error: error,
+          close: close,
+        );
       },
       onError: (err, ws) {
         if (error != null) {
@@ -216,6 +212,38 @@ class Chat {
     connect(user: user);
   }
 
+  void _scheduleReconnect({
+    required String user,
+    required int timeout,
+    Function(dynamic)? error,
+    Function? close,
+  }) {
+    _reconnectTimers[user]?.cancel();
+    final callbacks = _wsCallbacks[user] ?? [];
+    final retryTimes = _retryTimes[user] ?? 0;
+    if (callbacks.isEmpty || retryTimes >= Request.websocketMaxRetryTimes) {
+      return;
+    }
+
+    final delay = Request.websocketRetryDelay(retryTimes);
+    _retryTimes[user] = retryTimes + 1;
+    _reconnectTimers[user] = Timer(delay, () {
+      _wss[user]?.steam.cancel();
+      _wss[user]?.ws.sink.close();
+      _wss.remove(user);
+      if ((_wsCallbacks[user] ?? []).isEmpty) return;
+      if (close != null) close();
+      connect(user: user, timeout: timeout, error: error, close: close)
+          .catchError((err) {
+        if (error != null) error(err);
+      });
+    });
+    _retryResetTimers[user]?.cancel();
+    _retryResetTimers[user] = Timer(const Duration(minutes: 1), () {
+      _retryTimes[user] = 0;
+    });
+  }
+
   /// 移除消息监听函数
   ///
   /// - `user` 指定用户消息监听函数，空为新信息监听
@@ -226,6 +254,7 @@ class Chat {
   }) {
     if (wsCallback == null) {
       _wsCallbacks.remove(user);
+      _closeConnection(user);
       return;
     }
 
@@ -235,6 +264,10 @@ class Chat {
     }
 
     _wsCallbacks[user]!.remove(wsCallback);
+    if (_wsCallbacks[user]!.isEmpty) {
+      _wsCallbacks.remove(user);
+      _closeConnection(user);
+    }
   }
 
   /// 是否已连接
@@ -250,5 +283,14 @@ class Chat {
     }
     _wss[user]!.ws.sink.add(content);
     return _wss[user]!;
+  }
+
+  void _closeConnection(String user) {
+    _reconnectTimers.remove(user)?.cancel();
+    _retryResetTimers.remove(user)?.cancel();
+    _retryTimes.remove(user);
+    _wss[user]?.steam.cancel();
+    _wss[user]?.ws.sink.close();
+    _wss.remove(user);
   }
 }

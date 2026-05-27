@@ -5,7 +5,12 @@ import 'package:get/get.dart';
 
 class SplashLogic extends GetxController {
   final isLogin = false.obs;
-  final dio = Dio();
+  final dio = Dio(
+    BaseOptions(
+      connectTimeout: const Duration(seconds: 5),
+      receiveTimeout: const Duration(seconds: 8),
+    ),
+  );
 
   @override
   void onInit() {
@@ -14,7 +19,15 @@ class SplashLogic extends GetxController {
   }
 
   void toStartApp() async {
-    await dio.getUri(Uri.parse('https://fishpi.cn/privacy'));
+    try {
+      await dio.getUri(Uri.parse('https://fishpi.cn/privacy'));
+    } catch (_) {}
     isLogin.value ? AppNavigator.closeAllToHome() : AppNavigator.startLogin();
+  }
+
+  @override
+  void onClose() {
+    dio.close();
+    super.onClose();
   }
 }

@@ -122,7 +122,14 @@ class MedalService {
   MedalService({
     Dio? dio,
     this.baseUrl = 'https://fishpi.cn',
-  }) : _dio = dio ?? Dio();
+  }) : _dio = dio ??
+            Dio(
+              BaseOptions(
+                connectTimeout: const Duration(seconds: 8),
+                sendTimeout: const Duration(seconds: 10),
+                receiveTimeout: const Duration(seconds: 15),
+              ),
+            );
 
   final Dio _dio;
   final String baseUrl;
@@ -182,14 +189,37 @@ class MedalService {
   Future<dynamic> _post(String path,
       {required Map<String, dynamic> data}) async {
     // 勋章接口按开放 API 约定使用 JSON 请求体，apiKey 放入 body 鉴权。
-    final response = await _dio.post(
-      '$baseUrl$path',
-      data: data,
-      options: Options(
-        contentType: Headers.jsonContentType,
-        headers: {'Accept': Headers.jsonContentType},
-      ),
-    );
-    return response.data;
+    try {
+      final response = await _dio.post(
+        '$baseUrl$path',
+        data: data,
+        options: Options(
+          contentType: Headers.jsonContentType,
+          headers: {'Accept': Headers.jsonContentType},
+        ),
+      );
+      return response.data;
+    } on DioException catch (e) {
+      throw _friendlyDioError(e);
+    }
+  }
+
+  String _friendlyDioError(DioException error) {
+    switch (error.type) {
+      case DioExceptionType.connectionTimeout:
+      case DioExceptionType.sendTimeout:
+      case DioExceptionType.receiveTimeout:
+        return '网络连接超时，请检查网络后重试';
+      case DioExceptionType.connectionError:
+        return '网络连接失败，请检查网络后重试';
+      case DioExceptionType.badResponse:
+        return '服务器响应异常(${error.response?.statusCode ?? '未知'})';
+      case DioExceptionType.cancel:
+        return '请求已取消';
+      case DioExceptionType.badCertificate:
+        return '网络证书异常，请稍后重试';
+      case DioExceptionType.unknown:
+        return '网络异常，请稍后重试';
+    }
   }
 }

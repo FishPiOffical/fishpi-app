@@ -19,6 +19,7 @@ class BreezemoonsLogic extends GetxController {
   final list = <BreezemoonContent>[].obs;
   final page = 1.obs;
   final isFinished = false.obs;
+  final isLoading = false.obs;
 
   final breezemoons = ''.obs;
   final List<BlackUser> _blackUsers = [];
@@ -41,34 +42,49 @@ class BreezemoonsLogic extends GetxController {
   }
 
   void initBreezemoon() async {
-    await _loadBlackUsers();
-    List<BreezemoonContent> res = await imController.fishpi.breezemoon.list(
-      page: page.value,
-      size: 15,
-    );
-    final visibleList = _visibleBreezemoons(res);
-    if (page.value == 1) {
-      list.value = MemoryListUtils.keepFirst(
-        visibleList,
-        MemoryLimits.contentListItems,
+    if (isLoading.value) return;
+    isLoading.value = true;
+    final requestPage = page.value;
+    try {
+      await _loadBlackUsers();
+      List<BreezemoonContent> res = await imController.fishpi.breezemoon.list(
+        page: requestPage,
+        size: 15,
       );
-      list.refresh();
-      refresherController.loadComplete();
-    } else {
-      list.value = MemoryListUtils.keepFirst(
-        [
-          ...list,
-          ...visibleList,
-        ],
-        MemoryLimits.contentListItems,
-      );
-      list.refresh();
-      if (res.isNotEmpty) {
+      final visibleList = _visibleBreezemoons(res);
+      if (requestPage == 1) {
+        list.value = MemoryListUtils.keepFirst(
+          visibleList,
+          MemoryLimits.contentListItems,
+        );
+        list.refresh();
+        refresherController.refreshCompleted();
         refresherController.loadComplete();
       } else {
-        refresherController.loadNoData();
-        isFinished.value = true;
+        list.value = MemoryListUtils.keepFirst(
+          [
+            ...list,
+            ...visibleList,
+          ],
+          MemoryLimits.contentListItems,
+        );
+        list.refresh();
+        if (res.isNotEmpty) {
+          refresherController.loadComplete();
+        } else {
+          refresherController.loadNoData();
+          isFinished.value = true;
+        }
       }
+    } catch (_) {
+      if (requestPage > 1 && page.value == requestPage) {
+        page.value = requestPage - 1;
+      }
+      requestPage == 1
+          ? refresherController.refreshFailed()
+          : refresherController.loadFailed();
+    } finally {
+      isLoading.value = false;
     }
   }
 
@@ -108,7 +124,6 @@ class BreezemoonsLogic extends GetxController {
     isFinished.value = false;
     page.value = 1;
     initBreezemoon();
-    refresherController.refreshCompleted();
   }
 
   void onLoading() {
@@ -124,11 +139,18 @@ class BreezemoonsLogic extends GetxController {
   void sendBreezemoon() async {
     if (breezemoons.value == '') return;
     ToastManager.show();
-    await imController.fishpi.breezemoon.send(breezemoons.value);
-    ToastManager.dismiss();
-    textEditingController.text = '';
-    breezemoons.value = '';
-    onRefresh();
+    try {
+      await imController.fishpi.breezemoon.send(breezemoons.value);
+      textEditingController.text = '';
+      breezemoons.value = '';
+      onRefresh();
+    } catch (e) {
+      ToastManager.dismiss();
+      ToastManager.showToast('发布失败：$e');
+      return;
+    } finally {
+      ToastManager.dismiss();
+    }
   }
 
   @override
