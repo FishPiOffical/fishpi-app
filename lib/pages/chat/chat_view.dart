@@ -23,6 +23,7 @@ import 'package:fishpi_app/widgets/chat/chat_weather_card.dart';
 import 'package:fishpi_app/widgets/pi_avatar.dart';
 import 'package:fishpi_app/widgets/pi_msg_dom.dart';
 import 'package:fishpi_app/widgets/pi_title_bar.dart';
+import 'package:fishpi_app/widgets/vip_name_text.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
@@ -218,8 +219,10 @@ class ChatPage extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                Text(
-                  logic.displayNameFor(chat.userName, fallback: chat.allName),
+                VipNameText(
+                  userId: _chatVipUserId(chat),
+                  userName: chat.userName,
+                  fallback: chat.allName,
                   style: TextStyle(
                     color: Styles.primaryTextColor,
                     fontWeight: FontWeight.bold,
@@ -328,8 +331,10 @@ class ChatPage extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  logic.displayNameFor(chat.userName, fallback: chat.allName),
+                VipNameText(
+                  userId: _chatVipUserId(chat),
+                  userName: chat.userName,
+                  fallback: chat.allName,
                   style: TextStyle(
                     color: Styles.primaryTextColor,
                     fontWeight: FontWeight.bold,
@@ -647,6 +652,10 @@ class ChatPage extends StatelessWidget {
 
   Widget _buildWeather(WeatherMsg weather, bool isSelf) {
     return ChatWeatherCard(weather: weather, isSelf: isSelf);
+  }
+
+  String? _chatVipUserId(ChatRoomMessage chat) {
+    return chat.userOId > 0 ? chat.userOId.toString() : null;
   }
 
   Widget _buildSingleImage(

@@ -5,6 +5,7 @@ import 'package:fishpi_app/widgets/pi_avatar.dart';
 import 'package:fishpi_app/widgets/pi_breezemoon_item.dart';
 import 'package:fishpi_app/widgets/pi_image.dart';
 import 'package:fishpi_app/widgets/pi_title_bar.dart';
+import 'package:fishpi_app/widgets/vip_name_text.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
@@ -129,8 +130,10 @@ class UserPanelPage extends StatelessWidget {
                               children: [
                                 SizedBox(
                                   width: 1.sw - 110.w,
-                                  child: Text(
-                                    logic.displayName,
+                                  child: VipNameText(
+                                    userId: logic.userInfo.value.oId,
+                                    userName: logic.userInfo.value.userName,
+                                    fallback: logic.userInfo.value.name,
                                     style: TextStyle(
                                       color: Styles.primaryTextColor,
                                       fontSize: 24.sp,

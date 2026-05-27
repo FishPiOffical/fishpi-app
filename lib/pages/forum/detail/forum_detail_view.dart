@@ -5,6 +5,7 @@ import 'package:fishpi_app/utils/pi_utils.dart';
 import 'package:fishpi_app/widgets/loading.dart';
 import 'package:fishpi_app/widgets/pi_avatar.dart';
 import 'package:fishpi_app/widgets/pi_title_bar.dart';
+import 'package:fishpi_app/widgets/vip_name_text.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_emoji/flutter_emoji.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -48,14 +49,32 @@ class ForumDetailPage extends StatelessWidget {
                             ),
                           ),
                           SizedBox(height: 10.h),
-                          Text(
-                            '${logic.displayNameFor(logic.article.value.authorName)} · ${logic.article.value.timeAgo} · ${logic.article.value.viewCnt}人看过',
-                            style: TextStyle(
-                              fontSize: 14.sp,
-                              fontWeight: FontWeight.bold,
-                              color: const Color(0xFF9FA4B4),
-                            ),
-                            textAlign: TextAlign.right,
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.end,
+                            children: [
+                              Flexible(
+                                child: VipNameText(
+                                  userId: logic.article.value.authorId,
+                                  userName: logic.article.value.authorName,
+                                  style: TextStyle(
+                                    fontSize: 14.sp,
+                                    fontWeight: FontWeight.bold,
+                                    color: const Color(0xFF9FA4B4),
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  textAlign: TextAlign.right,
+                                ),
+                              ),
+                              Text(
+                                ' · ${logic.article.value.timeAgo} · ${logic.article.value.viewCnt}人看过',
+                                style: TextStyle(
+                                  fontSize: 14.sp,
+                                  fontWeight: FontWeight.bold,
+                                  color: const Color(0xFF9FA4B4),
+                                ),
+                              ),
+                            ],
                           ),
                           const Divider(),
                           ...buildMarkdown(),
@@ -409,8 +428,9 @@ class ForumDetailPage extends StatelessWidget {
                     Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Text(
-                          logic.displayNameFor(item.author),
+                        VipNameText(
+                          userId: item.authorId,
+                          userName: item.author,
                           style: TextStyle(
                             fontSize: 14.sp,
                             fontWeight: FontWeight.bold,

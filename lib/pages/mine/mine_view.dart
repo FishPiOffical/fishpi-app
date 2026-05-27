@@ -1,6 +1,7 @@
 import 'package:fishpi_app/res/styles.dart';
 import 'package:fishpi_app/utils/pi_utils.dart';
 import 'package:fishpi_app/widgets/pi_avatar.dart';
+import 'package:fishpi_app/widgets/vip_name_text.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
@@ -67,8 +68,10 @@ class MinePage extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        logic.userInfo.value.name,
+                      VipNameText(
+                        userId: logic.userInfo.value.oId,
+                        userName: logic.userInfo.value.userName,
+                        fallback: logic.userInfo.value.name,
                         style: TextStyle(
                           color: Styles.primaryTextColor,
                           fontSize: 24.sp,

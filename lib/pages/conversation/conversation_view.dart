@@ -3,6 +3,7 @@ import 'package:fishpi_app/res/styles.dart';
 import 'package:fishpi_app/routers/navigator.dart';
 import 'package:fishpi_app/utils/pi_utils.dart';
 import 'package:fishpi_app/widgets/pi_avatar.dart';
+import 'package:fishpi_app/widgets/vip_name_text.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
@@ -83,16 +84,26 @@ class ConversationPage extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
                           Expanded(
-                            child: Text(
-                              chat != null
-                                  ? logic.displayNameFor(peerName)
-                                  : '聊天室',
-                              style: TextStyle(
-                                fontSize: 16.sp,
-                                color: Styles.primaryTextColor,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
+                            child: chat != null
+                                ? VipNameText(
+                                    userId: logic.privatePeerId(chat),
+                                    userName: peerName,
+                                    style: TextStyle(
+                                      fontSize: 16.sp,
+                                      color: Styles.primaryTextColor,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  )
+                                : Text(
+                                    '聊天室',
+                                    style: TextStyle(
+                                      fontSize: 16.sp,
+                                      color: Styles.primaryTextColor,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
                           ),
                           Text(
                             PiUtils.getChatTime(

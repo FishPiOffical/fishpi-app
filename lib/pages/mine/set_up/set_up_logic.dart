@@ -1,5 +1,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:fishpi_app/core/manager/toast.dart';
+import 'package:fishpi_app/core/vip/vip_style_service.dart';
 import 'package:fishpi_app/routers/navigator.dart';
 import 'package:fishpi_app/utils/pi_utils.dart';
 import 'package:flutter/painting.dart';
@@ -37,6 +38,7 @@ class SetUpLogic extends GetxController {
   }
 
   void logout() {
+    VipStyleService.clearSharedCache();
     PiUtils.clear();
     AppNavigator.startLogin();
   }
