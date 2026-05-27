@@ -15,6 +15,7 @@ import 'package:fishpi_app/widgets/chat/chat_red_packet_card.dart';
 import 'package:fishpi_app/widgets/chat/chat_red_packet_detail_sheet.dart';
 import 'package:fishpi_app/widgets/chat/chat_red_packet_sheet.dart';
 import 'package:fishpi_app/widgets/chat/chat_repeat_avatar_strip.dart';
+import 'package:fishpi_app/widgets/chat/chat_room_extension_sheet.dart';
 import 'package:fishpi_app/widgets/chat/chat_topic_sheet.dart';
 import 'package:fishpi_app/widgets/chat/chat_voice_message.dart';
 import 'package:fishpi_app/widgets/chat/chat_weather_card.dart';
@@ -129,6 +130,8 @@ class ChatPage extends StatelessWidget {
                 onRedPacketTap:
                     logic.isGroup.value ? _showRedPacketSheet : null,
                 onBarragerTap: logic.isGroup.value ? _showBarragerSheet : null,
+                onExtensionTap:
+                    logic.isGroup.value ? _showExtensionSheet : null,
                 topic: logic.isGroup.value ? logic.currentTopic.value : null,
                 onTopicTap: logic.isGroup.value ? _showTopicSheet : null,
                 onTopicQuoteTap: logic.isGroup.value &&
@@ -520,6 +523,18 @@ class ChatPage extends StatelessWidget {
       ChatBarragerSheet(
         cost: logic.barrageCost.value,
         onSubmit: logic.sendBarrager,
+      ),
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+    );
+  }
+
+  void _showExtensionSheet() {
+    Get.bottomSheet(
+      ChatRoomExtensionSheet(
+        extensions: logic.extensions.toList(),
+        onInsert: logic.insertExtensionResult,
+        onSend: logic.sendExtensionResult,
       ),
       backgroundColor: Colors.transparent,
       isScrollControlled: true,

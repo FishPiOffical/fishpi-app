@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:fishpi/types/redpacket.dart';
 import 'package:fishpi_app/core/sql/chat_room_auto_grab_settings.dart';
 import 'package:fishpi_app/core/sql/chat_room_block_list.dart';
+import 'package:fishpi_app/core/sql/chat_room_extension_store.dart';
 import 'package:fishpi_app/core/sql/user_remark.dart';
 import 'package:fishpi_app/pages/chat/chat_room_settings/chat_room_settings_logic.dart';
 import 'package:fishpi_app/pages/chat/chat_room_settings/chat_room_settings_view.dart';
@@ -29,6 +30,8 @@ void main() {
     );
     await ChatRoomBlockList.init();
     await ChatRoomBlockList.clear();
+    await ChatRoomExtensionStore.init();
+    await ChatRoomExtensionStore.clear();
     await UserRemark.init();
     await UserRemark.clear();
   });
@@ -43,13 +46,14 @@ void main() {
   tearDownAll(() async {
     await ChatRoomAutoGrabSettings.dispose();
     await ChatRoomBlockList.dispose();
+    await ChatRoomExtensionStore.dispose();
     await UserRemark.dispose();
     if (tempDir.existsSync()) {
       tempDir.deleteSync(recursive: true);
     }
   });
 
-  testWidgets('聊天室设置页可正常渲染标题、自动抢红包和屏蔽空状态', (tester) async {
+  testWidgets('聊天室设置页可正常渲染标题、自动抢红包、扩展和屏蔽空状态', (tester) async {
     Get.put(ChatRoomSettingsLogic(autoLoad: false));
 
     await tester.pumpWidget(_wrap(const ChatRoomSettingsPage()));
@@ -62,8 +66,34 @@ void main() {
         findsOneWidget);
     expect(find.byKey(const ValueKey('auto_grab_switch')), findsOneWidget);
     expect(find.text('3 秒'), findsOneWidget);
+    expect(find.byKey(const ValueKey('chat_room_extension_section')),
+        findsOneWidget);
+    expect(find.text('暂无扩展插件'), findsOneWidget);
+    expect(find.byKey(const ValueKey('chat_room_extension_add_button')),
+        findsOneWidget);
     expect(find.text('暂无屏蔽用户'), findsOneWidget);
     expect(find.byKey(const ValueKey('chat_room_manual_add_button')),
+        findsOneWidget);
+  });
+
+  testWidgets('聊天室设置页能展示扩展插件并切换启用状态', (tester) async {
+    final logic = Get.put(ChatRoomSettingsLogic(autoLoad: false));
+    logic.extensions.assignAll([
+      const ChatRoomExtension(
+        id: 'daily',
+        name: '摸鱼日报',
+        icon: '报',
+        enabled: true,
+        template: r'进度：${进度}',
+      ),
+    ]);
+
+    await tester.pumpWidget(_wrap(const ChatRoomSettingsPage()));
+    await tester.pump();
+
+    expect(find.text('摸鱼日报'), findsOneWidget);
+    expect(find.text('已启用 1 / 共 1 个'), findsOneWidget);
+    expect(find.byKey(const ValueKey('chat_room_extension_switch_daily')),
         findsOneWidget);
   });
 

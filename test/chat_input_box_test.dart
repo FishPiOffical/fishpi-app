@@ -251,7 +251,38 @@ void main() {
     controller.dispose();
   });
 
-  testWidgets('没有聊天室回调时工具栏不显示红包、弹幕和话题', (tester) async {
+  testWidgets('工具栏点击扩展会触发对应回调', (tester) async {
+    final controller = TextEditingController();
+    final focusNode = FocusNode();
+    var extensionTapCount = 0;
+
+    await tester.pumpWidget(
+      _wrap(
+        ChatInputBox(
+          controller: controller,
+          focusNode: focusNode,
+          emojiList: const {},
+          diyEmojiList: const [],
+          onInput: (_) {},
+          clickSend: () async {},
+          scrollToBottom: () {},
+          onExtensionTap: () => extensionTapCount++,
+        ),
+      ),
+    );
+
+    await tester.tap(_assetImage('assets/images/more_feature.png'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('chat_tool_extension')));
+    await tester.pumpAndSettle();
+
+    expect(extensionTapCount, 1);
+
+    focusNode.dispose();
+    controller.dispose();
+  });
+
+  testWidgets('没有聊天室回调时工具栏不显示红包、弹幕、扩展和话题', (tester) async {
     final controller = TextEditingController();
     final focusNode = FocusNode();
 
@@ -274,6 +305,7 @@ void main() {
 
     expect(find.byKey(const ValueKey('chat_tool_red_packet')), findsNothing);
     expect(find.byKey(const ValueKey('chat_tool_barrager')), findsNothing);
+    expect(find.byKey(const ValueKey('chat_tool_extension')), findsNothing);
     expect(find.byKey(const ValueKey('chat_tool_topic')), findsNothing);
 
     await tester.tap(_assetImage('assets/images/more_feature.png'));

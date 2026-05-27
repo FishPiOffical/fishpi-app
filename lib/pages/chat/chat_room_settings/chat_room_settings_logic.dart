@@ -5,11 +5,14 @@ import 'package:fishpi_app/core/chat/chat_red_packet_utils.dart';
 import 'package:fishpi_app/core/manager/toast.dart';
 import 'package:fishpi_app/core/sql/chat_room_auto_grab_settings.dart';
 import 'package:fishpi_app/core/sql/chat_room_block_list.dart';
+import 'package:fishpi_app/core/sql/chat_room_extension_store.dart';
 import 'package:fishpi_app/core/sql/user_remark.dart';
 import 'package:fishpi_app/pages/chat/chat_logic.dart';
+import 'package:fishpi_app/widgets/chat/chat_room_extension_editor_sheet.dart';
 import 'package:fishpi_app/widgets/pi_editer.dart';
 import 'package:fishpi_app/widgets/pop_route.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 
 class ChatRoomSettingsLogic extends GetxController {
@@ -17,10 +20,12 @@ class ChatRoomSettingsLogic extends GetxController {
   final blockedUsers = <ChatRoomBlockedUser>[].obs;
   final recentUsers = <ChatRoomBlockedUser>[].obs;
   final autoGrabConfig = ChatRoomAutoGrabConfig.defaults().obs;
+  final extensions = <ChatRoomExtension>[].obs;
   final remarkVersion = 0.obs;
 
   StreamSubscription<void>? _blockListSubscription;
   StreamSubscription<void>? _autoGrabSubscription;
+  StreamSubscription<void>? _extensionSubscription;
   StreamSubscription<void>? _remarkSubscription;
 
   ChatLogic? get _chatLogic =>
@@ -38,6 +43,9 @@ class ChatRoomSettingsLogic extends GetxController {
     });
     _autoGrabSubscription ??= ChatRoomAutoGrabSettings.changes.listen((_) {
       _loadAutoGrabConfig();
+    });
+    _extensionSubscription ??= ChatRoomExtensionStore.changes.listen((_) {
+      _loadExtensions();
     });
     UserRemark.init();
     _remarkSubscription ??= UserRemark.changes.listen((_) {
@@ -81,6 +89,9 @@ class ChatRoomSettingsLogic extends GetxController {
 
   String gestureName(GestureType gesture) =>
       ChatRedPacketUtils.gestureName(gesture);
+
+  int get enabledExtensionCount =>
+      extensions.where((extension) => extension.enabled).length;
 
   bool isAutoGrabTypeSelected(String type) {
     return autoGrabConfig.value.enabledTypes.contains(type);
@@ -132,6 +143,73 @@ class ChatRoomSettingsLogic extends GetxController {
     await _loadAutoGrabConfig();
   }
 
+  Future<String?> saveExtension(ChatRoomExtension extension) async {
+    final error = await ChatRoomExtensionStore.saveExtension(extension);
+    if (error != null) return error;
+    ToastManager.showToast('扩展已保存');
+    await _loadExtensions();
+    return null;
+  }
+
+  Future<void> toggleExtension(
+      ChatRoomExtension extension, bool enabled) async {
+    final error = await ChatRoomExtensionStore.saveExtension(extension.copyWith(
+      enabled: enabled,
+    ));
+    if (error != null) {
+      ToastManager.showToast(error);
+      return;
+    }
+    await _loadExtensions();
+  }
+
+  Future<void> deleteExtension(ChatRoomExtension extension) async {
+    await ChatRoomExtensionStore.deleteExtension(extension.id);
+    ToastManager.showToast('扩展已删除');
+    await _loadExtensions();
+  }
+
+  Future<void> duplicateExtension(ChatRoomExtension extension) async {
+    final error = await ChatRoomExtensionStore.duplicateExtension(extension);
+    if (error != null) {
+      ToastManager.showToast(error);
+      return;
+    }
+    ToastManager.showToast('扩展已复制');
+    await _loadExtensions();
+  }
+
+  void openNewExtensionEditor() {
+    _openExtensionEditor(null);
+  }
+
+  void openExtensionEditor(ChatRoomExtension extension) {
+    _openExtensionEditor(extension);
+  }
+
+  Future<void> exportExtensions() async {
+    if (extensions.isEmpty) {
+      ToastManager.showToast('暂无可导出的扩展');
+      return;
+    }
+    await Clipboard.setData(
+      ClipboardData(text: ChatRoomExtensionStore.exportJson(extensions)),
+    );
+    ToastManager.showToast('扩展配置已复制到剪贴板');
+  }
+
+  Future<void> importExtensionsFromClipboard() async {
+    final data = await Clipboard.getData(Clipboard.kTextPlain);
+    final raw = data?.text?.trim() ?? '';
+    try {
+      final count = await ChatRoomExtensionStore.importJson(raw);
+      ToastManager.showToast('已导入 $count 个扩展');
+      await _loadExtensions();
+    } catch (e) {
+      ToastManager.showToast(e.toString());
+    }
+  }
+
   void openManualAddEditor() {
     final context = Get.context;
     if (context == null) return;
@@ -159,6 +237,7 @@ class ChatRoomSettingsLogic extends GetxController {
   Future<void> _loadAll() async {
     await _loadBlockedUsers();
     await _loadAutoGrabConfig();
+    await _loadExtensions();
     _loadRecentUsers();
   }
 
@@ -211,6 +290,16 @@ class ChatRoomSettingsLogic extends GetxController {
     }
   }
 
+  Future<void> _loadExtensions() async {
+    try {
+      await ChatRoomExtensionStore.init();
+      extensions.assignAll(await ChatRoomExtensionStore.getAll());
+    } catch (_) {
+      extensions.clear();
+    }
+    extensions.refresh();
+  }
+
   Future<void> _saveAutoGrabConfig(ChatRoomAutoGrabConfig config) async {
     final error = await ChatRoomAutoGrabSettings.saveConfig(config);
     if (error != null) {
@@ -221,10 +310,22 @@ class ChatRoomSettingsLogic extends GetxController {
     ToastManager.showToast('自动抢红包设置已保存');
   }
 
+  void _openExtensionEditor(ChatRoomExtension? extension) {
+    Get.bottomSheet(
+      ChatRoomExtensionEditorSheet(
+        extension: extension,
+        onSave: saveExtension,
+      ),
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+    );
+  }
+
   @override
   void onClose() {
     _blockListSubscription?.cancel();
     _autoGrabSubscription?.cancel();
+    _extensionSubscription?.cancel();
     _remarkSubscription?.cancel();
     super.onClose();
   }

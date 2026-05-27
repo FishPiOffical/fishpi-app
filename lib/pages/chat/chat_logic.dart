@@ -15,6 +15,7 @@ import 'package:fishpi_app/core/sql/black_list.dart';
 import 'package:fishpi_app/core/sql/chat_room_auto_grab_settings.dart';
 import 'package:fishpi_app/core/sql/chat_room_block_list.dart';
 import 'package:fishpi_app/core/sql/chat_emoji_cache.dart';
+import 'package:fishpi_app/core/sql/chat_room_extension_store.dart';
 import 'package:fishpi_app/core/sql/user_remark.dart';
 import 'package:fishpi_app/pages/conversation/conversation_logic.dart';
 import 'package:fishpi_app/routers/navigator.dart';
@@ -55,6 +56,7 @@ class ChatLogic extends GetxController {
   final autoGrabConfig = ChatRoomAutoGrabConfig.defaults().obs;
   final barrageCost = Rxn<BarrageCost>();
   final barragers = <ChatBarragerItem>[].obs;
+  final extensions = <ChatRoomExtension>[].obs;
   final int historyPageSize = 20;
 
   ScrollController chatRoomController = ScrollController();
@@ -73,6 +75,7 @@ class ChatLogic extends GetxController {
   StreamSubscription<void>? _blackListSubscription;
   StreamSubscription<void>? _chatRoomBlockListSubscription;
   StreamSubscription<void>? _autoGrabSettingsSubscription;
+  StreamSubscription<void>? _extensionSubscription;
   StreamSubscription<void>? _remarkSubscription;
   bool _scrollListenerAttached = false;
   final AudioRecorder _voiceRecorder = AudioRecorder();
@@ -123,6 +126,9 @@ class ChatLogic extends GetxController {
           ChatRoomAutoGrabSettings.changes.listen((_) {
         _loadAutoGrabConfig();
       });
+      _extensionSubscription ??= ChatRoomExtensionStore.changes.listen((_) {
+        loadExtensions();
+      });
     }
     UserRemark.init();
     _remarkSubscription ??= UserRemark.changes.listen((_) {
@@ -146,6 +152,7 @@ class ChatLogic extends GetxController {
     if (isGroup.value) {
       await _loadChatRoomBlockedUsers();
       await _loadAutoGrabConfig();
+      await loadExtensions();
       messageList.assignAll(_visibleMessages(messageList));
       messageList.refresh();
       if (messageList.isEmpty) {
@@ -438,8 +445,37 @@ class ChatLogic extends GetxController {
   }
 
   Future<void> clickSend() async {
-    final text = content.value;
-    if (text.trim().isEmpty) return;
+    await _sendComposedText(
+      content.value,
+      clearComposerOnSuccess: true,
+    );
+  }
+
+  Future<bool> sendExtensionResult(String text) {
+    if (!isGroup.value) return Future.value(false);
+    return _sendComposedText(
+      text,
+      clearComposerOnSuccess: false,
+    );
+  }
+
+  void insertExtensionResult(String text) {
+    if (!isGroup.value) return;
+    final value = text.trim();
+    if (value.isEmpty) return;
+    chatRoomControllerText.text = value;
+    chatRoomControllerText.selection = TextSelection.collapsed(
+      offset: chatRoomControllerText.text.length,
+    );
+    content.value = value;
+    chatRoomFocusNode.requestFocus();
+  }
+
+  Future<bool> _sendComposedText(
+    String text, {
+    required bool clearComposerOnSuccess,
+  }) async {
+    if (text.trim().isEmpty) return false;
     final sendText = ChatQuoteUtils.composeMessage(
       quote: quoteDraft.value,
       text: text,
@@ -451,12 +487,16 @@ class ChatLogic extends GetxController {
       } else {
         await imController.fishpi.chat.send(userName.value, sendText);
       }
-      content.value = '';
+      if (clearComposerOnSuccess) {
+        content.value = '';
+        chatRoomControllerText.clear();
+      }
       quoteDraft.value = null;
-      chatRoomControllerText.clear();
       scrollToBottom(delay: 300);
+      return true;
     } catch (e) {
       ToastManager.showToast('发送失败：$e');
+      return false;
     }
   }
 
@@ -712,6 +752,19 @@ class ChatLogic extends GetxController {
       barrageCost.value = await imController.fishpi.chatroom.barragePay();
     } catch (_) {
       barrageCost.value = BarrageCost();
+    }
+  }
+
+  Future<void> loadExtensions() async {
+    if (!isGroup.value) {
+      extensions.clear();
+      return;
+    }
+    try {
+      await ChatRoomExtensionStore.init();
+      extensions.assignAll(await ChatRoomExtensionStore.getEnabled());
+    } catch (_) {
+      extensions.clear();
     }
   }
 
@@ -1079,6 +1132,7 @@ class ChatLogic extends GetxController {
     _blackListSubscription?.cancel();
     _chatRoomBlockListSubscription?.cancel();
     _autoGrabSettingsSubscription?.cancel();
+    _extensionSubscription?.cancel();
     _remarkSubscription?.cancel();
     _cancelAutoGrabTimers();
     barragers.clear();

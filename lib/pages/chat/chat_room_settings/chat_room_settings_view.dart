@@ -1,5 +1,6 @@
 import 'package:fishpi/types/redpacket.dart';
 import 'package:fishpi_app/core/sql/chat_room_block_list.dart';
+import 'package:fishpi_app/core/sql/chat_room_extension_store.dart';
 import 'package:fishpi_app/res/styles.dart';
 import 'package:fishpi_app/widgets/pi_avatar.dart';
 import 'package:fishpi_app/widgets/pi_title_bar.dart';
@@ -26,6 +27,8 @@ class ChatRoomSettingsPage extends GetView<ChatRoomSettingsLogic> {
             child: Column(
               children: [
                 _buildAutoGrabSection(),
+                14.verticalSpace,
+                _buildExtensionSection(),
                 14.verticalSpace,
                 _buildBlockedSection(),
                 14.verticalSpace,
@@ -311,6 +314,77 @@ class ChatRoomSettingsPage extends GetView<ChatRoomSettingsLogic> {
     );
   }
 
+  Widget _buildExtensionSection() {
+    return Container(
+      key: const ValueKey('chat_room_extension_section'),
+      width: 1.sw - 32.w,
+      padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 16.h),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: Styles.commonBorder,
+        borderRadius: BorderRadius.circular(16.r),
+      ),
+      child: Column(
+        children: [
+          _buildSectionHeader(
+            title: '扩展插件',
+            actionText: '新增',
+            actionIcon: Icons.add,
+            actionKey: const ValueKey('chat_room_extension_add_button'),
+            onActionTap: controller.openNewExtensionEditor,
+          ),
+          6.verticalSpace,
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  '已启用 ${controller.enabledExtensionCount} / 共 ${controller.extensions.length} 个',
+                  style: TextStyle(
+                    color: const Color(0xFF777777),
+                    fontSize: 13.sp,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              _buildOutlineButton(
+                key: const ValueKey('chat_room_extension_import_button'),
+                text: '导入',
+                icon: Icons.content_paste,
+                onTap: controller.importExtensionsFromClipboard,
+              ),
+              8.horizontalSpace,
+              _buildOutlineButton(
+                key: const ValueKey('chat_room_extension_export_button'),
+                text: '导出',
+                icon: Icons.copy,
+                onTap: controller.exportExtensions,
+              ),
+            ],
+          ),
+          if (controller.extensions.isEmpty)
+            Container(
+              key: const ValueKey('chat_room_extension_empty'),
+              height: 86.h,
+              alignment: Alignment.center,
+              child: Text(
+                '暂无扩展插件',
+                style: TextStyle(
+                  color: const Color(0xFF777777),
+                  fontSize: 15.sp,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            )
+          else ...[
+            8.verticalSpace,
+            for (final extension in controller.extensions)
+              _buildExtensionRow(extension),
+          ],
+        ],
+      ),
+    );
+  }
+
   Widget _buildRecentSection() {
     return Container(
       key: const ValueKey('chat_room_recent_users_section'),
@@ -355,6 +429,7 @@ class ChatRoomSettingsPage extends GetView<ChatRoomSettingsLogic> {
     required String title,
     String? actionText,
     IconData? actionIcon,
+    Key? actionKey,
     VoidCallback? onActionTap,
   }) {
     return Row(
@@ -371,12 +446,117 @@ class ChatRoomSettingsPage extends GetView<ChatRoomSettingsLogic> {
         ),
         if (actionText != null)
           _buildOutlineButton(
-            key: const ValueKey('chat_room_manual_add_button'),
+            key: actionKey ?? const ValueKey('chat_room_manual_add_button'),
             text: actionText,
             icon: actionIcon,
             onTap: onActionTap,
           ),
       ],
+    );
+  }
+
+  Widget _buildExtensionRow(ChatRoomExtension extension) {
+    return Container(
+      key: ValueKey('chat_room_extension_${extension.id}'),
+      padding: EdgeInsets.symmetric(vertical: 10.h),
+      decoration: BoxDecoration(
+        border: Border(
+          bottom: BorderSide(
+            color: const Color(0xFFE8E8E8),
+            width: 1.w,
+          ),
+        ),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 38.w,
+            height: 38.w,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: Styles.primaryColor,
+              border: Styles.commonBorder,
+              borderRadius: BorderRadius.circular(10.r),
+            ),
+            child: Text(
+              extension.icon.trim().isEmpty ? '扩' : extension.icon.trim(),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: Styles.primaryTextColor,
+                fontSize: 15.sp,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+          10.horizontalSpace,
+          Expanded(
+            child: GestureDetector(
+              onTap: () => controller.openExtensionEditor(extension),
+              behavior: HitTestBehavior.translucent,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    extension.name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: Styles.primaryTextColor,
+                      fontSize: 16.sp,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  2.verticalSpace,
+                  Text(
+                    extension.fields.isEmpty
+                        ? '无需参数'
+                        : '${extension.fields.length} 个参数',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: const Color(0xFF777777),
+                      fontSize: 12.sp,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          Switch(
+            key: ValueKey('chat_room_extension_switch_${extension.id}'),
+            value: extension.enabled,
+            activeThumbColor: Styles.primaryColor,
+            onChanged: (value) => controller.toggleExtension(extension, value),
+          ),
+          _buildIconAction(
+            key: ValueKey('chat_room_extension_copy_${extension.id}'),
+            icon: Icons.copy,
+            onTap: () => controller.duplicateExtension(extension),
+          ),
+          _buildIconAction(
+            key: ValueKey('chat_room_extension_delete_${extension.id}'),
+            icon: Icons.delete_outline,
+            onTap: () => controller.deleteExtension(extension),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildIconAction({
+    required Key key,
+    required IconData icon,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      key: key,
+      onTap: onTap,
+      child: SizedBox(
+        width: 30.w,
+        height: 34.w,
+        child: Icon(icon, size: 18.w, color: Styles.primaryTextColor),
+      ),
     );
   }
 
