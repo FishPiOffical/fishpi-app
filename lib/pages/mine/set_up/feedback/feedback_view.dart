@@ -26,7 +26,7 @@ class FeedbackPage extends StatelessWidget {
           child: SafeArea(
             top: false,
             child: SingleChildScrollView(
-              padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 20.h),
+              padding: Styles.pagePadding,
               child: Column(
                 children: [
                   _buildFormCard(),
@@ -44,11 +44,11 @@ class FeedbackPage extends StatelessWidget {
   Widget _buildFormCard() {
     return Container(
       width: 1.sw - 32.w,
-      padding: EdgeInsets.all(14.w),
+      padding: Styles.cardPadding,
       decoration: BoxDecoration(
         color: Colors.white,
         border: Styles.commonBorder,
-        borderRadius: BorderRadius.circular(16.r),
+        borderRadius: Styles.cardRadius,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -64,15 +64,14 @@ class FeedbackPage extends StatelessWidget {
           _buildLabel('联系方式'),
           8.verticalSpace,
           SizedBox(
-            height: 52.h,
+            height: Styles.formFieldHeight,
             child: PiInput(
               key: const ValueKey('feedback_contact_input'),
               controller: logic.contactController,
               hintText: '微信/邮箱/摸鱼派用户名（选填）',
               prefixIcon: const Icon(Icons.contact_mail_outlined),
               textAlign: TextAlign.start,
-              contentPadding:
-                  EdgeInsets.symmetric(horizontal: 12.w, vertical: 12.h),
+              contentPadding: Styles.formFieldPadding,
               textInputAction: TextInputAction.done,
               onInputChanged: (_) {},
             ),
@@ -84,14 +83,16 @@ class FeedbackPage extends StatelessWidget {
 
   Widget _buildCategoryDropdown() {
     return Container(
-      height: 52.h,
-      padding: EdgeInsets.symmetric(horizontal: 12.w),
-      decoration: const BoxDecoration(
+      height: Styles.formFieldHeight,
+      padding: EdgeInsets.symmetric(
+        horizontal: PiStyleTokens.inputHorizontalPadding.w,
+      ),
+      decoration: BoxDecoration(
         color: Colors.white,
-        border: Border.fromBorderSide(
-          BorderSide(color: Colors.black, width: 2),
+        border: const Border.fromBorderSide(
+          BorderSide(color: Colors.black, width: PiStyleTokens.borderWidth),
         ),
-        borderRadius: BorderRadius.all(Radius.circular(10)),
+        borderRadius: Styles.controlRadius,
       ),
       child: DropdownButtonHideUnderline(
         child: DropdownButton<FeedbackCategory>(
@@ -141,7 +142,7 @@ class FeedbackPage extends StatelessWidget {
         enabledBorder: Styles.inputBorder,
         focusedBorder: Styles.inputBorder,
         border: Styles.inputBorder,
-        contentPadding: EdgeInsets.all(12.w),
+        contentPadding: Styles.formFieldPadding,
       ),
     );
   }
@@ -164,11 +165,11 @@ class FeedbackPage extends StatelessWidget {
         opacity: logic.isSubmitting.value ? 0.62 : 1,
         child: Container(
           width: 1.sw - 32.w,
-          height: 56.h,
+          height: Styles.primaryButtonHeight,
           alignment: Alignment.center,
           decoration: BoxDecoration(
             color: Colors.black,
-            borderRadius: BorderRadius.circular(10.r),
+            borderRadius: Styles.controlRadius,
           ),
           child: logic.isSubmitting.value
               ? SizedBox(

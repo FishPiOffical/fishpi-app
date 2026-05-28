@@ -22,7 +22,7 @@ class EditInfoPage extends StatelessWidget {
           constraints: BoxConstraints(minHeight: 1.sh),
           color: Styles.titleBarColor,
           child: SingleChildScrollView(
-            padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 20.h),
+            padding: Styles.pagePadding,
             child: Column(
               children: [
                 _buildFormCard(),
@@ -39,11 +39,11 @@ class EditInfoPage extends StatelessWidget {
   Widget _buildFormCard() {
     return Container(
       width: 1.sw - 32.w,
-      padding: EdgeInsets.all(14.w),
+      padding: Styles.cardPadding,
       decoration: BoxDecoration(
         color: Colors.white,
         border: Styles.commonBorder,
-        borderRadius: BorderRadius.circular(16.r),
+        borderRadius: Styles.cardRadius,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -108,7 +108,7 @@ class EditInfoPage extends StatelessWidget {
         _buildLabel(label),
         8.verticalSpace,
         SizedBox(
-          height: 52.h,
+          height: Styles.formFieldHeight,
           child: PiInput(
             key: key,
             controller: controller,
@@ -117,8 +117,7 @@ class EditInfoPage extends StatelessWidget {
             keyboardType: keyboardType,
             textInputAction: textInputAction ?? TextInputAction.next,
             textAlign: TextAlign.start,
-            contentPadding:
-                EdgeInsets.symmetric(horizontal: 12.w, vertical: 12.h),
+            contentPadding: Styles.formFieldPadding,
             onInputChanged: (_) {},
           ),
         ),
@@ -157,7 +156,7 @@ class EditInfoPage extends StatelessWidget {
             enabledBorder: Styles.inputBorder,
             focusedBorder: Styles.inputBorder,
             border: Styles.inputBorder,
-            contentPadding: EdgeInsets.all(12.w),
+            contentPadding: Styles.formFieldPadding,
           ),
         ),
       ],
@@ -182,11 +181,11 @@ class EditInfoPage extends StatelessWidget {
         opacity: logic.isSaving.value ? 0.62 : 1,
         child: Container(
           width: 1.sw - 32.w,
-          height: 56.h,
+          height: Styles.primaryButtonHeight,
           alignment: Alignment.center,
           decoration: BoxDecoration(
             color: Colors.black,
-            borderRadius: BorderRadius.circular(10.r),
+            borderRadius: Styles.controlRadius,
           ),
           child: logic.isSaving.value
               ? SizedBox(

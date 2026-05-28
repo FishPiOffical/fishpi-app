@@ -27,8 +27,7 @@ class MinePage extends StatelessWidget {
               child: ConstrainedBox(
                 constraints: BoxConstraints(minHeight: constraints.maxHeight),
                 child: Padding(
-                  padding:
-                      EdgeInsets.symmetric(horizontal: 16.w, vertical: 20.h),
+                  padding: Styles.pagePadding,
                   child: Column(
                     children: [
                       _buildUserCard(),
@@ -52,9 +51,9 @@ class MinePage extends StatelessWidget {
       () => Container(
         width: 1.sw - 32.w,
         constraints: BoxConstraints(minHeight: 185.h),
-        padding: EdgeInsets.all(10.w),
+        padding: Styles.compactCardPadding,
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(16.r),
+          borderRadius: Styles.cardRadius,
           border: Styles.commonBorder,
           color: const Color(0xFF00C6AE),
         ),
@@ -185,7 +184,7 @@ class MinePage extends StatelessWidget {
         padding: EdgeInsets.all(12.w),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(12.r),
+          borderRadius: Styles.actionRadius,
           border: Styles.commonBorder,
         ),
         child: Row(
@@ -216,7 +215,7 @@ class MinePage extends StatelessWidget {
                 padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 6.h),
                 decoration: BoxDecoration(
                   color: Styles.primaryTextColor,
-                  borderRadius: BorderRadius.circular(8.r),
+                  borderRadius: Styles.smallRadius,
                 ),
                 child: Text(
                   '重试',
@@ -237,9 +236,9 @@ class MinePage extends StatelessWidget {
   Widget _buildMenuCard() {
     return Container(
       width: 1.sw - 32.w,
-      padding: EdgeInsets.all(10.w),
+      padding: Styles.compactCardPadding,
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16.r),
+        borderRadius: Styles.cardRadius,
         border: Styles.commonBorder,
         color: Colors.white,
       ),

@@ -27,7 +27,7 @@ class PiArticleItem extends StatelessWidget {
         margin: EdgeInsets.only(bottom: 20.h),
         decoration: BoxDecoration(
           border: Styles.commonBorder,
-          borderRadius: BorderRadius.circular(16.r),
+          borderRadius: Styles.cardRadius,
         ),
         child: Column(
           children: [
@@ -48,7 +48,7 @@ class PiArticleItem extends StatelessWidget {
                 ),
               ),
             Container(
-              padding: EdgeInsets.all(10.w),
+              padding: Styles.compactCardPadding,
               child: Column(
                 children: [
                   Row(
@@ -187,7 +187,7 @@ class PiArticleItem extends StatelessWidget {
       decoration: BoxDecoration(
         color: Styles.primaryColor,
         border: Styles.commonBorder,
-        borderRadius: BorderRadius.circular(10.r),
+        borderRadius: Styles.controlRadius,
       ),
       child: Text(
         '置顶',

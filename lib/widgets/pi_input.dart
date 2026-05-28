@@ -53,7 +53,7 @@ class PiInput extends StatelessWidget {
           color: Colors.black,
         ),
         contentPadding: contentPadding ??
-            EdgeInsets.fromLTRB(10, 0, suffixIcon == null ? 50 : 10, 0),
+            Styles.inputContentPadding(hasSuffix: suffixIcon != null),
         filled: true,
         fillColor: Colors.white,
         prefixIcon: prefixIcon,

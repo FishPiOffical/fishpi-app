@@ -27,7 +27,7 @@ class ComplaintPage extends StatelessWidget {
           child: SafeArea(
             top: false,
             child: SingleChildScrollView(
-              padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 20.h),
+              padding: Styles.pagePadding,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -46,11 +46,11 @@ class ComplaintPage extends StatelessWidget {
   Widget _buildFormCard() {
     return Container(
       width: 1.sw - 32.w,
-      padding: EdgeInsets.all(14.w),
+      padding: Styles.cardPadding,
       decoration: BoxDecoration(
         color: Colors.white,
         border: Styles.commonBorder,
-        borderRadius: BorderRadius.circular(16.r),
+        borderRadius: Styles.cardRadius,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -58,15 +58,14 @@ class ComplaintPage extends StatelessWidget {
           _buildLabel('举报对象 ID'),
           8.verticalSpace,
           SizedBox(
-            height: 52.h,
+            height: Styles.formFieldHeight,
             child: PiInput(
               key: const ValueKey('complaint_target_id_input'),
               controller: logic.targetIdController,
               hintText: '文章/评论/用户/消息 oId',
               prefixIcon: const Icon(Icons.tag_outlined),
               textAlign: TextAlign.start,
-              contentPadding:
-                  EdgeInsets.symmetric(horizontal: 12.w, vertical: 12.h),
+              contentPadding: Styles.formFieldPadding,
               textInputAction: TextInputAction.next,
               onInputChanged: (_) {},
             ),
@@ -113,14 +112,16 @@ class ComplaintPage extends StatelessWidget {
     required ValueChanged<T?> onChanged,
   }) {
     return Container(
-      height: 52.h,
-      padding: EdgeInsets.symmetric(horizontal: 12.w),
-      decoration: const BoxDecoration(
+      height: Styles.formFieldHeight,
+      padding: EdgeInsets.symmetric(
+        horizontal: PiStyleTokens.inputHorizontalPadding.w,
+      ),
+      decoration: BoxDecoration(
         color: Colors.white,
-        border: Border.fromBorderSide(
-          BorderSide(color: Colors.black, width: 2),
+        border: const Border.fromBorderSide(
+          BorderSide(color: Colors.black, width: PiStyleTokens.borderWidth),
         ),
-        borderRadius: BorderRadius.all(Radius.circular(10)),
+        borderRadius: Styles.controlRadius,
       ),
       child: DropdownButtonHideUnderline(
         child: DropdownButton<T>(
@@ -170,7 +171,7 @@ class ComplaintPage extends StatelessWidget {
         enabledBorder: Styles.inputBorder,
         focusedBorder: Styles.inputBorder,
         border: Styles.inputBorder,
-        contentPadding: EdgeInsets.all(12.w),
+        contentPadding: Styles.formFieldPadding,
       ),
     );
   }
@@ -193,11 +194,11 @@ class ComplaintPage extends StatelessWidget {
         opacity: logic.isSubmitting.value ? 0.62 : 1,
         child: Container(
           width: 1.sw - 32.w,
-          height: 56.h,
+          height: Styles.primaryButtonHeight,
           alignment: Alignment.center,
           decoration: BoxDecoration(
             color: Colors.black,
-            borderRadius: BorderRadius.circular(10.r),
+            borderRadius: Styles.controlRadius,
           ),
           child: logic.isSubmitting.value
               ? SizedBox(

@@ -29,7 +29,7 @@ class PiListState extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         border: Styles.commonBorder,
-        borderRadius: BorderRadius.circular(16.r),
+        borderRadius: Styles.cardRadius,
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -41,7 +41,7 @@ class PiListState extends StatelessWidget {
             decoration: BoxDecoration(
               color: Styles.primaryColor,
               border: Styles.commonBorder,
-              borderRadius: BorderRadius.circular(14.r),
+              borderRadius: Styles.actionRadius,
             ),
             child: Icon(
               icon,
@@ -81,7 +81,7 @@ class PiListState extends StatelessWidget {
                 padding: EdgeInsets.symmetric(horizontal: 16.w),
                 decoration: BoxDecoration(
                   color: Styles.primaryTextColor,
-                  borderRadius: BorderRadius.circular(12.r),
+                  borderRadius: Styles.actionRadius,
                 ),
                 child: Text(
                   buttonText,

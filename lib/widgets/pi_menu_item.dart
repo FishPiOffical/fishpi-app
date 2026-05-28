@@ -29,8 +29,12 @@ class PiMenuItem extends StatelessWidget {
         onTap: onTap,
         child: Container(
           width: 1.sw - 32.w,
-          padding: EdgeInsets.symmetric(horizontal: 10.w),
-          margin: EdgeInsets.symmetric(vertical: 10.h),
+          padding: EdgeInsets.symmetric(
+            horizontal: PiStyleTokens.menuItemHorizontalPadding.w,
+          ),
+          margin: EdgeInsets.symmetric(
+            vertical: PiStyleTokens.menuItemVerticalMargin.h,
+          ),
           color: Colors.white,
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,

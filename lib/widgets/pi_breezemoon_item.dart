@@ -17,9 +17,9 @@ class PiBreezemoonItem extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       margin: EdgeInsets.only(bottom: 10.h),
-      padding: EdgeInsets.all(10.w),
+      padding: Styles.compactCardPadding,
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16.r),
+        borderRadius: Styles.cardRadius,
         border: Styles.commonBorder,
       ),
       child: Column(
