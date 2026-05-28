@@ -33,10 +33,18 @@ class NoticeLogic extends GetxController {
   }
 
   Future<void> reload() async {
-    await Future.wait([
+    final results = await Future.wait<String?>([
       _loadCount(),
       _loadCurrentList(),
     ]);
+    if (errorText.value.isEmpty && notices.isEmpty) {
+      for (final result in results) {
+        if (result != null && result.isNotEmpty) {
+          errorText.value = result;
+          break;
+        }
+      }
+    }
     refreshController.refreshCompleted();
   }
 
@@ -53,7 +61,7 @@ class NoticeLogic extends GetxController {
       ToastManager.showToast('已标记当前分类为已读');
       await reload();
     } catch (e) {
-      ToastManager.showToast('标记已读失败：$e');
+      ToastManager.showToast(_friendlyError(e, fallback: '标记已读失败'));
     }
   }
 
@@ -63,7 +71,7 @@ class NoticeLogic extends GetxController {
       ToastManager.showToast('已全部标记为已读');
       await reload();
     } catch (e) {
-      ToastManager.showToast('全部已读失败：$e');
+      ToastManager.showToast(_friendlyError(e, fallback: '全部已读失败'));
     }
   }
 
@@ -86,15 +94,16 @@ class NoticeLogic extends GetxController {
     ToastManager.showToast('暂不支持跳转该通知');
   }
 
-  Future<void> _loadCount() async {
+  Future<String?> _loadCount() async {
     try {
       noticeCount.value = await imController.fishpi.notice.count();
-    } catch (_) {
-      noticeCount.value = _emptyCount();
+      return null;
+    } catch (e) {
+      return _friendlyError(e, fallback: '通知数量加载失败');
     }
   }
 
-  Future<void> _loadCurrentList() async {
+  Future<String?> _loadCurrentList() async {
     isLoading.value = true;
     errorText.value = '';
     try {
@@ -107,18 +116,20 @@ class NoticeLogic extends GetxController {
             .where((item) => item.title.isNotEmpty || item.content.isNotEmpty)
             .toList(),
       );
+      return null;
     } catch (e) {
       // 切分类或刷新失败时保留已有通知，避免短暂解析/网络异常把页面打空。
       // 首次加载失败仍显示空态，已有内容时只在刷新状态里记录错误。
       errorText.value = _friendlyError(e);
+      return errorText.value;
     } finally {
       notices.refresh();
       isLoading.value = false;
     }
   }
 
-  String _friendlyError(Object error) {
-    return AppErrorMessage.friendly(error, fallback: '通知加载失败');
+  String _friendlyError(Object error, {String fallback = '通知加载失败'}) {
+    return AppErrorMessage.friendly(error, fallback: fallback);
   }
 
   @override

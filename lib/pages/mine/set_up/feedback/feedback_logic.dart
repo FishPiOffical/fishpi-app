@@ -1,6 +1,7 @@
 import 'package:fishpi/fishpi.dart';
 import 'package:fishpi_app/core/controller/im.dart';
 import 'package:fishpi_app/core/manager/toast.dart';
+import 'package:fishpi_app/core/network/app_error_message.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
@@ -109,7 +110,9 @@ class FeedbackLogic extends GetxController {
       Get.back();
     } catch (e) {
       ToastManager.dismiss();
-      ToastManager.showToast(e.toString());
+      ToastManager.showToast(
+        AppErrorMessage.friendly(e, fallback: '意见反馈提交失败'),
+      );
     } finally {
       isSubmitting.value = false;
     }

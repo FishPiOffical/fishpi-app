@@ -12,6 +12,7 @@ import 'package:fishpi_app/core/debug/memory_snapshot.dart';
 import 'package:fishpi_app/core/im_event.dart';
 import 'package:fishpi_app/core/manager/toast.dart';
 import 'package:fishpi_app/core/memory/memory_limits.dart';
+import 'package:fishpi_app/core/network/app_error_message.dart';
 import 'package:fishpi_app/core/sql/black_list.dart';
 import 'package:fishpi_app/core/sql/chat_room_auto_grab_settings.dart';
 import 'package:fishpi_app/core/sql/chat_room_block_list.dart';
@@ -279,7 +280,9 @@ class ChatLogic extends GetxController {
       messageList.refresh();
       _logMemorySnapshot('聊天首屏历史');
     } catch (e) {
-      ToastManager.showToast('加载历史消息失败：$e');
+      ToastManager.showToast(
+        AppErrorMessage.friendly(e, fallback: '加载历史消息失败'),
+      );
     } finally {
       isLoadingHistory.value = false;
     }
@@ -322,7 +325,9 @@ class ChatLogic extends GetxController {
         _restoreScrollOffsetAfterPrepend(oldMaxScrollExtent, oldPixels);
       }
     } catch (e) {
-      ToastManager.showToast('加载历史消息失败：$e');
+      ToastManager.showToast(
+        AppErrorMessage.friendly(e, fallback: '加载历史消息失败'),
+      );
     } finally {
       isLoadingHistory.value = false;
     }
@@ -519,7 +524,9 @@ class ChatLogic extends GetxController {
       }
       return true;
     } catch (e) {
-      ToastManager.showToast('发送失败：$e');
+      ToastManager.showToast(
+        AppErrorMessage.friendly(e, fallback: '发送失败'),
+      );
       return false;
     }
   }
@@ -534,7 +541,9 @@ class ChatLogic extends GetxController {
       if (images.isEmpty) return;
       await _uploadAndSendImages(images);
     } catch (e) {
-      ToastManager.showToast('选择图片失败：$e');
+      ToastManager.showToast(
+        AppErrorMessage.friendly(e, fallback: '选择图片失败'),
+      );
     }
   }
 
@@ -549,7 +558,9 @@ class ChatLogic extends GetxController {
       if (image == null) return;
       await _uploadAndSendImages([image]);
     } catch (e) {
-      ToastManager.showToast('拍摄图片失败：$e');
+      ToastManager.showToast(
+        AppErrorMessage.friendly(e, fallback: '拍摄图片失败'),
+      );
     }
   }
 
@@ -576,7 +587,9 @@ class ChatLogic extends GetxController {
       ToastManager.showToast(images.length > 1 ? '图片已发送' : '图片发送成功');
     } catch (e) {
       ToastManager.dismiss();
-      ToastManager.showToast('图片发送失败：$e');
+      ToastManager.showToast(
+        AppErrorMessage.friendly(e, fallback: '图片发送失败'),
+      );
     } finally {
       isSendingImage.value = false;
     }
@@ -690,7 +703,9 @@ class ChatLogic extends GetxController {
       scrollToBottom(delay: 300);
       return true;
     } catch (e) {
-      ToastManager.showToast('发送红包失败：$e');
+      ToastManager.showToast(
+        AppErrorMessage.friendly(e, fallback: '发送红包失败'),
+      );
       return false;
     } finally {
       isSendingRedPacket.value = false;
@@ -1022,7 +1037,9 @@ class ChatLogic extends GetxController {
       ToastManager.showToast('弹幕已发送');
       return true;
     } catch (e) {
-      ToastManager.showToast('发送弹幕失败：$e');
+      ToastManager.showToast(
+        AppErrorMessage.friendly(e, fallback: '发送弹幕失败'),
+      );
       return false;
     } finally {
       isSendingBarrager.value = false;
@@ -1068,7 +1085,9 @@ class ChatLogic extends GetxController {
       _startVoiceTimer();
     } catch (e) {
       await _resetVoiceRecordState(cancelRecorder: true);
-      ToastManager.showToast('开始录音失败：$e');
+      ToastManager.showToast(
+        AppErrorMessage.friendly(e, fallback: '开始录音失败'),
+      );
     }
   }
 
@@ -1110,7 +1129,9 @@ class ChatLogic extends GetxController {
 
       await _sendVoiceRecord(path, duration);
     } catch (e) {
-      ToastManager.showToast('语音发送失败：$e');
+      ToastManager.showToast(
+        AppErrorMessage.friendly(e, fallback: '语音发送失败'),
+      );
     } finally {
       _voiceRecordPath = null;
       _voiceStartedAt = null;

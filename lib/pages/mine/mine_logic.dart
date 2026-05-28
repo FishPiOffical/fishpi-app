@@ -1,17 +1,24 @@
 import 'package:fishpi/types/user.dart';
 import 'package:fishpi_app/core/controller/im.dart';
 import 'package:fishpi_app/core/manager/toast.dart';
+import 'package:fishpi_app/core/network/app_error_message.dart';
 import 'package:fishpi_app/routers/navigator.dart';
 import 'package:get/get.dart';
 
 class MineLogic extends GetxController {
+  MineLogic({this.autoLoad = true});
+
+  final bool autoLoad;
   final imController = Get.find<IMController>();
   final userInfo = UserInfo().obs;
   final isLoading = false.obs;
+  final errorText = ''.obs;
 
   @override
   void onInit() {
-    initUserInfo();
+    if (autoLoad) {
+      initUserInfo();
+    }
     super.onInit();
   }
 
@@ -24,9 +31,15 @@ class MineLogic extends GetxController {
     isLoading.value = true;
     try {
       userInfo.value = await imController.fishpi.user.info(false);
+      errorText.value = '';
       if (!silent) ToastManager.showToast('用户信息已刷新');
     } catch (e) {
-      if (!silent) ToastManager.showToast('刷新用户信息失败：$e');
+      final message = AppErrorMessage.friendly(
+        e,
+        fallback: '用户信息刷新失败',
+      );
+      errorText.value = message;
+      if (!silent) ToastManager.showToast(message);
     } finally {
       isLoading.value = false;
     }

@@ -32,6 +32,7 @@ class MinePage extends StatelessWidget {
                   child: Column(
                     children: [
                       _buildUserCard(),
+                      _buildErrorBanner(),
                       20.verticalSpace,
                       _buildMenuCard(),
                       SizedBox(height: 20.h),
@@ -50,7 +51,7 @@ class MinePage extends StatelessWidget {
     return Obx(
       () => Container(
         width: 1.sw - 32.w,
-        height: 185.h,
+        constraints: BoxConstraints(minHeight: 185.h),
         padding: EdgeInsets.all(10.w),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(16.r),
@@ -171,6 +172,66 @@ class MinePage extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  Widget _buildErrorBanner() {
+    return Obx(() {
+      final error = logic.errorText.value.trim();
+      if (error.isEmpty) return const SizedBox.shrink();
+      return Container(
+        key: const ValueKey('mine_error_banner'),
+        width: 1.sw - 32.w,
+        margin: EdgeInsets.only(top: 10.h),
+        padding: EdgeInsets.all(12.w),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12.r),
+          border: Styles.commonBorder,
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(
+              Icons.cloud_off_outlined,
+              size: 18.w,
+              color: Colors.redAccent,
+            ),
+            8.horizontalSpace,
+            Expanded(
+              child: Text(
+                error,
+                style: TextStyle(
+                  color: Styles.secondaryTextColor,
+                  fontSize: 12.sp,
+                  fontWeight: FontWeight.w600,
+                  height: 1.35,
+                ),
+              ),
+            ),
+            8.horizontalSpace,
+            GestureDetector(
+              key: const ValueKey('mine_retry_button'),
+              onTap: logic.refreshUserInfo,
+              child: Container(
+                padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 6.h),
+                decoration: BoxDecoration(
+                  color: Styles.primaryTextColor,
+                  borderRadius: BorderRadius.circular(8.r),
+                ),
+                child: Text(
+                  '重试',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 11.sp,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    });
   }
 
   Widget _buildMenuCard() {

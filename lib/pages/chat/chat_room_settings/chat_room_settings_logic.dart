@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:fishpi/types/redpacket.dart';
 import 'package:fishpi_app/core/chat/chat_red_packet_utils.dart';
 import 'package:fishpi_app/core/manager/toast.dart';
+import 'package:fishpi_app/core/network/app_error_message.dart';
 import 'package:fishpi_app/core/sql/chat_room_auto_grab_settings.dart';
 import 'package:fishpi_app/core/sql/chat_room_block_list.dart';
 import 'package:fishpi_app/core/sql/chat_room_extension_store.dart';
@@ -232,7 +233,9 @@ class ChatRoomSettingsLogic extends GetxController {
       ToastManager.showToast('已导入 $count 个扩展');
       await _loadExtensions();
     } catch (e) {
-      ToastManager.showToast(e.toString());
+      ToastManager.showToast(
+        AppErrorMessage.friendly(e, fallback: '扩展配置导入失败'),
+      );
     }
   }
 

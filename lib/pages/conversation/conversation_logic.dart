@@ -8,17 +8,22 @@ import 'package:get/get.dart';
 import '../../core/chat/chat_message_utils.dart';
 import '../../core/controller/im.dart';
 import '../../core/im_event.dart';
+import '../../core/network/app_error_message.dart';
 import '../../core/sql/black_list.dart';
 import '../../core/sql/chat_room_block_list.dart';
 import '../../core/sql/user_remark.dart';
 
 class ConversationLogic extends GetxController {
+  ConversationLogic({this.autoLoad = true});
+
+  final bool autoLoad;
   final imController = Get.find<IMController>();
   final chatList = <ChatData>[].obs;
   final chatRoomLastMsg = ChatRoomMessage().obs;
   final currentUser = UserInfo().obs;
   final remarkVersion = 0.obs;
   final isLoading = false.obs;
+  final errorText = ''.obs;
   final showItem = "";
   final chatRoomMsg = <ChatRoomMessage>[].obs;
   final List<BlackUser> _blackUsers = [];
@@ -32,19 +37,26 @@ class ConversationLogic extends GetxController {
   @override
   void onInit() {
     super.onInit();
-    loadHistoryMessage();
+    if (autoLoad) {
+      loadHistoryMessage();
+    }
   }
 
   Future<void> loadHistoryMessage() async {
     if (isLoading.value) return;
     isLoading.value = true;
+    final errors = <String>[];
     await _loadBlackUsers();
     await _loadChatRoomBlockedUsers();
     await _loadCurrentUser();
     try {
       final list = await imController.fishpi.chat.list();
       chatList.assignAll(list);
-    } catch (_) {}
+    } catch (e) {
+      errors.add(
+        AppErrorMessage.friendly(e, fallback: '私聊会话加载失败'),
+      );
+    }
 
     try {
       final history = await imController.fishpi.chatroom.more(1);
@@ -52,12 +64,17 @@ class ConversationLogic extends GetxController {
       chatRoomMsg.assignAll(visibleHistory);
       chatRoomLastMsg.value =
           visibleHistory.isEmpty ? ChatRoomMessage() : visibleHistory.last;
-    } catch (_) {
-      chatRoomMsg.clear();
-      chatRoomLastMsg.value = ChatRoomMessage();
+    } catch (e) {
+      errors.add(
+        AppErrorMessage.friendly(e, fallback: '聊天室消息加载失败'),
+      );
+      if (chatRoomMsg.isEmpty) {
+        chatRoomLastMsg.value = ChatRoomMessage();
+      }
     } finally {
       isLoading.value = false;
     }
+    errorText.value = errors.join('\n');
     chatList.refresh();
     chatRoomMsg.refresh();
     chatRoomLastMsg.refresh();
@@ -200,7 +217,13 @@ class ConversationLogic extends GetxController {
   Future<void> _refreshChatList() async {
     try {
       chatList.assignAll(await imController.fishpi.chat.list());
-    } catch (_) {}
+      errorText.value = '';
+    } catch (e) {
+      errorText.value = AppErrorMessage.friendly(
+        e,
+        fallback: '私聊会话加载失败',
+      );
+    }
     chatList.refresh();
   }
 

@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 
 import '../../core/controller/im.dart';
 import '../../core/manager/toast.dart';
+import '../../core/network/app_error_message.dart';
 
 enum RegisterStep {
   info,
@@ -127,7 +128,9 @@ class RegisterLogic extends GetxController {
       ToastManager.showToast('验证码已发送');
     } catch (e) {
       ToastManager.dismiss();
-      ToastManager.showToast(e.toString());
+      ToastManager.showToast(
+        AppErrorMessage.friendly(e, fallback: '注册信息提交失败'),
+      );
     } finally {
       isSubmitting.value = false;
     }
@@ -151,7 +154,9 @@ class RegisterLogic extends GetxController {
       ToastManager.showToast('验证成功');
     } catch (e) {
       ToastManager.dismiss();
-      ToastManager.showToast(e.toString());
+      ToastManager.showToast(
+        AppErrorMessage.friendly(e, fallback: '验证码验证失败'),
+      );
     } finally {
       isSubmitting.value = false;
     }
@@ -193,7 +198,9 @@ class RegisterLogic extends GetxController {
       Get.offNamed(_loginRoute);
     } catch (e) {
       ToastManager.dismiss();
-      ToastManager.showToast(e.toString());
+      ToastManager.showToast(
+        AppErrorMessage.friendly(e, fallback: '注册失败'),
+      );
     } finally {
       isSubmitting.value = false;
     }

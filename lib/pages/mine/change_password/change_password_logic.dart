@@ -1,6 +1,7 @@
 import 'package:fishpi_app/core/account/account_service.dart';
 import 'package:fishpi_app/core/controller/im.dart';
 import 'package:fishpi_app/core/manager/toast.dart';
+import 'package:fishpi_app/core/network/app_error_message.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
@@ -77,7 +78,9 @@ class ChangePasswordLogic extends GetxController {
       Get.back();
     } catch (e) {
       ToastManager.dismiss();
-      ToastManager.showToast(e.toString());
+      ToastManager.showToast(
+        AppErrorMessage.friendly(e, fallback: '密码更新失败'),
+      );
     } finally {
       isSaving.value = false;
     }

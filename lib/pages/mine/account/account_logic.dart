@@ -2,6 +2,7 @@ import 'package:fishpi/types/user.dart';
 import 'package:fishpi_app/core/account/account_service.dart';
 import 'package:fishpi_app/core/controller/im.dart';
 import 'package:fishpi_app/core/manager/toast.dart';
+import 'package:fishpi_app/core/network/app_error_message.dart';
 import 'package:fishpi_app/pages/mine/mine_logic.dart';
 import 'package:fishpi_app/routers/navigator.dart';
 import 'package:get/get.dart';
@@ -54,7 +55,9 @@ class AccountLogic extends GetxController {
       final info = await imController.fishpi.user.info(false);
       _syncUserInfo(info);
     } catch (e) {
-      ToastManager.showToast('加载用户信息失败：$e');
+      ToastManager.showToast(
+        AppErrorMessage.friendly(e, fallback: '加载用户信息失败'),
+      );
     } finally {
       isLoading.value = false;
     }
@@ -96,7 +99,9 @@ class AccountLogic extends GetxController {
       }
     } catch (e) {
       ToastManager.dismiss();
-      ToastManager.showToast(e.toString());
+      ToastManager.showToast(
+        AppErrorMessage.friendly(e, fallback: '头像更新失败'),
+      );
     } finally {
       isUploading.value = false;
     }

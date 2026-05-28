@@ -2,6 +2,7 @@ import 'package:fishpi/types/user.dart';
 import 'package:fishpi_app/core/controller/im.dart';
 import 'package:fishpi_app/core/manager/toast.dart';
 import 'package:fishpi_app/core/medal/medal_service.dart';
+import 'package:fishpi_app/core/network/app_error_message.dart';
 import 'package:fishpi_app/pages/mine/mine_logic.dart';
 import 'package:get/get.dart';
 
@@ -46,9 +47,13 @@ class CollectionListLogic extends GetxController {
       await _loadUserInfoFallback();
     } catch (e) {
       if (medals.isEmpty) {
-        await _loadUserInfoFallback();
+        try {
+          await _loadUserInfoFallback();
+        } catch (_) {}
       }
-      ToastManager.showToast('加载勋章失败：$e');
+      ToastManager.showToast(
+        AppErrorMessage.friendly(e, fallback: '加载勋章失败'),
+      );
     } finally {
       isLoading.value = false;
     }
@@ -74,7 +79,9 @@ class CollectionListLogic extends GetxController {
       await _refreshMineUserInfo();
       ToastManager.showToast(nextDisplay ? '已展示勋章' : '已卸下勋章');
     } catch (e) {
-      ToastManager.showToast(e.toString());
+      ToastManager.showToast(
+        AppErrorMessage.friendly(e, fallback: '勋章状态更新失败'),
+      );
     } finally {
       updatingMedalIds.remove(medal.id);
     }

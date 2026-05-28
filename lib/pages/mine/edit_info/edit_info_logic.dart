@@ -2,6 +2,7 @@ import 'package:fishpi/types/user.dart';
 import 'package:fishpi_app/core/account/account_service.dart';
 import 'package:fishpi_app/core/controller/im.dart';
 import 'package:fishpi_app/core/manager/toast.dart';
+import 'package:fishpi_app/core/network/app_error_message.dart';
 import 'package:fishpi_app/pages/mine/account/account_logic.dart';
 import 'package:fishpi_app/pages/mine/mine_logic.dart';
 import 'package:flutter/material.dart';
@@ -52,7 +53,9 @@ class EditInfoLogic extends GetxController {
       fillUserInfo(info);
       _syncUserInfo(info);
     } catch (e) {
-      ToastManager.showToast('加载用户信息失败：$e');
+      ToastManager.showToast(
+        AppErrorMessage.friendly(e, fallback: '加载用户信息失败'),
+      );
     } finally {
       isLoading.value = false;
     }
@@ -125,7 +128,9 @@ class EditInfoLogic extends GetxController {
       Get.back();
     } catch (e) {
       ToastManager.dismiss();
-      ToastManager.showToast(e.toString());
+      ToastManager.showToast(
+        AppErrorMessage.friendly(e, fallback: '保存用户信息失败'),
+      );
     } finally {
       isSaving.value = false;
     }
