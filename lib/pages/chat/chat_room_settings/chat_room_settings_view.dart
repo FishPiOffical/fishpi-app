@@ -2,6 +2,7 @@ import 'package:fishpi/types/redpacket.dart';
 import 'package:fishpi_app/core/sql/chat_room_block_list.dart';
 import 'package:fishpi_app/core/sql/chat_room_extension_store.dart';
 import 'package:fishpi_app/res/styles.dart';
+import 'package:fishpi_app/routers/navigator.dart';
 import 'package:fishpi_app/widgets/pi_avatar.dart';
 import 'package:fishpi_app/widgets/pi_title_bar.dart';
 import 'package:fishpi_app/widgets/vip_badge.dart';
@@ -12,14 +13,26 @@ import 'package:get/get.dart';
 
 import 'chat_room_settings_logic.dart';
 
+enum ChatRoomSettingsPageMode {
+  menu,
+  autoGrab,
+  extensions,
+  blockList,
+}
+
 class ChatRoomSettingsPage extends GetView<ChatRoomSettingsLogic> {
-  const ChatRoomSettingsPage({super.key});
+  const ChatRoomSettingsPage({
+    this.mode = ChatRoomSettingsPageMode.menu,
+    super.key,
+  });
+
+  final ChatRoomSettingsPageMode mode;
 
   @override
   Widget build(BuildContext context) {
     return Obx(
       () => Scaffold(
-        appBar: PiTitleBar.back(title: '聊天室设置'),
+        appBar: PiTitleBar.back(title: _pageTitle),
         body: Container(
           width: 1.sw,
           constraints: BoxConstraints(minHeight: 1.sh),
@@ -27,18 +40,163 @@ class ChatRoomSettingsPage extends GetView<ChatRoomSettingsLogic> {
           child: SingleChildScrollView(
             padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 20.h),
             child: Column(
-              children: [
-                _buildAutoGrabSection(),
-                14.verticalSpace,
-                _buildExtensionSection(),
-                14.verticalSpace,
-                _buildBlockedSection(),
-                14.verticalSpace,
-                _buildRecentSection(),
-              ],
+              children: _buildPageChildren(),
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  String get _pageTitle {
+    switch (mode) {
+      case ChatRoomSettingsPageMode.autoGrab:
+        return '自动抢红包';
+      case ChatRoomSettingsPageMode.extensions:
+        return '扩展插件';
+      case ChatRoomSettingsPageMode.blockList:
+        return '聊天室屏蔽';
+      case ChatRoomSettingsPageMode.menu:
+        return '聊天室设置';
+    }
+  }
+
+  List<Widget> _buildPageChildren() {
+    switch (mode) {
+      case ChatRoomSettingsPageMode.autoGrab:
+        return [_buildAutoGrabSection()];
+      case ChatRoomSettingsPageMode.extensions:
+        return [_buildExtensionSection()];
+      case ChatRoomSettingsPageMode.blockList:
+        return [
+          _buildBlockedSection(),
+          14.verticalSpace,
+          _buildRecentSection(),
+        ];
+      case ChatRoomSettingsPageMode.menu:
+        return [_buildMenuSection()];
+    }
+  }
+
+  Widget _buildMenuSection() {
+    final config = controller.autoGrabConfig.value;
+    return Container(
+      key: const ValueKey('chat_room_settings_menu'),
+      width: 1.sw - 32.w,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: Styles.commonBorder,
+        borderRadius: BorderRadius.circular(16.r),
+      ),
+      child: Column(
+        children: [
+          _buildSettingsEntry(
+            key: const ValueKey('chat_room_auto_grab_entry'),
+            icon: Icons.redeem_outlined,
+            title: '自动抢红包',
+            subtitle: config.enabled
+                ? '已开启 · 延迟 ${config.delaySeconds} 秒 · 已领 ${config.totalPoint} 积分'
+                : '未开启 · 可设置延迟、类型和猜拳手势',
+            onTap: AppNavigator.toChatRoomAutoGrabSettings,
+          ),
+          _buildMenuDivider(),
+          _buildSettingsEntry(
+            key: const ValueKey('chat_room_extension_entry'),
+            icon: Icons.extension_outlined,
+            title: '扩展插件',
+            subtitle:
+                '已启用 ${controller.enabledExtensionCount} / 共 ${controller.extensions.length} 个',
+            onTap: AppNavigator.toChatRoomExtensions,
+          ),
+          _buildMenuDivider(),
+          _buildSettingsEntry(
+            key: const ValueKey('chat_room_block_entry'),
+            icon: Icons.person_off_outlined,
+            title: '聊天室屏蔽',
+            subtitle:
+                '已屏蔽 ${controller.blockedUsers.length} 人 · 最近候选 ${controller.recentUsers.length} 人',
+            onTap: AppNavigator.toChatRoomBlockList,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSettingsEntry({
+    required Key key,
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      key: key,
+      onTap: onTap,
+      behavior: HitTestBehavior.translucent,
+      child: Padding(
+        padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 14.h),
+        child: Row(
+          children: [
+            Container(
+              width: 42.w,
+              height: 42.w,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: Styles.primaryColor,
+                border: Styles.commonBorder,
+                borderRadius: BorderRadius.circular(12.r),
+              ),
+              child: Icon(
+                icon,
+                color: Styles.primaryTextColor,
+                size: 22.w,
+              ),
+            ),
+            12.horizontalSpace,
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: TextStyle(
+                      color: Styles.primaryTextColor,
+                      fontSize: 16.sp,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  4.verticalSpace,
+                  Text(
+                    subtitle,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: const Color(0xFF777777),
+                      fontSize: 12.sp,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Icon(
+              Icons.chevron_right,
+              color: Styles.primaryTextColor,
+              size: 22.w,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMenuDivider() {
+    return Padding(
+      padding: EdgeInsets.only(left: 68.w),
+      child: Divider(
+        height: 1,
+        color: const Color(0xFFE8E8E8),
+        thickness: 1.w,
       ),
     );
   }

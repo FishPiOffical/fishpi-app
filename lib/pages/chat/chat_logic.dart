@@ -26,6 +26,7 @@ import 'package:fishpi_app/widgets/pop_route.dart';
 import 'package:fishpi_app/widgets/chat/chat_room_extension_trigger_sheet.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:get/get.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:record/record.dart';
 
 import '../../core/controller/im.dart';
@@ -47,6 +48,7 @@ class ChatLogic extends GetxController {
   final remarkVersion = 0.obs;
   final isRecordingVoice = false.obs;
   final isSendingVoice = false.obs;
+  final isSendingImage = false.obs;
   final voiceRecordSeconds = 0.obs;
   final currentTopic = ''.obs;
   final onlineUsers = <OnlineInfo>[].obs;
@@ -64,6 +66,7 @@ class ChatLogic extends GetxController {
   ScrollController chatRoomController = ScrollController();
   TextEditingController chatRoomControllerText = TextEditingController();
   FocusNode chatRoomFocusNode = FocusNode();
+  final ImagePicker _imagePicker = ImagePicker();
 
   final content = ''.obs;
 
@@ -519,6 +522,89 @@ class ChatLogic extends GetxController {
       ToastManager.showToast('发送失败：$e');
       return false;
     }
+  }
+
+  Future<void> pickAndSendImages() async {
+    if (isSendingImage.value) return;
+
+    try {
+      final images = await _imagePicker.pickMultiImage(
+        imageQuality: 88,
+      );
+      if (images.isEmpty) return;
+      await _uploadAndSendImages(images);
+    } catch (e) {
+      ToastManager.showToast('选择图片失败：$e');
+    }
+  }
+
+  Future<void> takeAndSendImage() async {
+    if (isSendingImage.value) return;
+
+    try {
+      final image = await _imagePicker.pickImage(
+        source: ImageSource.camera,
+        imageQuality: 88,
+      );
+      if (image == null) return;
+      await _uploadAndSendImages([image]);
+    } catch (e) {
+      ToastManager.showToast('拍摄图片失败：$e');
+    }
+  }
+
+  Future<void> _uploadAndSendImages(List<XFile> images) async {
+    if (images.isEmpty || isSendingImage.value) return;
+
+    isSendingImage.value = true;
+    ToastManager.show(content: images.length > 1 ? '图片发送中...' : '图片上传中...');
+    try {
+      for (final image in images) {
+        final result = await imController.fishpi.upload([image.path]);
+        if (result.success.isEmpty) {
+          throw result.errs.isEmpty ? '上传失败' : result.errs.join('，');
+        }
+
+        final url = result.success.first.url.trim();
+        if (url.isEmpty) throw '上传地址为空';
+
+        final sent = await _sendRawChatContent(_imageMessageHtml(url));
+        if (!sent) throw '发送失败';
+      }
+
+      ToastManager.dismiss();
+      ToastManager.showToast(images.length > 1 ? '图片已发送' : '图片发送成功');
+    } catch (e) {
+      ToastManager.dismiss();
+      ToastManager.showToast('图片发送失败：$e');
+    } finally {
+      isSendingImage.value = false;
+    }
+  }
+
+  Future<bool> _sendRawChatContent(String sendText) async {
+    if (sendText.trim().isEmpty) return false;
+
+    try {
+      if (isGroup.value) {
+        await imController.fishpi.chatroom.send(sendText);
+      } else {
+        await imController.fishpi.chat.send(userName.value, sendText);
+      }
+      scrollToBottom(delay: 300);
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  String _imageMessageHtml(String url) {
+    final escapedUrl = url
+        .replaceAll('&', '&amp;')
+        .replaceAll('"', '&quot;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;');
+    return '<p><img src="$escapedUrl"/></p>';
   }
 
   void quickSetRemark(ChatRoomMessage message) {

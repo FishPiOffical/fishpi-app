@@ -5,6 +5,8 @@ import 'chat_room_settings_logic.dart';
 class ChatRoomSettingsBinding extends Bindings {
   @override
   void dependencies() {
-    Get.lazyPut(() => ChatRoomSettingsLogic());
+    if (!Get.isRegistered<ChatRoomSettingsLogic>()) {
+      Get.lazyPut(() => ChatRoomSettingsLogic());
+    }
   }
 }

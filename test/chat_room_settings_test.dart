@@ -53,7 +53,7 @@ void main() {
     }
   });
 
-  testWidgets('聊天室设置页可正常渲染标题、自动抢红包、扩展和屏蔽空状态', (tester) async {
+  testWidgets('聊天室设置主页可正常渲染二级入口', (tester) async {
     Get.put(ChatRoomSettingsLogic(autoLoad: false));
 
     await tester.pumpWidget(_wrap(const ChatRoomSettingsPage()));
@@ -62,15 +62,58 @@ void main() {
 
     expect(find.byType(PiTitleBar), findsOneWidget);
     expect(find.text('聊天室设置'), findsOneWidget);
+    expect(
+        find.byKey(const ValueKey('chat_room_settings_menu')), findsOneWidget);
+    expect(find.byKey(const ValueKey('chat_room_auto_grab_entry')),
+        findsOneWidget);
+    expect(find.byKey(const ValueKey('chat_room_extension_entry')),
+        findsOneWidget);
+    expect(find.byKey(const ValueKey('chat_room_block_entry')), findsOneWidget);
+  });
+
+  testWidgets('自动抢红包设置页可正常渲染配置项', (tester) async {
+    Get.put(ChatRoomSettingsLogic(autoLoad: false));
+
+    await tester.pumpWidget(_wrap(const ChatRoomSettingsPage(
+      mode: ChatRoomSettingsPageMode.autoGrab,
+    )));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
+
+    expect(find.text('自动抢红包'), findsWidgets);
     expect(find.byKey(const ValueKey('chat_room_auto_grab_section')),
         findsOneWidget);
     expect(find.byKey(const ValueKey('auto_grab_switch')), findsOneWidget);
     expect(find.text('3 秒'), findsOneWidget);
+  });
+
+  testWidgets('扩展插件设置页可正常渲染空状态和新增入口', (tester) async {
+    Get.put(ChatRoomSettingsLogic(autoLoad: false));
+
+    await tester.pumpWidget(_wrap(const ChatRoomSettingsPage(
+      mode: ChatRoomSettingsPageMode.extensions,
+    )));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
+
+    expect(find.text('扩展插件'), findsWidgets);
     expect(find.byKey(const ValueKey('chat_room_extension_section')),
         findsOneWidget);
     expect(find.text('暂无扩展插件'), findsOneWidget);
     expect(find.byKey(const ValueKey('chat_room_extension_add_button')),
         findsOneWidget);
+  });
+
+  testWidgets('聊天室屏蔽设置页可正常渲染空状态和添加入口', (tester) async {
+    Get.put(ChatRoomSettingsLogic(autoLoad: false));
+
+    await tester.pumpWidget(_wrap(const ChatRoomSettingsPage(
+      mode: ChatRoomSettingsPageMode.blockList,
+    )));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
+
+    expect(find.text('聊天室屏蔽'), findsOneWidget);
     expect(find.text('暂无屏蔽用户'), findsOneWidget);
     expect(find.byKey(const ValueKey('chat_room_manual_add_button')),
         findsOneWidget);
@@ -88,7 +131,9 @@ void main() {
       ),
     ]);
 
-    await tester.pumpWidget(_wrap(const ChatRoomSettingsPage()));
+    await tester.pumpWidget(_wrap(const ChatRoomSettingsPage(
+      mode: ChatRoomSettingsPageMode.extensions,
+    )));
     await tester.pump();
 
     expect(find.text('摸鱼日报'), findsOneWidget);
@@ -100,7 +145,9 @@ void main() {
   testWidgets('聊天室屏蔽页能展示已屏蔽用户和移出按钮', (tester) async {
     final logic = Get.put(ChatRoomSettingsLogic(autoLoad: false));
 
-    await tester.pumpWidget(_wrap(const ChatRoomSettingsPage()));
+    await tester.pumpWidget(_wrap(const ChatRoomSettingsPage(
+      mode: ChatRoomSettingsPageMode.blockList,
+    )));
     await tester.pump();
     logic.blockedUsers.assignAll([
       ChatRoomBlockedUser(
@@ -124,7 +171,9 @@ void main() {
       ],
     );
 
-    await tester.pumpWidget(_wrap(const ChatRoomSettingsPage()));
+    await tester.pumpWidget(_wrap(const ChatRoomSettingsPage(
+      mode: ChatRoomSettingsPageMode.autoGrab,
+    )));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 50));
 

@@ -10,6 +10,9 @@ abstract class AppRoutes {
   static const conversation = '/conversation';
   static const chat = '/chat';
   static const chatRoomSettings = '/chat_room_settings';
+  static const chatRoomAutoGrabSettings = '/chat_room_settings/auto_grab';
+  static const chatRoomExtensions = '/chat_room_settings/extensions';
+  static const chatRoomBlockList = '/chat_room_settings/block_list';
   static const userPanel = '/user_panel';
   static const forum = '/forum';
   static const forumDetail = '/forum_detail';

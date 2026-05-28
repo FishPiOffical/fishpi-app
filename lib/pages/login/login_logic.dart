@@ -11,6 +11,9 @@ class LoginLogic extends GetxController {
   final userName = "".obs;
   final pwd = "".obs;
   final mfaCode = "".obs;
+  final isLoggingIn = false.obs;
+  final isSubmittingMfa = false.obs;
+  final showPassword = false.obs;
 
   /// 用户名输入框输入
   void onUserNameChanged(value) {
@@ -27,17 +30,41 @@ class LoginLogic extends GetxController {
     mfaCode.value = value;
   }
 
-  Future<String> login({void Function()? mfaCb}) async {
+  void togglePasswordVisible() {
+    showPassword.value = !showPassword.value;
+  }
+
+  Future<String> login({
+    void Function()? mfaCb,
+    bool submittingMfa = false,
+  }) async {
+    if (isLoggingIn.value || isSubmittingMfa.value) {
+      return Future.error('正在登录，请稍候');
+    }
+
     LoginData loginData = LoginData(
       username: userName.value,
       passwd: pwd.value,
       mfaCode: mfaCode.value,
     );
-    return imController.login(
-      loginData,
-      mfaCb: mfaCb,
-      mfaCode: mfaCode.value,
-    );
+    if (submittingMfa) {
+      isSubmittingMfa.value = true;
+    } else {
+      isLoggingIn.value = true;
+    }
+    try {
+      return await imController.login(
+        loginData,
+        mfaCb: mfaCb,
+        mfaCode: mfaCode.value,
+      );
+    } finally {
+      if (submittingMfa) {
+        isSubmittingMfa.value = false;
+      } else {
+        isLoggingIn.value = false;
+      }
+    }
   }
 
   @override

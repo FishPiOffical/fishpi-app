@@ -1,6 +1,7 @@
 import 'package:fishpi/fishpi.dart';
 import 'package:fishpi_app/core/controller/im.dart';
 import 'package:fishpi_app/core/manager/toast.dart';
+import 'package:fishpi_app/routers/navigator.dart';
 import 'package:fishpi_app/utils/pi_utils.dart';
 import 'package:get/get.dart';
 import 'package:pull_to_refresh/pull_to_refresh.dart';
@@ -67,6 +68,22 @@ class NoticeLogic extends GetxController {
 
   int unreadFor(NoticeCategory category) =>
       category.unreadCount(noticeCount.value);
+
+  void openNotice(NoticeDisplayItem item) {
+    final articleId = item.targetArticleId.trim();
+    if (articleId.isNotEmpty) {
+      AppNavigator.toForumDetail(oId: articleId);
+      return;
+    }
+
+    final userName = item.targetUserName.trim();
+    if (userName.isNotEmpty) {
+      AppNavigator.toUserPanel(userName: userName);
+      return;
+    }
+
+    ToastManager.showToast('暂不支持跳转该通知');
+  }
 
   Future<void> _loadCount() async {
     try {
@@ -185,6 +202,8 @@ class NoticeDisplayItem {
   final String vipUserId;
   final String vipUserName;
   final String titleAction;
+  final String targetArticleId;
+  final String targetUserName;
 
   const NoticeDisplayItem({
     this.oId = '',
@@ -196,6 +215,8 @@ class NoticeDisplayItem {
     this.vipUserId = '',
     this.vipUserName = '',
     this.titleAction = '',
+    this.targetArticleId = '',
+    this.targetUserName = '',
   });
 
   factory NoticeDisplayItem.from(String type, dynamic item) {
@@ -219,6 +240,8 @@ class NoticeDisplayItem {
         hasRead: item.hasRead,
         vipUserName: item.author,
         titleAction: action,
+        targetArticleId: _extractArticleId(item.sharpURL),
+        targetUserName: item.author,
       );
     }
     if (item is NoticeAt) {
@@ -231,6 +254,8 @@ class NoticeDisplayItem {
         hasRead: item.hasRead,
         vipUserName: item.userName,
         titleAction: '提到了你',
+        targetArticleId: _extractArticleId(item.content),
+        targetUserName: item.userName,
       );
     }
     if (item is NoticeFollow) {
@@ -243,6 +268,8 @@ class NoticeDisplayItem {
         avatarURL: item.thumbnailURL,
         hasRead: item.hasRead,
         vipUserName: item.author,
+        targetArticleId: _extractArticleId(item.url),
+        targetUserName: item.author,
       );
     }
     if (item is NoticeSystem) {
@@ -252,6 +279,7 @@ class NoticeDisplayItem {
         content: item.description,
         time: item.createTime,
         hasRead: item.hasRead,
+        targetArticleId: _normalizeArticleId(item.dataId),
       );
     }
     if (item is NoticeUnknown) {
@@ -262,6 +290,7 @@ class NoticeDisplayItem {
         time: item.createTime,
         avatarURL: item.avatarURL,
         hasRead: item.hasRead,
+        targetArticleId: _extractArticleId('${item.title} ${item.content}'),
       );
     }
     return NoticeDisplayItem(
@@ -276,5 +305,30 @@ class NoticeDisplayItem {
     if (cleanTitle.isEmpty) return cleanContent;
     if (cleanContent.isEmpty) return cleanTitle;
     return '$cleanTitle：$cleanContent';
+  }
+
+  static String _extractArticleId(String raw) {
+    final value = raw.trim();
+    if (value.isEmpty) return '';
+
+    final articleMatch =
+        RegExp(r'(?:^|/)article/([0-9A-Za-z_-]+)').firstMatch(value);
+    if (articleMatch != null) {
+      return articleMatch.group(1) ?? '';
+    }
+
+    final queryMatch = RegExp(r'(?:articleId|articleOId|oId)=([0-9A-Za-z_-]+)')
+        .firstMatch(value);
+    if (queryMatch != null) {
+      return queryMatch.group(1) ?? '';
+    }
+
+    return _normalizeArticleId(value);
+  }
+
+  static String _normalizeArticleId(String raw) {
+    final value = raw.trim();
+    if (RegExp(r'^[0-9A-Za-z_-]{8,}$').hasMatch(value)) return value;
+    return '';
   }
 }

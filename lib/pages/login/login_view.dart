@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:pin_input_text_field/pin_input_text_field.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/manager/toast.dart';
 import '../../utils/pi_utils.dart';
@@ -23,115 +24,90 @@ class LoginPage extends StatelessWidget {
         height: 1.sh,
         color: Styles.primaryColor,
         padding: const EdgeInsets.all(10),
-        child: Center(
-          child: SizedBox(
-            width: 327.w,
-            height: 370.h,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                const Text(
-                  '登录',
-                  style: TextStyle(
-                    fontSize: 26,
-                    color: Colors.black,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                SizedBox(
-                  height: 24.h,
-                ),
-                buildUserNameInputWidget(),
-                SizedBox(
-                  height: 24.h,
-                ),
-                buildPwdInputWidget(),
-                SizedBox(
-                  height: 48.h,
-                ),
-                GestureDetector(
-                  onTap: () async {
-                    if (logic.userName.isEmpty) {
-                      ToastManager.showToast('请输入用户名/邮箱');
-                      return;
-                    }
-                    if (logic.pwd.isEmpty) {
-                      ToastManager.showToast('请输入密码');
-                      return;
-                    }
-                    logic.pinEditingController.clear();
-                    ToastManager.show(content: '登录中...');
-                    logic.login(mfaCb: () {
-                      _showMfaCodeDialog();
-                    }).then((token) {
-                      ToastManager.dismiss();
-                      ToastManager.showToast('登录成功');
-                      PiUtils.setString('token', token);
-                      PiUtils.setBool('isLogin', true);
-                      AppNavigator.closeAllToHome();
-                    }).catchError((e) {
-                      ToastManager.dismiss();
-                      ToastManager.showToast(e.toString());
-                    });
-                  },
-                  child: Container(
-                    width: 327.w,
-                    height: 56.h,
-                    alignment: Alignment.center,
-                    decoration: const BoxDecoration(
-                      borderRadius: BorderRadius.all(Radius.circular(10)),
-                      color: Colors.black,
-                    ),
-                    child: Text(
-                      '登 录'.tr,
+        child: SafeArea(
+          child: Center(
+            child: SingleChildScrollView(
+              padding: EdgeInsets.symmetric(vertical: 20.h),
+              child: SizedBox(
+                width: 327.w,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    const Text(
+                      '登录',
                       style: TextStyle(
-                        color: Colors.white,
+                        fontSize: 26,
+                        color: Colors.black,
                         fontWeight: FontWeight.bold,
-                        fontSize: 16.sp,
                       ),
                     ),
-                  ),
-                ),
-                SizedBox(
-                  height: 24.h,
-                ),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
+                    SizedBox(
+                      height: 24.h,
+                    ),
+                    buildUserNameInputWidget(),
+                    SizedBox(
+                      height: 24.h,
+                    ),
+                    buildPwdInputWidget(),
+                    SizedBox(
+                      height: 48.h,
+                    ),
+                    _buildLoginButton(),
+                    SizedBox(
+                      height: 16.h,
+                    ),
                     Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text(
-                          '还没有账号?'.tr,
-                          style: TextStyle(
-                              color: Colors.black,
-                              fontSize: 13.sp,
-                              fontWeight: FontWeight.bold),
+                        Row(
+                          children: [
+                            Text(
+                              '还没有账号?'.tr,
+                              style: TextStyle(
+                                  color: Colors.black,
+                                  fontSize: 13.sp,
+                                  fontWeight: FontWeight.bold),
+                            ),
+                            GestureDetector(
+                              onTap: AppNavigator.toRegister,
+                              child: Text(
+                                '现在注册'.tr,
+                                style: TextStyle(
+                                    color: Colors.red,
+                                    fontSize: 13.sp,
+                                    fontWeight: FontWeight.bold),
+                              ),
+                            ),
+                          ],
                         ),
                         GestureDetector(
-                          onTap: AppNavigator.toRegister,
+                          key: const ValueKey('login_forgot_password_button'),
+                          onTap: _openForgotPassword,
                           child: Text(
-                            '现在注册'.tr,
+                            '忘记密码'.tr,
                             style: TextStyle(
-                                color: Colors.red,
-                                fontSize: 13.sp,
-                                fontWeight: FontWeight.bold),
+                              color: Colors.black,
+                              fontSize: 13.sp,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                         ),
+                        GestureDetector(
+                          onTap: () {
+                            AppNavigator.toScan();
+                          },
+                          child: const Icon(
+                            Icons.qr_code_scanner,
+                            color: Colors.black,
+                            size: 20,
+                          ),
+                        )
                       ],
-                    ),
-                    GestureDetector(
-                      onTap: () {
-                        AppNavigator.toScan();
-                      },
-                      child: const Icon(
-                        Icons.qr_code_scanner,
-                        color: Colors.black,
-                        size: 20,
-                      ),
                     )
                   ],
-                )
-              ],
+                ),
+              ),
             ),
           ),
         ),
@@ -157,19 +133,128 @@ class LoginPage extends StatelessWidget {
 
   /// 密码输入框
   Widget buildPwdInputWidget() {
-    return SizedBox(
-      width: 327.w,
-      height: 56.h,
-      child: PiInput(
-        hintText: '密码',
-        prefixIcon: const Icon(Icons.lock),
-        controller: logic.pwdController,
-        obscureText: true,
-        onInputChanged: (text) {
-          logic.onPwdChanged(text);
-        },
+    return Obx(
+      () => SizedBox(
+        width: 327.w,
+        height: 56.h,
+        child: PiInput(
+          hintText: '密码',
+          prefixIcon: const Icon(Icons.lock),
+          controller: logic.pwdController,
+          obscureText: !logic.showPassword.value,
+          suffixIcon: GestureDetector(
+            key: const ValueKey('login_password_visibility_button'),
+            onTap: logic.togglePasswordVisible,
+            child: Icon(
+              logic.showPassword.value
+                  ? Icons.visibility_off_outlined
+                  : Icons.visibility_outlined,
+            ),
+          ),
+          onInputChanged: (text) {
+            logic.onPwdChanged(text);
+          },
+        ),
       ),
     );
+  }
+
+  Widget _buildLoginButton() {
+    return Obx(
+      () {
+        final loading = logic.isLoggingIn.value;
+        return GestureDetector(
+          key: const ValueKey('login_submit_button'),
+          onTap: loading ? null : _submitLogin,
+          child: Container(
+            width: 327.w,
+            height: 56.h,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              borderRadius: const BorderRadius.all(Radius.circular(10)),
+              color:
+                  loading ? Colors.black.withValues(alpha: 0.72) : Colors.black,
+            ),
+            child: loading
+                ? SizedBox(
+                    width: 20.w,
+                    height: 20.w,
+                    child: const CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
+                  )
+                : Text(
+                    '登 录'.tr,
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16.sp,
+                    ),
+                  ),
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _submitLogin() async {
+    if (logic.userName.value.trim().isEmpty) {
+      ToastManager.showToast('请输入用户名/邮箱');
+      return;
+    }
+    if (logic.pwd.value.trim().isEmpty) {
+      ToastManager.showToast('请输入密码');
+      return;
+    }
+
+    logic.pinEditingController.clear();
+    logic.onPinChange('');
+    try {
+      final token = await logic.login(mfaCb: _showMfaCodeDialog);
+      _finishLogin(token);
+    } catch (e) {
+      final message = e.toString();
+      if (message == '请输入正确的二次验证码') return;
+      ToastManager.showToast(message);
+    }
+  }
+
+  Future<void> _submitMfa(BuildContext dialogContext) async {
+    if (logic.mfaCode.value.trim().length != 6) {
+      ToastManager.showToast('请输入 6 位二次验证码');
+      return;
+    }
+
+    final navigator = Navigator.of(dialogContext);
+    try {
+      final token = await logic.login(
+        submittingMfa: true,
+      );
+      if (navigator.mounted && navigator.canPop()) {
+        navigator.pop();
+      }
+      _finishLogin(token);
+    } catch (e) {
+      logic.pinEditingController.clear();
+      logic.onPinChange('');
+      ToastManager.showToast('二次验证码验证失败：$e');
+    }
+  }
+
+  void _finishLogin(String token) {
+    ToastManager.showToast('登录成功');
+    PiUtils.setString('token', token);
+    PiUtils.setBool('isLogin', true);
+    AppNavigator.closeAllToHome();
+  }
+
+  Future<void> _openForgotPassword() async {
+    final uri = Uri.parse('https://fishpi.cn/login');
+    final success = await launchUrl(uri, mode: LaunchMode.externalApplication);
+    if (!success) {
+      ToastManager.showToast('请前往 fishpi.cn 网页端找回密码');
+    }
   }
 
   /// 二步验证弹窗
@@ -229,39 +314,44 @@ class LoginPage extends StatelessWidget {
                         ),
                       ),
                     )),
-                GestureDetector(
-                  onTap: () {
-                    Navigator.pop(context);
-                    logic.pinEditingController.clear();
-                    logic.login(mfaCb: () {
-                      _showMfaCodeDialog();
-                    }).then((token) {
-                      ToastManager.dismiss();
-                      ToastManager.showToast('登录成功');
-                      PiUtils.setString('token', token);
-                      PiUtils.setBool('isLogin', true);
-                      AppNavigator.closeAllToHome();
-                    }).catchError((e) {
-                      ToastManager.dismiss();
-                    });
-                  },
-                  child: Container(
-                    width: 290.w,
-                    height: 60.h,
-                    decoration: const BoxDecoration(
-                        color: Colors.black,
-                        borderRadius: BorderRadius.all(Radius.circular(10))),
-                    alignment: Alignment.center,
-                    child: const Text(
-                      "提交二次验证码",
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 18.0,
-                        color: Colors.white,
-                        decoration: TextDecoration.none,
+                Obx(
+                  () {
+                    final loading = logic.isSubmittingMfa.value;
+                    return GestureDetector(
+                      key: const ValueKey('login_mfa_submit_button'),
+                      onTap: loading ? null : () => _submitMfa(context),
+                      child: Container(
+                        width: 290.w,
+                        height: 60.h,
+                        decoration: BoxDecoration(
+                          color: loading
+                              ? Colors.black.withValues(alpha: 0.72)
+                              : Colors.black,
+                          borderRadius:
+                              const BorderRadius.all(Radius.circular(10)),
+                        ),
+                        alignment: Alignment.center,
+                        child: loading
+                            ? SizedBox(
+                                width: 20.w,
+                                height: 20.w,
+                                child: const CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Colors.white,
+                                ),
+                              )
+                            : const Text(
+                                "提交二次验证码",
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 18.0,
+                                  color: Colors.white,
+                                  decoration: TextDecoration.none,
+                                ),
+                              ),
                       ),
-                    ),
-                  ),
+                    );
+                  },
                 )
               ],
             ),

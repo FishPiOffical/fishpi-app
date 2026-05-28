@@ -23,6 +23,8 @@ class ChatInputBox extends StatefulWidget {
   final Future<void> Function()? onVoiceRecordStart;
   final Future<void> Function()? onVoiceRecordFinish;
   final Future<void> Function()? onVoiceRecordCancel;
+  final VoidCallback? onImageTap;
+  final VoidCallback? onCameraTap;
   final VoidCallback? onRedPacketTap;
   final VoidCallback? onBarragerTap;
   final VoidCallback? onExtensionTap;
@@ -48,6 +50,8 @@ class ChatInputBox extends StatefulWidget {
     this.onVoiceRecordStart,
     this.onVoiceRecordFinish,
     this.onVoiceRecordCancel,
+    this.onImageTap,
+    this.onCameraTap,
     this.onRedPacketTap,
     this.onBarragerTap,
     this.onExtensionTap,
@@ -443,13 +447,19 @@ class ChatInputBoxState extends State<ChatInputBox> {
         key: const ValueKey('chat_tool_image'),
         title: '图片',
         icon: Icon(Icons.photo, size: 30.w),
-        onTap: () {},
+        onTap: () {
+          closeAllTools();
+          widget.onImageTap?.call();
+        },
       ),
       _buildToolItem(
         key: const ValueKey('chat_tool_camera'),
         title: '拍摄',
         icon: Icon(Icons.camera_alt, size: 30.w),
-        onTap: () {},
+        onTap: () {
+          closeAllTools();
+          widget.onCameraTap?.call();
+        },
       ),
       if (widget.onRedPacketTap != null)
         _buildToolItem(

@@ -139,6 +139,8 @@ class ChatPage extends StatelessWidget {
                 onVoiceRecordStart: logic.startVoiceRecord,
                 onVoiceRecordFinish: logic.finishVoiceRecord,
                 onVoiceRecordCancel: logic.cancelVoiceRecord,
+                onImageTap: logic.pickAndSendImages,
+                onCameraTap: logic.takeAndSendImage,
                 onRedPacketTap:
                     logic.isGroup.value ? _showRedPacketSheet : null,
                 onBarragerTap: logic.isGroup.value ? _showBarragerSheet : null,

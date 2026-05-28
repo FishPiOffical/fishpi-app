@@ -46,6 +46,17 @@ class AppNavigator {
   /// 聊天室设置
   static void toChatRoomSettings() => Get.toNamed(AppRoutes.chatRoomSettings);
 
+  /// 自动抢红包设置
+  static void toChatRoomAutoGrabSettings() =>
+      Get.toNamed(AppRoutes.chatRoomAutoGrabSettings);
+
+  /// 聊天室扩展插件
+  static void toChatRoomExtensions() =>
+      Get.toNamed(AppRoutes.chatRoomExtensions);
+
+  /// 聊天室屏蔽名单
+  static void toChatRoomBlockList() => Get.toNamed(AppRoutes.chatRoomBlockList);
+
   /// 设置页面
   static void toForumCreate() => Get.toNamed(AppRoutes.forumCreate);
 

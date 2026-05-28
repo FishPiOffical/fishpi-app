@@ -195,66 +195,76 @@ class NoticePage extends GetView<NoticeLogic> {
     }
 
     final item = controller.notices[index];
-    return Container(
+    return GestureDetector(
       key: ValueKey('notice_item_${item.oId.isEmpty ? index : item.oId}'),
-      margin: EdgeInsets.only(bottom: 12.h),
-      padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 12.h),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        border: Styles.commonBorder,
-        borderRadius: BorderRadius.circular(14.r),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildNoticeIcon(item),
-          10.horizontalSpace,
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: _buildNoticeTitle(item),
-                    ),
-                    if (!item.hasRead)
-                      Container(
-                        width: 8.w,
-                        height: 8.w,
-                        decoration: const BoxDecoration(
-                          color: Colors.redAccent,
-                          shape: BoxShape.circle,
-                        ),
+      onTap: () => controller.openNotice(item),
+      behavior: HitTestBehavior.translucent,
+      child: Container(
+        margin: EdgeInsets.only(bottom: 12.h),
+        padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 12.h),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          border: Styles.commonBorder,
+          borderRadius: BorderRadius.circular(14.r),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildNoticeIcon(item),
+            10.horizontalSpace,
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _buildNoticeTitle(item),
                       ),
-                  ],
-                ),
-                6.verticalSpace,
-                Text(
-                  item.content,
-                  maxLines: 3,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: Styles.secondaryTextColor,
-                    fontSize: 13.sp,
-                    height: 1.35,
+                      if (!item.hasRead)
+                        Container(
+                          width: 8.w,
+                          height: 8.w,
+                          decoration: const BoxDecoration(
+                            color: Colors.redAccent,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                      6.horizontalSpace,
+                      Icon(
+                        Icons.chevron_right,
+                        size: 18.w,
+                        color: const Color(0xFF999999),
+                      ),
+                    ],
                   ),
-                ),
-                if (item.time.isNotEmpty) ...[
-                  8.verticalSpace,
+                  6.verticalSpace,
                   Text(
-                    PiUtils.getChatTime(item.time),
+                    item.content,
+                    maxLines: 3,
+                    overflow: TextOverflow.ellipsis,
                     style: TextStyle(
-                      color: const Color(0xFF999999),
-                      fontSize: 11.sp,
-                      fontWeight: FontWeight.bold,
+                      color: Styles.secondaryTextColor,
+                      fontSize: 13.sp,
+                      height: 1.35,
                     ),
                   ),
+                  if (item.time.isNotEmpty) ...[
+                    8.verticalSpace,
+                    Text(
+                      PiUtils.getChatTime(item.time),
+                      style: TextStyle(
+                        color: const Color(0xFF999999),
+                        fontSize: 11.sp,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
                 ],
-              ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

@@ -220,6 +220,45 @@ void main() {
     controller.dispose();
   });
 
+  testWidgets('工具栏点击图片和拍摄会触发对应回调', (tester) async {
+    final controller = TextEditingController();
+    final focusNode = FocusNode();
+    var imageTapCount = 0;
+    var cameraTapCount = 0;
+
+    await tester.pumpWidget(
+      _wrap(
+        ChatInputBox(
+          controller: controller,
+          focusNode: focusNode,
+          emojiList: const {},
+          diyEmojiList: const [],
+          onInput: (_) {},
+          clickSend: () async {},
+          scrollToBottom: () {},
+          onImageTap: () => imageTapCount++,
+          onCameraTap: () => cameraTapCount++,
+        ),
+      ),
+    );
+
+    await tester.tap(_assetImage('assets/images/more_feature.png'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('chat_tool_image')));
+    await tester.pumpAndSettle();
+
+    await tester.tap(_assetImage('assets/images/more_feature.png'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('chat_tool_camera')));
+    await tester.pumpAndSettle();
+
+    expect(imageTapCount, 1);
+    expect(cameraTapCount, 1);
+
+    focusNode.dispose();
+    controller.dispose();
+  });
+
   testWidgets('工具栏点击弹幕会触发对应回调', (tester) async {
     final controller = TextEditingController();
     final focusNode = FocusNode();

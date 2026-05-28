@@ -111,6 +111,27 @@ class AppPages {
       binding: ChatRoomSettingsBinding(),
     ),
     _pageBuilder(
+      name: AppRoutes.chatRoomAutoGrabSettings,
+      page: () => const ChatRoomSettingsPage(
+        mode: ChatRoomSettingsPageMode.autoGrab,
+      ),
+      binding: ChatRoomSettingsBinding(),
+    ),
+    _pageBuilder(
+      name: AppRoutes.chatRoomExtensions,
+      page: () => const ChatRoomSettingsPage(
+        mode: ChatRoomSettingsPageMode.extensions,
+      ),
+      binding: ChatRoomSettingsBinding(),
+    ),
+    _pageBuilder(
+      name: AppRoutes.chatRoomBlockList,
+      page: () => const ChatRoomSettingsPage(
+        mode: ChatRoomSettingsPageMode.blockList,
+      ),
+      binding: ChatRoomSettingsBinding(),
+    ),
+    _pageBuilder(
       name: AppRoutes.forum,
       page: () => ForumPage(),
       binding: ForumBinding(),
