@@ -52,10 +52,28 @@ void main() {
     await tester.pumpWidget(_wrap(ForumPage()));
     await tester.pump();
 
+    expect(find.byKey(const ValueKey('forum_query_header')), findsOneWidget);
+    expect(find.text('最新回复'), findsOneWidget);
+    expect(find.text('最新发布'), findsOneWidget);
+    expect(find.text('热门'), findsOneWidget);
+    expect(find.text('精华'), findsOneWidget);
     expect(find.byKey(const ValueKey('forum_list_state')), findsOneWidget);
     expect(find.text('暂无帖子'), findsOneWidget);
     expect(
         find.byKey(const ValueKey('forum_list_retry_button')), findsOneWidget);
+  });
+
+  testWidgets('帖子页搜索入口可以展开并显示搜索框', (tester) async {
+    Get.put(ForumLogic(autoLoad: false));
+
+    await tester.pumpWidget(_wrap(ForumPage()));
+    await tester.pump();
+    await tester.tap(find.byKey(const ValueKey('forum_search_toggle')));
+    await tester.pump();
+
+    expect(find.byKey(const ValueKey('forum_search_input')), findsOneWidget);
+    expect(find.text('搜索标签/关键词'), findsOneWidget);
+    expect(find.byKey(const ValueKey('forum_search_submit')), findsOneWidget);
   });
 
   testWidgets('帖子页首次加载失败显示错误空态', (tester) async {
