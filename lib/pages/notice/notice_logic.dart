@@ -1,6 +1,7 @@
 import 'package:fishpi/fishpi.dart';
 import 'package:fishpi_app/core/controller/im.dart';
 import 'package:fishpi_app/core/manager/toast.dart';
+import 'package:fishpi_app/core/network/app_error_message.dart';
 import 'package:fishpi_app/routers/navigator.dart';
 import 'package:fishpi_app/utils/pi_utils.dart';
 import 'package:get/get.dart';
@@ -117,16 +118,7 @@ class NoticeLogic extends GetxController {
   }
 
   String _friendlyError(Object error) {
-    final raw = error
-        .toString()
-        .replaceFirst('Exception:', '')
-        .replaceFirst('Invalid argument(s):', '')
-        .trim();
-    if (raw.isEmpty) return '通知加载失败';
-    if (raw.contains('type') || raw.contains('List') || raw.contains('Map')) {
-      return '通知数据解析失败，请下拉重试';
-    }
-    return raw;
+    return AppErrorMessage.friendly(error, fallback: '通知加载失败');
   }
 
   @override

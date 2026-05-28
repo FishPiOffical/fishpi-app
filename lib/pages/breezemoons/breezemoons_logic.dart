@@ -6,6 +6,7 @@ import 'package:fishpi_app/core/debug/memory_snapshot.dart';
 import 'package:fishpi_app/core/manager/toast.dart';
 import 'package:fishpi_app/core/memory/memory_limits.dart';
 import 'package:fishpi_app/core/memory/memory_list_utils.dart';
+import 'package:fishpi_app/core/network/app_error_message.dart';
 import 'package:fishpi_app/core/sql/black_list.dart';
 import 'package:fishpi_app/core/sql/user_remark.dart';
 import 'package:flutter/cupertino.dart';
@@ -13,6 +14,9 @@ import 'package:get/get.dart';
 import 'package:pull_to_refresh/pull_to_refresh.dart';
 
 class BreezemoonsLogic extends GetxController {
+  BreezemoonsLogic({this.autoLoad = true});
+
+  final bool autoLoad;
   final refresherController = RefreshController();
   final imController = Get.find<IMController>();
 
@@ -20,6 +24,7 @@ class BreezemoonsLogic extends GetxController {
   final page = 1.obs;
   final isFinished = false.obs;
   final isLoading = false.obs;
+  final errorText = ''.obs;
 
   final breezemoons = ''.obs;
   final List<BlackUser> _blackUsers = [];
@@ -37,7 +42,9 @@ class BreezemoonsLogic extends GetxController {
     _remarkSubscription ??= UserRemark.changes.listen((_) {
       list.refresh();
     });
-    initBreezemoon();
+    if (autoLoad) {
+      initBreezemoon();
+    }
     super.onInit();
   }
 
@@ -51,6 +58,7 @@ class BreezemoonsLogic extends GetxController {
         page: requestPage,
         size: 15,
       );
+      errorText.value = '';
       final visibleList = _visibleBreezemoons(res);
       if (requestPage == 1) {
         list.value = MemoryListUtils.keepFirst(
@@ -76,7 +84,11 @@ class BreezemoonsLogic extends GetxController {
           isFinished.value = true;
         }
       }
-    } catch (_) {
+    } catch (e) {
+      errorText.value = AppErrorMessage.friendly(
+        e,
+        fallback: '清风明月加载失败',
+      );
       if (requestPage > 1 && page.value == requestPage) {
         page.value = requestPage - 1;
       }

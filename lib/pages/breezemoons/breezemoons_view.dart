@@ -7,6 +7,7 @@ import 'package:pull_to_refresh/pull_to_refresh.dart';
 
 import '../../res/view.dart';
 import '../../widgets/pi_breezemoon_item.dart';
+import '../../widgets/pi_list_state.dart';
 import 'breezemoons_logic.dart';
 
 class BreezemoonsPage extends StatelessWidget {
@@ -36,7 +37,7 @@ class BreezemoonsPage extends StatelessWidget {
               padding: EdgeInsets.only(top: 20.h),
               shrinkWrap: true,
               itemBuilder: _buildBreezemoonList,
-              itemCount: logic.list.length + 1,
+              itemCount: logic.list.isEmpty ? 2 : logic.list.length + 1,
             ),
           ),
         ),
@@ -77,7 +78,23 @@ class BreezemoonsPage extends StatelessWidget {
         ),
       );
     }
+    if (logic.list.isEmpty) {
+      return _buildListState();
+    }
     BreezemoonContent item = logic.list[idx - 1];
     return PiBreezemoonItem(breezemoon: item);
+  }
+
+  Widget _buildListState() {
+    final error = logic.errorText.value.trim();
+    final hasError = error.isNotEmpty;
+    return PiListState(
+      key: const ValueKey('breezemoon_list_state'),
+      retryKey: const ValueKey('breezemoon_list_retry_button'),
+      icon: hasError ? Icons.cloud_off_outlined : Icons.air_outlined,
+      title: hasError ? '清风明月加载失败' : '暂无清风明月',
+      message: hasError ? error : '下拉刷新，或者先写下此刻想说的话。',
+      onRetry: logic.onRefresh,
+    );
   }
 }

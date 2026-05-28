@@ -9,6 +9,7 @@ import 'package:get/get.dart';
 import 'package:pull_to_refresh/pull_to_refresh.dart';
 
 import 'notice_logic.dart';
+import '../../widgets/pi_list_state.dart';
 
 class NoticePage extends GetView<NoticeLogic> {
   const NoticePage({super.key});
@@ -342,27 +343,17 @@ class NoticePage extends GetView<NoticeLogic> {
   }
 
   Widget _buildEmpty() {
-    final text =
-        controller.errorText.value.isEmpty ? '当前分类暂无通知' : '通知加载失败，下拉重试';
-    return Container(
+    final error = controller.errorText.value.trim();
+    final hasError = error.isNotEmpty;
+    return PiListState(
       key: const ValueKey('notice_empty_state'),
-      width: 1.sw - 32.w,
-      height: 180.h,
-      alignment: Alignment.center,
-      margin: EdgeInsets.only(top: 20.h),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        border: Styles.commonBorder,
-        borderRadius: BorderRadius.circular(16.r),
-      ),
-      child: Text(
-        text,
-        style: TextStyle(
-          color: Styles.secondaryTextColor,
-          fontSize: 15.sp,
-          fontWeight: FontWeight.bold,
-        ),
-      ),
+      retryKey: const ValueKey('notice_retry_button'),
+      icon: hasError
+          ? Icons.notifications_off_outlined
+          : Icons.notifications_none_outlined,
+      title: hasError ? '通知加载失败' : '当前分类暂无通知',
+      message: hasError ? error : '换个分类看看，或者稍后再来。',
+      onRetry: controller.reload,
     );
   }
 

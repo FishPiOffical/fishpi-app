@@ -6,12 +6,16 @@ import 'package:fishpi_app/core/debug/memory_snapshot.dart';
 import 'package:fishpi_app/core/forum/article_utils.dart';
 import 'package:fishpi_app/core/memory/memory_limits.dart';
 import 'package:fishpi_app/core/memory/memory_list_utils.dart';
+import 'package:fishpi_app/core/network/app_error_message.dart';
 import 'package:fishpi_app/core/sql/black_list.dart';
 import 'package:fishpi_app/core/sql/user_remark.dart';
 import 'package:get/get.dart';
 import 'package:pull_to_refresh/pull_to_refresh.dart';
 
 class ForumLogic extends GetxController {
+  ForumLogic({this.autoLoad = true});
+
+  final bool autoLoad;
   final refresherController = RefreshController();
   final imController = Get.find<IMController>();
 
@@ -19,6 +23,7 @@ class ForumLogic extends GetxController {
   final page = 1.obs;
   final isFinished = false.obs;
   final isLoading = false.obs;
+  final errorText = ''.obs;
   final List<BlackUser> _blackUsers = [];
   StreamSubscription<void>? _blackListSubscription;
   StreamSubscription<void>? _remarkSubscription;
@@ -32,7 +37,9 @@ class ForumLogic extends GetxController {
     _remarkSubscription ??= UserRemark.changes.listen((_) {
       list.refresh();
     });
-    initArticle();
+    if (autoLoad) {
+      initArticle();
+    }
     super.onInit();
   }
 
@@ -46,6 +53,7 @@ class ForumLogic extends GetxController {
         type: ArticleListType.Reply,
         page: requestPage,
       );
+      errorText.value = '';
       final visibleList = _visibleArticles(res.list);
       if (requestPage == 1) {
         list.value = MemoryListUtils.keepFirst(
@@ -71,7 +79,11 @@ class ForumLogic extends GetxController {
           isFinished.value = true;
         }
       }
-    } catch (_) {
+    } catch (e) {
+      errorText.value = AppErrorMessage.friendly(
+        e,
+        fallback: '帖子加载失败',
+      );
       if (requestPage > 1 && page.value == requestPage) {
         page.value = requestPage - 1;
       }
