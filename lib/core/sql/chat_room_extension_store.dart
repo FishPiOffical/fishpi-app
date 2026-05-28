@@ -255,6 +255,115 @@ class ChatRoomExtensionStore {
   }
 }
 
+class ChatRoomExtensionBuiltInTemplates {
+  ChatRoomExtensionBuiltInTemplates._();
+
+  static const tail = ChatRoomExtensionTemplate(
+    id: 'tail',
+    name: '小尾巴',
+    description: '发消息时自动在正文后附加昵称、积分、活跃度和时间。',
+    extension: ChatRoomExtension(
+      name: '小尾巴',
+      icon: '尾',
+      template: r'''${message.content}
+
+-- ${me.nickname} · 积分 ${me.point} · 活跃 ${me.liveness} · ${now}''',
+      triggers: [ChatRoomExtensionTrigger.beforeSend],
+      triggerAction: ChatRoomExtensionTriggerAction.insert,
+      cooldownSeconds: 0,
+      dataScopes: [
+        ChatRoomExtensionDataScope.me,
+        ChatRoomExtensionDataScope.message,
+        ChatRoomExtensionDataScope.time,
+      ],
+    ),
+  );
+
+  static const dailyStatus = ChatRoomExtensionTemplate(
+    id: 'daily_status',
+    name: '今日状态',
+    description: '手动填写状态、摸鱼进度和备注，生成一条状态消息。',
+    extension: ChatRoomExtension(
+      name: '今日状态',
+      icon: '状',
+      template: r'''今日状态：${状态}
+摸鱼进度：${进度}%
+当前积分：${me.point} · 活跃度：${me.liveness}
+聊天室话题：${room.topic}
+${备注}''',
+      fields: [
+        ChatRoomExtensionField(
+          key: '状态',
+          label: '今天状态',
+          type: ChatRoomExtensionFieldType.select,
+          required: true,
+          options: ['摸鱼中', '搬砖中', '准备下班', '灵感充电'],
+          defaultValue: '摸鱼中',
+        ),
+        ChatRoomExtensionField(
+          key: '进度',
+          label: '摸鱼进度',
+          type: ChatRoomExtensionFieldType.number,
+          required: true,
+          defaultValue: '60',
+        ),
+        ChatRoomExtensionField(
+          key: '备注',
+          label: '补充说明',
+          type: ChatRoomExtensionFieldType.multiline,
+        ),
+      ],
+      triggers: [ChatRoomExtensionTrigger.manual],
+      triggerAction: ChatRoomExtensionTriggerAction.preview,
+      dataScopes: [
+        ChatRoomExtensionDataScope.me,
+        ChatRoomExtensionDataScope.room,
+      ],
+    ),
+  );
+
+  static const imageCaption = ChatRoomExtensionTemplate(
+    id: 'image_caption',
+    name: '自动图片说明',
+    description: '收到单张图片时生成说明草稿，确认后可发送或填入输入框。',
+    extension: ChatRoomExtension(
+      name: '自动图片说明',
+      icon: '图',
+      template: r'''图片说明草稿
+来自：${message.senderName}
+图片地址：${message.imageUrl}
+发送时间：${message.time}
+
+我看到了这张图，可以补一句想法再发送。''',
+      triggers: [ChatRoomExtensionTrigger.receiveSingleImage],
+      triggerAction: ChatRoomExtensionTriggerAction.preview,
+      dataScopes: [
+        ChatRoomExtensionDataScope.message,
+      ],
+    ),
+  );
+
+  static const all = [
+    tail,
+    dailyStatus,
+    imageCaption,
+  ];
+}
+
+class ChatRoomExtensionTemplate {
+  final String id;
+  final String name;
+  final String description;
+  final ChatRoomExtension extension;
+
+  const ChatRoomExtensionTemplate({
+    required this.id,
+    required this.name,
+    required this.description,
+    required this.extension,
+  });
+}
+
 class ChatRoomExtension {
   final String id;
   final String name;

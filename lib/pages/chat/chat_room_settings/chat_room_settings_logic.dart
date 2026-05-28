@@ -93,6 +93,15 @@ class ChatRoomSettingsLogic extends GetxController {
   int get enabledExtensionCount =>
       extensions.where((extension) => extension.enabled).length;
 
+  List<ChatRoomExtensionTemplate> get builtInTemplates =>
+      ChatRoomExtensionBuiltInTemplates.all;
+
+  bool isBuiltInTemplateInstalled(ChatRoomExtensionTemplate template) {
+    return extensions.any((extension) =>
+        extension.name == template.extension.name &&
+        extension.template == template.extension.template);
+  }
+
   bool isAutoGrabTypeSelected(String type) {
     return autoGrabConfig.value.enabledTypes.contains(type);
   }
@@ -181,6 +190,23 @@ class ChatRoomSettingsLogic extends GetxController {
 
   void openNewExtensionEditor() {
     _openExtensionEditor(null);
+  }
+
+  Future<void> addBuiltInTemplate(ChatRoomExtensionTemplate template) async {
+    if (isBuiltInTemplateInstalled(template)) {
+      ToastManager.showToast('模板已添加，可直接编辑');
+      return;
+    }
+
+    final error = await ChatRoomExtensionStore.saveExtension(
+      template.extension.copyWith(id: '', createdAt: 0, updatedAt: 0),
+    );
+    if (error != null) {
+      ToastManager.showToast(error);
+      return;
+    }
+    ToastManager.showToast('已添加「${template.name}」');
+    await _loadExtensions();
   }
 
   void openExtensionEditor(ChatRoomExtension extension) {

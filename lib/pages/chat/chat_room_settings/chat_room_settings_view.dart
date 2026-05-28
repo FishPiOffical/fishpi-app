@@ -521,6 +521,8 @@ class ChatRoomSettingsPage extends GetView<ChatRoomSettingsLogic> {
               ),
             ],
           ),
+          14.verticalSpace,
+          _buildBuiltInTemplateList(),
           if (controller.extensions.isEmpty)
             Container(
               key: const ValueKey('chat_room_extension_empty'),
@@ -540,6 +542,128 @@ class ChatRoomSettingsPage extends GetView<ChatRoomSettingsLogic> {
             for (final extension in controller.extensions)
               _buildExtensionRow(extension),
           ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBuiltInTemplateList() {
+    return Container(
+      key: const ValueKey('chat_room_extension_template_section'),
+      decoration: BoxDecoration(
+        color: Styles.titleBarColor,
+        border: Styles.commonBorder,
+        borderRadius: BorderRadius.circular(12.r),
+      ),
+      child: Column(
+        children: [
+          Padding(
+            padding: EdgeInsets.fromLTRB(12.w, 10.h, 12.w, 6.h),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.auto_awesome_outlined,
+                  color: Styles.primaryTextColor,
+                  size: 18.w,
+                ),
+                6.horizontalSpace,
+                Expanded(
+                  child: Text(
+                    '模板库',
+                    style: TextStyle(
+                      color: Styles.primaryTextColor,
+                      fontSize: 15.sp,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+                Text(
+                  '一键添加后可编辑',
+                  style: TextStyle(
+                    color: Styles.secondaryTextColor,
+                    fontSize: 11.sp,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          for (var i = 0; i < controller.builtInTemplates.length; i++) ...[
+            _buildTemplateRow(controller.builtInTemplates[i]),
+            if (i != controller.builtInTemplates.length - 1)
+              Padding(
+                padding: EdgeInsets.only(left: 58.w),
+                child: Divider(
+                  height: 1,
+                  color: const Color(0xFFDCDCDC),
+                  thickness: 1.w,
+                ),
+              ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTemplateRow(ChatRoomExtensionTemplate template) {
+    final installed = controller.isBuiltInTemplateInstalled(template);
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 9.h),
+      child: Row(
+        children: [
+          Container(
+            width: 38.w,
+            height: 38.w,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              border: Styles.commonBorder,
+              borderRadius: BorderRadius.circular(10.r),
+            ),
+            child: Text(
+              template.extension.icon,
+              style: TextStyle(
+                color: Styles.primaryTextColor,
+                fontSize: 15.sp,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+          10.horizontalSpace,
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  template.name,
+                  style: TextStyle(
+                    color: Styles.primaryTextColor,
+                    fontSize: 14.sp,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                3.verticalSpace,
+                Text(
+                  template.description,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: const Color(0xFF777777),
+                    fontSize: 11.sp,
+                    fontWeight: FontWeight.bold,
+                    height: 1.25,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          8.horizontalSpace,
+          _buildOutlineButton(
+            key: ValueKey('chat_room_extension_template_${template.id}'),
+            text: installed ? '已添加' : '添加',
+            icon: installed ? Icons.check : Icons.add,
+            onTap: () => controller.addBuiltInTemplate(template),
+          ),
         ],
       ),
     );

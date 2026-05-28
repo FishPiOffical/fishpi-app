@@ -99,6 +99,12 @@ void main() {
     expect(find.text('扩展插件'), findsWidgets);
     expect(find.byKey(const ValueKey('chat_room_extension_section')),
         findsOneWidget);
+    expect(find.byKey(const ValueKey('chat_room_extension_template_section')),
+        findsOneWidget);
+    expect(find.text('模板库'), findsOneWidget);
+    expect(find.text('小尾巴'), findsOneWidget);
+    expect(find.text('今日状态'), findsOneWidget);
+    expect(find.text('自动图片说明'), findsOneWidget);
     expect(find.text('暂无扩展插件'), findsOneWidget);
     expect(find.byKey(const ValueKey('chat_room_extension_add_button')),
         findsOneWidget);

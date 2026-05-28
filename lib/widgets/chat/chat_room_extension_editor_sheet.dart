@@ -20,6 +20,18 @@ class ChatRoomExtensionEditorSheet extends StatefulWidget {
 
 class _ChatRoomExtensionEditorSheetState
     extends State<ChatRoomExtensionEditorSheet> {
+  static const _templateVariables = [
+    r'${message.content}',
+    r'${message.preview}',
+    r'${message.imageUrl}',
+    r'${message.senderName}',
+    r'${me.nickname}',
+    r'${me.point}',
+    r'${me.liveness}',
+    r'${room.topic}',
+    r'${now}',
+  ];
+
   late final TextEditingController _nameController;
   late final TextEditingController _iconController;
   late final TextEditingController _templateController;
@@ -112,12 +124,7 @@ class _ChatRoomExtensionEditorSheetState
               12.verticalSpace,
               _buildDataScopeSection(),
               12.verticalSpace,
-              _buildInput(
-                controller: _templateController,
-                label: '消息模板',
-                hintText: r'例如：今天摸鱼进度：${进度}%',
-                maxLines: 5,
-              ),
+              _buildTemplateSection(),
               14.verticalSpace,
               _buildFieldHeader(),
               for (var i = 0; i < _fields.length; i++) ...[
@@ -337,6 +344,15 @@ class _ChatRoomExtensionEditorSheetState
               fontWeight: FontWeight.bold,
             ),
           ),
+          6.verticalSpace,
+          Text(
+            r'收到图片时可用 ${message.imageUrl}；小尾巴模板通常保留 ${message.content} 再追加内容。',
+            style: TextStyle(
+              color: const Color(0xFF777777),
+              fontSize: 12.sp,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
           10.verticalSpace,
           Wrap(
             spacing: 8.w,
@@ -370,6 +386,66 @@ class _ChatRoomExtensionEditorSheetState
             ],
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildTemplateSection() {
+    return _buildPanel(
+      title: '消息模板',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildInput(
+            controller: _templateController,
+            label: '模板内容',
+            hintText: r'例如：今天摸鱼进度：${进度}%',
+            maxLines: 5,
+          ),
+          10.verticalSpace,
+          Text(
+            '常用变量，点击可插入到模板光标位置',
+            style: TextStyle(
+              color: Styles.secondaryTextColor,
+              fontSize: 12.sp,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          8.verticalSpace,
+          Wrap(
+            spacing: 8.w,
+            runSpacing: 8.h,
+            children: [
+              for (final variable in _templateVariables)
+                _buildVariableChip(variable),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildVariableChip(String variable) {
+    return GestureDetector(
+      key: ValueKey('chat_room_extension_variable_$variable'),
+      onTap: () => _insertTemplateVariable(variable),
+      child: Container(
+        height: 30.w,
+        padding: EdgeInsets.symmetric(horizontal: 9.w),
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: Styles.titleBarColor,
+          border: Styles.commonBorder,
+          borderRadius: BorderRadius.circular(9.r),
+        ),
+        child: Text(
+          variable,
+          style: TextStyle(
+            color: Styles.primaryTextColor,
+            fontSize: 11.sp,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
       ),
     );
   }
@@ -736,6 +812,17 @@ class _ChatRoomExtensionEditorSheetState
         _dataScopes.add(scope);
       }
     });
+  }
+
+  void _insertTemplateVariable(String variable) {
+    final text = _templateController.text;
+    final selection = _templateController.selection;
+    final start = selection.start >= 0 ? selection.start : text.length;
+    final end = selection.end >= 0 ? selection.end : start;
+    final nextText = text.replaceRange(start, end, variable);
+    _templateController
+      ..text = nextText
+      ..selection = TextSelection.collapsed(offset: start + variable.length);
   }
 }
 

@@ -72,6 +72,45 @@ void main() {
       find.textContaining(r'${message.content} 是输入框里准备发送的内容'),
       findsOneWidget,
     );
+    expect(
+      find.textContaining(r'${message.imageUrl}'),
+      findsWidgets,
+    );
+  });
+
+  testWidgets('扩展编辑器可以点击常用变量插入模板', (tester) async {
+    ChatRoomExtension? saved;
+
+    await tester.pumpWidget(
+      _wrap(
+        ChatRoomExtensionEditorSheet(
+          extension: const ChatRoomExtension(
+            id: 'var',
+            name: '变量测试',
+            template: 'hello',
+          ),
+          onSave: (extension) async {
+            saved = extension;
+            return null;
+          },
+        ),
+      ),
+    );
+
+    final nowVariable =
+        find.byKey(const ValueKey(r'chat_room_extension_variable_${now}'));
+    await tester.ensureVisible(nowVariable);
+    await tester.tap(nowVariable);
+    await tester.pump();
+
+    final saveButton =
+        find.byKey(const ValueKey('chat_room_extension_save_button'));
+    await tester.ensureVisible(saveButton);
+    await tester.tap(saveButton);
+    await tester.pumpAndSettle();
+
+    expect(saved, isNotNull);
+    expect(saved!.template, contains(r'${now}'));
   });
 }
 

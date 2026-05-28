@@ -134,4 +134,43 @@ void main() {
     expect(all.single.name, '已存在');
     expect(enabled, isEmpty);
   });
+
+  test('内置模板覆盖小尾巴、今日状态和自动图片说明', () {
+    final templates = ChatRoomExtensionBuiltInTemplates.all;
+
+    expect(templates.map((item) => item.name), [
+      '小尾巴',
+      '今日状态',
+      '自动图片说明',
+    ]);
+
+    for (final template in templates) {
+      expect(
+        ChatRoomExtensionStore.validateExtension(template.extension),
+        isNull,
+      );
+    }
+
+    expect(
+      ChatRoomExtensionBuiltInTemplates.tail.extension.triggers,
+      [ChatRoomExtensionTrigger.beforeSend],
+    );
+    expect(
+      ChatRoomExtensionBuiltInTemplates.imageCaption.extension.triggers,
+      [ChatRoomExtensionTrigger.receiveSingleImage],
+    );
+  });
+
+  test('内置模板可以保存为可用扩展', () async {
+    final error = await ChatRoomExtensionStore.saveExtension(
+      ChatRoomExtensionBuiltInTemplates.tail.extension,
+    );
+
+    final all = await ChatRoomExtensionStore.getAll();
+
+    expect(error, isNull);
+    expect(all.single.name, '小尾巴');
+    expect(all.single.id, isNotEmpty);
+    expect(all.single.triggers, [ChatRoomExtensionTrigger.beforeSend]);
+  });
 }
