@@ -88,6 +88,9 @@ class AppNavigator {
   /// 修改密码
   static void toChangePassword() => Get.toNamed(AppRoutes.changePassword);
 
+  /// VIP会员
+  static void toVip() => Get.toNamed(AppRoutes.vip);
+
   /// Ta人主页
   static void toUserPanel({String? userName}) => Get.toNamed(
         AppRoutes.userPanel,

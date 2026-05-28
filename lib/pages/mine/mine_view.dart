@@ -194,6 +194,13 @@ class MinePage extends StatelessWidget {
             onTap: logic.toAccountPage,
           ),
           PiMenuItem(
+            title: 'VIP会员',
+            iconColor: const Color(0xFFFFB300),
+            icon: Icons.workspace_premium_outlined,
+            rightText: '状态与样式',
+            onTap: logic.toVipPage,
+          ),
+          PiMenuItem(
             title: '典藏馆',
             iconColor: Colors.lightBlueAccent,
             icon: Icons.dataset,

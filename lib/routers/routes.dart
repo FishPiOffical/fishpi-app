@@ -21,6 +21,7 @@ abstract class AppRoutes {
   static const mine = '/mine';
   static const editInfo = '/edit_info';
   static const changePassword = '/change_password';
+  static const vip = '/vip';
   static const setUp = '/set_up';
   static const about = '/about';
   static const blackList = '/black_list';

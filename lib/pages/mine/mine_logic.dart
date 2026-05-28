@@ -43,6 +43,10 @@ class MineLogic extends GetxController {
     AppNavigator.toCollection(metals);
   }
 
+  void toVipPage() {
+    AppNavigator.toVip();
+  }
+
   void toSetUpPage() {
     AppNavigator.toSetting();
   }

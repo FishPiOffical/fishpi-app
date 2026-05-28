@@ -36,6 +36,8 @@ import 'package:fishpi_app/pages/mine/set_up/feedback/feedback_binding.dart';
 import 'package:fishpi_app/pages/mine/set_up/feedback/feedback_view.dart';
 import 'package:fishpi_app/pages/mine/set_up/set_up_binding.dart';
 import 'package:fishpi_app/pages/mine/set_up/set_up_view.dart';
+import 'package:fishpi_app/pages/mine/vip/vip_binding.dart';
+import 'package:fishpi_app/pages/mine/vip/vip_view.dart';
 import 'package:fishpi_app/pages/notice/notice_binding.dart';
 import 'package:fishpi_app/pages/notice/notice_view.dart';
 import 'package:fishpi_app/pages/register/register_binding.dart';
@@ -160,6 +162,11 @@ class AppPages {
       name: AppRoutes.changePassword,
       page: () => ChangePasswordPage(),
       binding: ChangePasswordBinding(),
+    ),
+    _pageBuilder(
+      name: AppRoutes.vip,
+      page: () => VipPage(),
+      binding: VipBinding(),
     ),
     _pageBuilder(
       name: AppRoutes.setUp,
