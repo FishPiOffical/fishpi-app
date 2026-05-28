@@ -16,6 +16,8 @@ import 'package:pull_to_refresh/pull_to_refresh.dart';
 class BreezemoonsLogic extends GetxController {
   BreezemoonsLogic({this.autoLoad = true});
 
+  static const int maxContentLength = 280;
+
   final bool autoLoad;
   final refresherController = RefreshController();
   final imController = Get.find<IMController>();
@@ -27,6 +29,8 @@ class BreezemoonsLogic extends GetxController {
   final errorText = ''.obs;
 
   final breezemoons = ''.obs;
+  final isSending = false.obs;
+  final sendErrorText = ''.obs;
   final List<BlackUser> _blackUsers = [];
   StreamSubscription<void>? _blackListSubscription;
   StreamSubscription<void>? _remarkSubscription;
@@ -144,24 +148,62 @@ class BreezemoonsLogic extends GetxController {
     initBreezemoon();
   }
 
-  void onInputChanged(text) {
+  int get contentLength => breezemoons.value.trim().length;
+
+  bool get isContentOverflow => contentLength > maxContentLength;
+
+  bool get canSend =>
+      contentLength > 0 && !isContentOverflow && !isSending.value;
+
+  String? validateContent(String raw) {
+    final content = raw.trim();
+    if (content.isEmpty) {
+      return '先写点内容再发布';
+    }
+    if (content.length > maxContentLength) {
+      return '内容超过 $maxContentLength 字，请精简后再发布';
+    }
+    return null;
+  }
+
+  void onInputChanged(String text) {
     breezemoons.value = text;
+    if (sendErrorText.value.isNotEmpty) {
+      sendErrorText.value = '';
+    }
   }
 
   void sendBreezemoon() async {
-    if (breezemoons.value == '') return;
-    ToastManager.show();
+    if (isSending.value) return;
+    final content = breezemoons.value.trim();
+    final validationError = validateContent(content);
+    if (validationError != null) {
+      sendErrorText.value = validationError;
+      ToastManager.showToast(validationError);
+      return;
+    }
+
+    isSending.value = true;
+    sendErrorText.value = '';
+    ToastManager.show(content: '发布中...');
     try {
-      await imController.fishpi.breezemoon.send(breezemoons.value);
+      final result = await imController.fishpi.breezemoon.send(content);
+      if (!result.success) {
+        throw result.msg.isEmpty ? '服务端未接受发布' : result.msg;
+      }
       textEditingController.text = '';
       breezemoons.value = '';
+      ToastManager.dismiss();
+      ToastManager.showToast('已发布');
       onRefresh();
     } catch (e) {
       ToastManager.dismiss();
-      ToastManager.showToast('发布失败：$e');
+      final message = AppErrorMessage.friendly(e, fallback: '发布失败');
+      sendErrorText.value = message;
+      ToastManager.showToast(message);
       return;
     } finally {
-      ToastManager.dismiss();
+      isSending.value = false;
     }
   }
 

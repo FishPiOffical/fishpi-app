@@ -94,8 +94,65 @@ void main() {
     await tester.pump();
 
     expect(find.text('随便说说...'), findsOneWidget);
+    expect(
+        find.byKey(const ValueKey('breezemoon_send_button')), findsOneWidget);
+    expect(find.text('0/280'), findsOneWidget);
     expect(find.byKey(const ValueKey('breezemoon_list_state')), findsOneWidget);
     expect(find.text('暂无清风明月'), findsOneWidget);
+  });
+
+  testWidgets('清风明月发布框输入后更新字数提示', (tester) async {
+    Get.put(BreezemoonsLogic(autoLoad: false));
+
+    await tester.pumpWidget(_wrap(BreezemoonsPage()));
+    await tester.pump();
+
+    await tester.enterText(
+      find.byKey(const ValueKey('breezemoon_publish_input')),
+      'abc',
+    );
+    await tester.pump();
+
+    expect(find.text('3/280'), findsOneWidget);
+  });
+
+  testWidgets('清风明月发布框超长时显示错误提示', (tester) async {
+    Get.put(BreezemoonsLogic(autoLoad: false));
+
+    await tester.pumpWidget(_wrap(BreezemoonsPage()));
+    await tester.pump();
+
+    await tester.enterText(
+      find.byKey(const ValueKey('breezemoon_publish_input')),
+      'a' * (BreezemoonsLogic.maxContentLength + 1),
+    );
+    await tester.pump();
+
+    expect(find.text('281/280'), findsOneWidget);
+    expect(find.text('内容超过 280 字，请精简后再发布'), findsOneWidget);
+  });
+
+  testWidgets('清风明月发布中时展示发送中状态', (tester) async {
+    final logic = Get.put(BreezemoonsLogic(autoLoad: false));
+    logic.onInputChanged('今天也要好好摸鱼');
+    logic.textEditingController.text = logic.breezemoons.value;
+    logic.isSending.value = true;
+
+    await tester.pumpWidget(_wrap(BreezemoonsPage()));
+    await tester.pump();
+
+    expect(find.text('发送中'), findsOneWidget);
+  });
+
+  test('清风明月发布内容校验覆盖空内容和超长内容', () {
+    final logic = Get.put(BreezemoonsLogic(autoLoad: false));
+
+    expect(logic.validateContent('   '), '先写点内容再发布');
+    expect(
+      logic.validateContent('a' * (BreezemoonsLogic.maxContentLength + 1)),
+      '内容超过 280 字，请精简后再发布',
+    );
+    expect(logic.validateContent('今天摸鱼成功'), isNull);
   });
 }
 
