@@ -1,5 +1,6 @@
 import 'package:fishpi_app/core/controller/chat_music_player.dart';
 import 'package:fishpi_app/core/controller/im.dart';
+import 'package:fishpi_app/core/debug/performance_trace.dart';
 import 'package:fishpi_app/core/sql/user_remark.dart';
 import 'package:fishpi_app/routers/pages.dart';
 import 'package:fishpi_app/utils/pi_utils.dart';
@@ -12,6 +13,7 @@ import 'package:get/get.dart';
 import 'package:hive_flutter/adapters.dart';
 
 void main() async {
+  PerformanceTrace.startApp();
   SystemUiOverlayStyle systemUiOverlayStyle = const SystemUiOverlayStyle(
     statusBarColor: Colors.transparent,
     statusBarIconBrightness: Brightness.dark,

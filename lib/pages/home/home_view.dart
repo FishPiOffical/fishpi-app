@@ -1,3 +1,4 @@
+import 'package:fishpi_app/core/debug/performance_trace.dart';
 import 'package:fishpi_app/pages/breezemoons/breezemoons_view.dart';
 import 'package:fishpi_app/pages/mine/mine_view.dart';
 import 'package:fishpi_app/res/styles.dart';
@@ -10,7 +11,14 @@ import '../conversation/conversation_view.dart';
 import '../forum/forum_view.dart';
 import 'home_logic.dart';
 
-class HomePage extends StatelessWidget {
+class HomePage extends StatefulWidget {
+  const HomePage({super.key});
+
+  @override
+  State<HomePage> createState() => _HomePageState();
+}
+
+class _HomePageState extends State<HomePage> {
   static const List<String> _titles = [
     '聊天',
     '帖子',
@@ -26,7 +34,13 @@ class HomePage extends StatelessWidget {
     MinePage(),
   ];
 
-  HomePage({super.key});
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      PerformanceTrace.markHomeInteractive();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {

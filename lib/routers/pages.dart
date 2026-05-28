@@ -88,7 +88,7 @@ class AppPages {
     ),
     _pageBuilder(
       name: AppRoutes.home,
-      page: () => HomePage(),
+      page: () => const HomePage(),
       binding: HomeBinding(),
       transition: Transition.fadeIn,
     ),

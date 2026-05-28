@@ -1,3 +1,4 @@
+import 'package:fishpi_app/core/debug/performance_trace.dart';
 import 'package:fishpi_app/pages/splash/splash_logic.dart';
 import 'package:fishpi_app/res/styles.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
@@ -25,6 +26,9 @@ class _SplashScreenPageState extends State<SplashPage>
   void initState() {
     super.initState();
     FlutterNativeSplash.remove();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      PerformanceTrace.markSplashVisible();
+    });
     _lottieAnimation = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 1),
