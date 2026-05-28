@@ -11,8 +11,8 @@ class HomeBinding extends Bindings {
   void dependencies() {
     _putOnce(() => HomeLogic());
     _putOnce(() => ConversationLogic());
-    _putOnce(() => ForumLogic());
-    _putOnce(() => BreezemoonsLogic());
+    _putOnce(() => ForumLogic(autoLoad: false));
+    _putOnce(() => BreezemoonsLogic(autoLoad: false));
     _putOnce(() => MineLogic());
   }
 

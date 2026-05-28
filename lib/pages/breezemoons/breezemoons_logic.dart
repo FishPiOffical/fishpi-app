@@ -34,6 +34,7 @@ class BreezemoonsLogic extends GetxController {
   final List<BlackUser> _blackUsers = [];
   StreamSubscription<void>? _blackListSubscription;
   StreamSubscription<void>? _remarkSubscription;
+  bool _hasRequestedInitialLoad = false;
 
   TextEditingController textEditingController = TextEditingController();
 
@@ -47,15 +48,29 @@ class BreezemoonsLogic extends GetxController {
       list.refresh();
     });
     if (autoLoad) {
-      initBreezemoon();
+      loadInitialPageIfNeeded();
     }
     super.onInit();
   }
 
-  void initBreezemoon() async {
+  bool get hasRequestedInitialLoad => _hasRequestedInitialLoad;
+
+  Future<void> loadInitialPageIfNeeded() async {
+    if (_hasRequestedInitialLoad || isLoading.value || list.isNotEmpty) {
+      return;
+    }
+    isFinished.value = false;
+    page.value = 1;
+    await initBreezemoon();
+  }
+
+  Future<void> initBreezemoon() async {
     if (isLoading.value) return;
     isLoading.value = true;
     final requestPage = page.value;
+    if (requestPage == 1) {
+      _hasRequestedInitialLoad = true;
+    }
     try {
       await _loadBlackUsers();
       List<BreezemoonContent> res = await imController.fishpi.breezemoon.list(
