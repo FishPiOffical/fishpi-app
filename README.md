@@ -103,7 +103,7 @@ Dart stable 当前3.12.0
 - [x] 增加真机性能验收记录：冷启动耗时、首页可交互耗时、聊天 10 分钟内存峰值、图片缓存占用和返回首页后的回落情况，记录模板见 [docs/performance_acceptance.md](docs/performance_acceptance.md)。
 - [x] 建立统一视觉 token：卡片圆角、按钮高度、表单高度、边框粗细和页面间距，逐步替换旧页面里的零散样式。
 - [x] 梳理静默 `catch` 分支，把关键网络失败接入统一错误文案和可重试交互。
-- [ ] 升级 Android Gradle/Kotlin 构建链，消除当前 Flutter 构建提示的未来兼容警告。
+- [x] 升级 Android Gradle/Kotlin 构建链，消除当前 Flutter 构建提示的未来兼容警告。
 
 ## 当前验证
 
