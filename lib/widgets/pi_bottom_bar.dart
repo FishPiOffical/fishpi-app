@@ -5,10 +5,12 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 class PiBottomBar extends StatelessWidget {
   final Function(int) callback;
   final int index;
+  final int chatUnreadCount;
 
   const PiBottomBar({
     required this.callback,
     required this.index,
+    this.chatUnreadCount = 0,
     super.key,
   });
 
@@ -41,6 +43,7 @@ class PiBottomBar extends StatelessWidget {
             title: '聊天',
             idx: 0,
             cb: callback,
+            badgeCount: chatUnreadCount,
           ),
           _buildItem(
             icon: Image.asset(
@@ -82,6 +85,7 @@ class PiBottomBar extends StatelessWidget {
     required String title,
     required int idx,
     required Function(int) cb,
+    int badgeCount = 0,
   }) {
     return GestureDetector(
       onTap: () => cb(idx),
@@ -92,7 +96,41 @@ class PiBottomBar extends StatelessWidget {
           opacity: index == idx ? 1 : 0.7,
           child: Column(
             children: [
-              icon,
+              Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  icon,
+                  if (badgeCount > 0)
+                    Positioned(
+                      key: const ValueKey('bottom_chat_unread_badge'),
+                      right: -8.w,
+                      top: -6.h,
+                      child: Container(
+                        constraints: BoxConstraints(minWidth: 16.w),
+                        height: 16.w,
+                        padding: EdgeInsets.symmetric(horizontal: 4.w),
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(
+                          color: Colors.redAccent,
+                          border: Border.all(
+                            color: Styles.primaryTextColor,
+                            width: 1.5.w,
+                          ),
+                          borderRadius: BorderRadius.circular(8.r),
+                        ),
+                        child: Text(
+                          badgeCount > 99 ? '99+' : badgeCount.toString(),
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 9.sp,
+                            fontWeight: FontWeight.bold,
+                            height: 1,
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
               5.verticalSpace,
               Text(
                 title,

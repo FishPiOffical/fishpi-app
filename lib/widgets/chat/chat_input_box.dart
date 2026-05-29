@@ -487,7 +487,7 @@ class ChatInputBoxState extends State<ChatInputBox> {
   }
 
   Widget _buildToolsBox() {
-    List<Widget> list = [
+    final basicTools = [
       _buildToolItem(
         key: const ValueKey('chat_tool_image'),
         title: '图片',
@@ -506,6 +506,8 @@ class ChatInputBoxState extends State<ChatInputBox> {
           widget.onCameraTap?.call();
         },
       ),
+    ];
+    final roomTools = [
       if (widget.onRedPacketTap != null)
         _buildToolItem(
           key: const ValueKey('chat_tool_red_packet'),
@@ -551,18 +553,47 @@ class ChatInputBoxState extends State<ChatInputBox> {
     ];
     return Container(
       width: 1.sw,
-      height: 224.h,
-      padding: EdgeInsets.all(10.w),
+      height: 238.h,
+      padding: EdgeInsets.fromLTRB(14.w, 12.h, 14.w, 10.h),
       color: const Color(0xFFF5F7F9),
-      child: GridView.count(
-        crossAxisCount: 4,
-        scrollDirection: Axis.vertical,
-        //设置横向间距
-        crossAxisSpacing: 4.w,
-        //设置主轴间距
-        mainAxisSpacing: 4.w,
-        children: list,
+      child: ListView(
+        padding: EdgeInsets.zero,
+        children: [
+          _buildToolSection('基础发送', basicTools),
+          if (roomTools.isNotEmpty) ...[
+            10.verticalSpace,
+            _buildToolSection('聊天室互动', roomTools),
+          ],
+        ],
       ),
+    );
+  }
+
+  Widget _buildToolSection(String title, List<Widget> tools) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: EdgeInsets.only(left: 2.w, bottom: 8.h),
+          child: Text(
+            title,
+            style: TextStyle(
+              color: const Color(0xFF777777),
+              fontSize: 12.sp,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ),
+        GridView.count(
+          crossAxisCount: 4,
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          crossAxisSpacing: 4.w,
+          mainAxisSpacing: 4.w,
+          childAspectRatio: 0.86,
+          children: tools,
+        ),
+      ],
     );
   }
 

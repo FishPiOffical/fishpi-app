@@ -185,6 +185,7 @@ class ChatLogic extends GetxController {
       currentTopic.value = imController.fishpi.chatroom.discusse.toString();
       scrollToBottom(delay: 300);
     } else {
+      _conversationController?.clearPrivateUnreadForUser(userName.value);
       await _loadInitialHistory(markPrivateRead: true);
       scrollToBottom(delay: 300);
       _privateChatSubscription ??= imController

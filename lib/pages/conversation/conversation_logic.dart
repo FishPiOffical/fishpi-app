@@ -27,6 +27,7 @@ class ConversationLogic extends GetxController {
   final errorText = ''.obs;
   final showItem = "";
   final chatRoomMsg = <ChatRoomMessage>[].obs;
+  final privateUnreadUsers = <String>{}.obs;
   final List<BlackUser> _blackUsers = [];
   final List<ChatRoomBlockedUser> _chatRoomBlockedUsers = [];
   final Set<String> _loadingPrivatePeerNicknames = {};
@@ -36,6 +37,8 @@ class ConversationLogic extends GetxController {
   StreamSubscription<void>? _blackListSubscription;
   StreamSubscription<void>? _chatRoomBlockListSubscription;
   StreamSubscription<void>? _remarkSubscription;
+
+  int get privateUnreadCount => privateUnreadUsers.length;
 
   @override
   void onInit() {
@@ -52,6 +55,7 @@ class ConversationLogic extends GetxController {
     await _loadBlackUsers();
     await _loadChatRoomBlockedUsers();
     await _loadCurrentUser();
+    await _loadPrivateUnreadHint();
     try {
       final list = await imController.fishpi.chat.list();
       chatList.assignAll(list);
@@ -307,8 +311,27 @@ class ConversationLogic extends GetxController {
     }
 
     if (event.isNotice) {
+      _markPrivateUnreadFromNotice(event.notice);
       _refreshChatList();
     }
+  }
+
+  void markPrivateConversationSeen(ChatData chat) {
+    clearPrivateUnreadForUser(privatePeerName(chat));
+  }
+
+  void clearPrivateUnreadForUser(String userName) {
+    final normalized = userName.trim();
+    if (normalized.isEmpty) return;
+    privateUnreadUsers.remove(normalized);
+    privateUnreadUsers.refresh();
+  }
+
+  void markPrivateUnreadForUser(String userName) {
+    final normalized = userName.trim();
+    if (normalized.isEmpty) return;
+    privateUnreadUsers.add(normalized);
+    privateUnreadUsers.refresh();
   }
 
   Future<void> _refreshChatList() async {
@@ -352,6 +375,26 @@ class ConversationLogic extends GetxController {
     try {
       currentUser.value = await imController.fishpi.user.info();
     } catch (_) {}
+  }
+
+  Future<void> _loadPrivateUnreadHint() async {
+    try {
+      final unread = await imController.fishpi.chat.unread();
+      if (unread.oId.trim().isEmpty && unread.content.trim().isEmpty) return;
+      final peerName = privatePeerName(unread).trim();
+      if (peerName.isNotEmpty) {
+        privateUnreadUsers.add(peerName);
+        privateUnreadUsers.refresh();
+      }
+    } catch (_) {}
+  }
+
+  void _markPrivateUnreadFromNotice(ChatNotice? notice) {
+    if (notice == null) return;
+    final sender = (notice.senderUserName ?? '').trim();
+    final fallback = notice.userId.trim();
+    final user = sender.isNotEmpty ? sender : fallback;
+    markPrivateUnreadForUser(user);
   }
 
   bool _isChatRoomMessageBlocked(ChatRoomMessage message) {

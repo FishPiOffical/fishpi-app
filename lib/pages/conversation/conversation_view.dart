@@ -48,6 +48,9 @@ class ConversationPage extends StatelessWidget {
     return GestureDetector(
       behavior: HitTestBehavior.translucent,
       onTap: () {
+        if (chat != null) {
+          logic.markPrivateConversationSeen(chat);
+        }
         AppNavigator.toChat(
           isGroup: chat == null,
           userID: chat == null ? null : logic.privatePeerId(chat),

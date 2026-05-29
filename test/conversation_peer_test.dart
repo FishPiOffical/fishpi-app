@@ -115,6 +115,30 @@ void main() {
       'other',
     );
   });
+
+  test('私信未读只按私聊用户统计，进入会话后清除', () {
+    final logic = ConversationLogic();
+    logic.currentUser.value = UserInfo(oId: '1', userName: 'me');
+    final chat = _chatData(
+      fromId: '2',
+      toId: '1',
+      senderUserName: 'other',
+      receiverUserName: 'me',
+      senderAvatar: 'other.png',
+      receiverAvatar: 'me.png',
+    );
+
+    logic.markPrivateUnreadForUser('other');
+    logic.markPrivateUnreadForUser('other');
+    logic.markPrivateUnreadForUser('friend');
+
+    expect(logic.privateUnreadCount, 2);
+
+    logic.markPrivateConversationSeen(chat);
+
+    expect(logic.privateUnreadCount, 1);
+    expect(logic.privateUnreadUsers.contains('friend'), isTrue);
+  });
 }
 
 ChatData _chatData({

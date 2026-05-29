@@ -8,6 +8,7 @@ import 'package:get/get.dart';
 
 import '../../widgets/pi_bottom_bar.dart';
 import '../conversation/conversation_view.dart';
+import '../conversation/conversation_logic.dart';
 import '../forum/forum_view.dart';
 import 'home_logic.dart';
 
@@ -27,6 +28,7 @@ class _HomePageState extends State<HomePage> {
   ];
 
   final HomeLogic logic = Get.find<HomeLogic>();
+  final ConversationLogic conversationLogic = Get.find<ConversationLogic>();
   late final List<Widget> _pages = [
     ConversationPage(),
     ForumPage(),
@@ -61,6 +63,7 @@ class _HomePageState extends State<HomePage> {
             child: PiBottomBar(
               callback: logic.changeIndex,
               index: logic.index.value,
+              chatUnreadCount: conversationLogic.privateUnreadCount,
             ),
           ),
         ),

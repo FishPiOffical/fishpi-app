@@ -287,6 +287,12 @@ void main() {
 
     await tester.tap(_assetImage('assets/images/more_feature.png'));
     await tester.pumpAndSettle();
+    expect(find.text('基础发送'), findsOneWidget);
+    await _scrollToolPanelUntilVisible(
+      tester,
+      find.byKey(const ValueKey('chat_tool_red_packet')),
+    );
+    expect(find.text('聊天室互动'), findsOneWidget);
     await tester.tap(find.byKey(const ValueKey('chat_tool_red_packet')));
     await tester.pumpAndSettle();
 
@@ -358,6 +364,10 @@ void main() {
 
     await tester.tap(_assetImage('assets/images/more_feature.png'));
     await tester.pumpAndSettle();
+    await _scrollToolPanelUntilVisible(
+      tester,
+      find.byKey(const ValueKey('chat_tool_barrager')),
+    );
     await tester.tap(find.byKey(const ValueKey('chat_tool_barrager')));
     await tester.pumpAndSettle();
 
@@ -389,6 +399,10 @@ void main() {
 
     await tester.tap(_assetImage('assets/images/more_feature.png'));
     await tester.pumpAndSettle();
+    await _scrollToolPanelUntilVisible(
+      tester,
+      find.byKey(const ValueKey('chat_tool_extension')),
+    );
     await tester.tap(find.byKey(const ValueKey('chat_tool_extension')));
     await tester.pumpAndSettle();
 
@@ -419,6 +433,8 @@ void main() {
     await tester.tap(_assetImage('assets/images/more_feature.png'));
     await tester.pumpAndSettle();
 
+    expect(find.text('基础发送'), findsOneWidget);
+    expect(find.text('聊天室互动'), findsNothing);
     expect(find.byKey(const ValueKey('chat_tool_red_packet')), findsNothing);
     expect(find.byKey(const ValueKey('chat_tool_barrager')), findsNothing);
     expect(find.byKey(const ValueKey('chat_tool_extension')), findsNothing);
@@ -587,4 +603,17 @@ Finder _assetImage(String assetName) {
     if (widget is! Image || widget.image is! AssetImage) return false;
     return (widget.image as AssetImage).assetName == assetName;
   });
+}
+
+Future<void> _scrollToolPanelUntilVisible(
+  WidgetTester tester,
+  Finder finder,
+) async {
+  if (finder.evaluate().isNotEmpty) return;
+  await tester.scrollUntilVisible(
+    finder,
+    80,
+    scrollable: find.byType(Scrollable).last,
+  );
+  await tester.pumpAndSettle();
 }

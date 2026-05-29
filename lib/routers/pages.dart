@@ -210,7 +210,7 @@ class AppPages {
     ),
     _pageBuilder(
       name: AppRoutes.forumCreate,
-      page: () => PostPage(),
+      page: () => const PostPage(),
       binding: PostBinding(),
     ),
   ];
