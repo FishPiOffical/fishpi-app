@@ -166,6 +166,7 @@ class ForumDetailPage extends StatelessWidget {
                           const Divider(),
                           10.verticalSpace,
                           Row(
+                            key: logic.commentSectionKey,
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               Text(
@@ -180,7 +181,7 @@ class ForumDetailPage extends StatelessWidget {
                           10.verticalSpace,
                           GestureDetector(
                             onTap: () {
-                              logic.showEdit();
+                              logic.handleCommentTap();
                             },
                             child: Container(
                               padding: EdgeInsets.symmetric(
@@ -335,7 +336,7 @@ class ForumDetailPage extends StatelessWidget {
                                   ),
                                   10.horizontalSpace,
                                   GestureDetector(
-                                    onTap: () {},
+                                    onTap: logic.handleCommentTap,
                                     child: Row(
                                       children: [
                                         !logic.article.value.commentable
@@ -388,7 +389,7 @@ class ForumDetailPage extends StatelessWidget {
               decoration: TextDecoration.underline,
               decorationColor: Styles.primaryColor,
             ),
-            onTap: (url) {},
+            onTap: logic.openMarkdownLink,
           )
         ],
       ),
@@ -398,9 +399,19 @@ class ForumDetailPage extends StatelessWidget {
   Widget buildCommentItem(BuildContext context, int index) {
     ArticleComment item = logic.article.value.comments[index];
     //ArticleComment reply = logic.article.value.comments.map((e) => e.oId == item.replyId);
+    final highlighted =
+        item.oId.isNotEmpty && item.oId == logic.targetCommentId.value;
     return Container(
       width: 1.sw - 32.w,
       margin: EdgeInsets.only(bottom: 20.h),
+      padding: highlighted ? EdgeInsets.all(8.w) : EdgeInsets.zero,
+      decoration: highlighted
+          ? BoxDecoration(
+              color: Styles.primaryColor.withValues(alpha: 0.32),
+              border: Styles.commonBorder,
+              borderRadius: Styles.controlRadius,
+            )
+          : null,
       child: Row(
         mainAxisAlignment: MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.start,

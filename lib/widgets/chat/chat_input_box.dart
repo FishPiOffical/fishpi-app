@@ -19,6 +19,7 @@ class ChatInputBox extends StatefulWidget {
   final bool enableVoice;
   final bool isRecordingVoice;
   final bool isSendingVoice;
+  final bool isSendingText;
   final int voiceRecordSeconds;
   final Future<void> Function()? onVoiceRecordStart;
   final Future<void> Function()? onVoiceRecordFinish;
@@ -47,6 +48,7 @@ class ChatInputBox extends StatefulWidget {
     this.enableVoice = true,
     this.isRecordingVoice = false,
     this.isSendingVoice = false,
+    this.isSendingText = false,
     this.voiceRecordSeconds = 0,
     this.onVoiceRecordStart,
     this.onVoiceRecordFinish,
@@ -80,14 +82,34 @@ class ChatInputBoxState extends State<ChatInputBox> {
 
   @override
   void initState() {
+    content = widget.controller.text;
+    widget.controller.addListener(_syncContentFromController);
     widget.focusNode.addListener(_onFocusChange);
     super.initState();
   }
 
   @override
+  void didUpdateWidget(covariant ChatInputBox oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.controller != widget.controller) {
+      oldWidget.controller.removeListener(_syncContentFromController);
+      content = widget.controller.text;
+      widget.controller.addListener(_syncContentFromController);
+    }
+  }
+
+  @override
   void dispose() {
+    widget.controller.removeListener(_syncContentFromController);
     widget.focusNode.removeListener(_onFocusChange);
     super.dispose();
+  }
+
+  void _syncContentFromController() {
+    if (!mounted || content == widget.controller.text) return;
+    setState(() {
+      content = widget.controller.text;
+    });
   }
 
   @override
@@ -118,74 +140,40 @@ class ChatInputBoxState extends State<ChatInputBox> {
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   _buildVoiceToggle(),
-                  SizedBox(
-                      width: 220.w,
-                      child: isShowVoice
-                          ? _buildVoiceButton()
-                          : SizedBox(
-                              width: 220.w,
-                              height: 34.h,
-                              child: PiInput(
-                                controller: widget.controller,
-                                textAlign: isShowVoice
-                                    ? TextAlign.center
-                                    : TextAlign.left,
-                                hintText: '说点什么...',
-                                focusNode: widget.focusNode,
-                                onInputChanged: (t) {
-                                  setState(() {
-                                    content = t;
-                                    widget.onInput(t);
-                                  });
-                                },
-                                onEditingComplete: () async {
+                  6.horizontalSpace,
+                  Expanded(
+                    child: isShowVoice
+                        ? _buildVoiceButton()
+                        : SizedBox(
+                            height: 38.h,
+                            child: PiInput(
+                              controller: widget.controller,
+                              textAlign: isShowVoice
+                                  ? TextAlign.center
+                                  : TextAlign.left,
+                              hintText: '说点什么...',
+                              focusNode: widget.focusNode,
+                              onInputChanged: widget.onInput,
+                              onEditingComplete: () async {
+                                if (!widget.isSendingText) {
                                   await widget.clickSend();
-                                  if (!mounted) return;
-                                  setState(() {
-                                    content = widget.controller.text;
-                                  });
-                                },
-                              ),
-                            )),
-                  GestureDetector(
-                    onTap: () {
-                      toggleEmoji();
-                    },
-                    child: SizedBox(
+                                }
+                              },
+                            ),
+                          ),
+                  ),
+                  6.horizontalSpace,
+                  _buildIconButton(
+                    key: const ValueKey('chat_emoji_button'),
+                    label: '表情',
+                    onTap: toggleEmoji,
+                    child: Image.asset(
+                      'assets/images/face.png',
                       width: 24.w,
                       height: 24.w,
-                      child: Image.asset(
-                        'assets/images/face.png',
-                        width: 24.w,
-                        height: 24.w,
-                      ),
                     ),
                   ),
-                  GestureDetector(
-                    onTap: () async {
-                      if (content == '') {
-                        toggleTools();
-                      } else {
-                        await widget.clickSend();
-                        if (!mounted) return;
-                        setState(() {
-                          content = widget.controller.text;
-                        });
-                      }
-                    },
-                    child: Container(
-                      width: 28.w,
-                      height: 28.w,
-                      alignment: Alignment.center,
-                      child: Image.asset(
-                        content == ''
-                            ? 'assets/images/more_feature.png'
-                            : 'assets/images/send.png',
-                        width: 28.w,
-                        height: 28.w,
-                      ),
-                    ),
-                  ),
+                  _buildSendOrMoreButton(),
                 ],
               ),
             ),
@@ -219,20 +207,75 @@ class ChatInputBoxState extends State<ChatInputBox> {
   }
 
   Widget _buildVoiceToggle() {
-    if (!widget.enableVoice) return SizedBox(width: 24.w, height: 24.w);
-    return GestureDetector(
-      onTap: () {
-        toggleVoice();
-      },
-      child: SizedBox(
-        width: 24.w,
-        height: 24.w,
-        child: isShowVoice
-            ? Image.asset('assets/images/keyboard.png')
-            : const Icon(
-                Icons.keyboard_voice_outlined,
-              ),
+    if (!widget.enableVoice) return SizedBox(width: 44.w, height: 44.w);
+    return _buildIconButton(
+      key: const ValueKey('chat_voice_toggle_button'),
+      label: isShowVoice ? '切换键盘输入' : '切换语音输入',
+      onTap: toggleVoice,
+      child: isShowVoice
+          ? Image.asset(
+              'assets/images/keyboard.png',
+              width: 24.w,
+              height: 24.w,
+            )
+          : Icon(
+              Icons.keyboard_voice_outlined,
+              size: 24.w,
+              color: Styles.primaryTextColor,
+            ),
+    );
+  }
+
+  Widget _buildIconButton({
+    required Key key,
+    required String label,
+    required Widget child,
+    required VoidCallback? onTap,
+  }) {
+    return Semantics(
+      button: true,
+      label: label,
+      child: GestureDetector(
+        key: key,
+        onTap: onTap,
+        behavior: HitTestBehavior.translucent,
+        child: SizedBox(
+          width: 44.w,
+          height: 44.w,
+          child: Center(child: child),
+        ),
       ),
+    );
+  }
+
+  Widget _buildSendOrMoreButton() {
+    final hasContent = content.trim().isNotEmpty;
+    return _buildIconButton(
+      key: const ValueKey('chat_send_or_more_button'),
+      label: hasContent ? '发送消息' : '更多功能',
+      onTap: widget.isSendingText
+          ? null
+          : () async {
+              if (!hasContent) {
+                toggleTools();
+                return;
+              }
+              await widget.clickSend();
+            },
+      child: widget.isSendingText
+          ? SizedBox(
+              key: const ValueKey('chat_text_sending_indicator'),
+              width: 20.w,
+              height: 20.w,
+              child: const CircularProgressIndicator(strokeWidth: 2),
+            )
+          : Image.asset(
+              hasContent
+                  ? 'assets/images/send.png'
+                  : 'assets/images/more_feature.png',
+              width: 28.w,
+              height: 28.w,
+            ),
     );
   }
 
@@ -264,8 +307,8 @@ class ChatInputBoxState extends State<ChatInputBox> {
       behavior: HitTestBehavior.translucent,
       child: Container(
         key: const ValueKey('chat_voice_record_button'),
-        width: 220.w,
-        height: 34.h,
+        width: double.infinity,
+        height: 38.h,
         decoration: BoxDecoration(
           border: Border.all(
             width: 2.w,

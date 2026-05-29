@@ -134,6 +134,7 @@ class ChatPage extends StatelessWidget {
         enableVoice: logic.isGroup.value,
         isRecordingVoice: logic.isRecordingVoice.value,
         isSendingVoice: logic.isSendingVoice.value,
+        isSendingText: logic.isSendingText.value,
         voiceRecordSeconds: logic.voiceRecordSeconds.value,
         onVoiceRecordStart: logic.startVoiceRecord,
         onVoiceRecordFinish: logic.finishVoiceRecord,

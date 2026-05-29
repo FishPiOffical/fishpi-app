@@ -56,6 +56,7 @@ class ChatLogic extends GetxController {
   final remarkVersion = 0.obs;
   final isRecordingVoice = false.obs;
   final isSendingVoice = false.obs;
+  final isSendingText = false.obs;
   final isSendingImage = false.obs;
   final voiceRecordSeconds = 0.obs;
   final currentTopic = ''.obs;
@@ -506,15 +507,17 @@ class ChatLogic extends GetxController {
     required bool triggerExtensions,
   }) async {
     if (text.trim().isEmpty) return false;
-    final bodyText = triggerExtensions && isGroup.value
-        ? await _applyBeforeSendExtensions(text)
-        : text;
-    final sendText = ChatQuoteUtils.composeMessage(
-      quote: quoteDraft.value,
-      text: bodyText,
-    );
+    if (isSendingText.value) return false;
+    isSendingText.value = true;
 
     try {
+      final bodyText = triggerExtensions && isGroup.value
+          ? await _applyBeforeSendExtensions(text)
+          : text;
+      final sendText = ChatQuoteUtils.composeMessage(
+        quote: quoteDraft.value,
+        text: bodyText,
+      );
       if (isGroup.value) {
         await imController.fishpi.chatroom.send(sendText);
       } else {
@@ -538,6 +541,8 @@ class ChatLogic extends GetxController {
         AppErrorMessage.friendly(e, fallback: '发送失败'),
       );
       return false;
+    } finally {
+      isSendingText.value = false;
     }
   }
 

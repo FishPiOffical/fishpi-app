@@ -82,6 +82,77 @@ void main() {
     controller.dispose();
   });
 
+  testWidgets('外部填入输入框内容后会同步切换发送按钮', (tester) async {
+    final controller = TextEditingController();
+    final focusNode = FocusNode();
+    var sendCount = 0;
+
+    await tester.pumpWidget(
+      _wrap(
+        ChatInputBox(
+          controller: controller,
+          focusNode: focusNode,
+          emojiList: const {},
+          diyEmojiList: const [],
+          onInput: (_) {},
+          clickSend: () async {
+            sendCount++;
+            controller.clear();
+          },
+          scrollToBottom: () {},
+        ),
+      ),
+    );
+
+    expect(_assetImage('assets/images/more_feature.png'), findsOneWidget);
+
+    controller.text = '扩展填入的内容';
+    await tester.pump();
+
+    expect(_assetImage('assets/images/send.png'), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('chat_send_or_more_button')));
+    await tester.pumpAndSettle();
+
+    expect(sendCount, 1);
+    expect(controller.text, isEmpty);
+
+    focusNode.dispose();
+    controller.dispose();
+  });
+
+  testWidgets('文本发送中时显示轻量加载并禁用重复发送', (tester) async {
+    final controller = TextEditingController(text: '正在发送');
+    final focusNode = FocusNode();
+    var sendCount = 0;
+
+    await tester.pumpWidget(
+      _wrap(
+        ChatInputBox(
+          controller: controller,
+          focusNode: focusNode,
+          emojiList: const {},
+          diyEmojiList: const [],
+          onInput: (_) {},
+          clickSend: () async {
+            sendCount++;
+          },
+          scrollToBottom: () {},
+          isSendingText: true,
+        ),
+      ),
+    );
+
+    expect(find.byKey(const ValueKey('chat_text_sending_indicator')),
+        findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('chat_send_or_more_button')));
+    await tester.pump();
+
+    expect(sendCount, 0);
+
+    focusNode.dispose();
+    controller.dispose();
+  });
+
   testWidgets('语音模式支持长按开始并松开发送', (tester) async {
     final controller = TextEditingController();
     final focusNode = FocusNode();

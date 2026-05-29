@@ -21,10 +21,17 @@ class AppNavigator {
   /// 通知中心
   static void toNotice() => Get.toNamed(AppRoutes.notice);
 
-  static void toForumDetail({String? oId}) => Get.toNamed(
+  static void toForumDetail({
+    String? oId,
+    String? commentId,
+    bool focusComments = false,
+  }) =>
+      Get.toNamed(
         AppRoutes.forumDetail,
         arguments: {
           "oId": oId,
+          "commentId": commentId,
+          "focusComments": focusComments,
         },
         preventDuplicates: false,
       );

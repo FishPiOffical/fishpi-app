@@ -2,8 +2,12 @@ import 'package:fishpi/fishpi.dart';
 import 'package:fishpi_app/core/controller/im.dart';
 import 'package:fishpi_app/core/manager/toast.dart';
 import 'package:fishpi_app/core/network/app_error_message.dart';
+import 'package:fishpi_app/res/styles.dart';
 import 'package:fishpi_app/routers/navigator.dart';
 import 'package:fishpi_app/utils/pi_utils.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:pull_to_refresh/pull_to_refresh.dart';
 
@@ -81,7 +85,12 @@ class NoticeLogic extends GetxController {
   void openNotice(NoticeDisplayItem item) {
     final articleId = item.targetArticleId.trim();
     if (articleId.isNotEmpty) {
-      AppNavigator.toForumDetail(oId: articleId);
+      AppNavigator.toForumDetail(
+        oId: articleId,
+        commentId: item.targetCommentId,
+        focusComments:
+            item.targetCommentId.isNotEmpty || item.titleAction.isNotEmpty,
+      );
       return;
     }
 
@@ -91,7 +100,108 @@ class NoticeLogic extends GetxController {
       return;
     }
 
-    ToastManager.showToast('暂不支持跳转该通知');
+    showNoticeDetail(item);
+  }
+
+  void showNoticeDetail(NoticeDisplayItem item) {
+    Get.bottomSheet(
+      Container(
+        key: const ValueKey('notice_detail_sheet'),
+        width: 1.sw,
+        padding: EdgeInsets.fromLTRB(16.w, 16.h, 16.w, 20.h),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          border: Styles.commonBorder,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(18.r)),
+        ),
+        child: SafeArea(
+          top: false,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      item.title,
+                      style: TextStyle(
+                        color: Styles.primaryTextColor,
+                        fontSize: 18.sp,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  GestureDetector(
+                    key: const ValueKey('notice_detail_close_button'),
+                    onTap: Get.back,
+                    child: SizedBox(
+                      width: 40.w,
+                      height: 40.w,
+                      child: Icon(
+                        Icons.close,
+                        color: Styles.primaryTextColor,
+                        size: 22.w,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              if (item.time.isNotEmpty) ...[
+                4.verticalSpace,
+                Text(
+                  PiUtils.getChatTime(item.time),
+                  style: TextStyle(
+                    color: const Color(0xFF888888),
+                    fontSize: 12.sp,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+              12.verticalSpace,
+              Text(
+                item.content.isEmpty ? '这条通知暂无更多内容' : item.content,
+                style: TextStyle(
+                  color: Styles.secondaryTextColor,
+                  fontSize: 14.sp,
+                  height: 1.45,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              16.verticalSpace,
+              GestureDetector(
+                key: const ValueKey('notice_detail_copy_button'),
+                onTap: () async {
+                  await Clipboard.setData(
+                    ClipboardData(text: '${item.title}\n${item.content}'),
+                  );
+                  ToastManager.showToast('已复制通知内容');
+                },
+                child: Container(
+                  width: 1.sw - 32.w,
+                  height: 44.h,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: Styles.primaryTextColor,
+                    borderRadius: Styles.actionRadius,
+                  ),
+                  child: Text(
+                    '复制内容',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 14.sp,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+    );
   }
 
   Future<String?> _loadCount() async {
@@ -207,6 +317,8 @@ class NoticeDisplayItem {
   final String titleAction;
   final String targetArticleId;
   final String targetUserName;
+  final String targetCommentId;
+  final String targetUrl;
 
   const NoticeDisplayItem({
     this.oId = '',
@@ -220,6 +332,8 @@ class NoticeDisplayItem {
     this.titleAction = '',
     this.targetArticleId = '',
     this.targetUserName = '',
+    this.targetCommentId = '',
+    this.targetUrl = '',
   });
 
   factory NoticeDisplayItem.from(String type, dynamic item) {
@@ -245,6 +359,8 @@ class NoticeDisplayItem {
         titleAction: action,
         targetArticleId: _extractArticleId(item.sharpURL),
         targetUserName: item.author,
+        targetCommentId: _extractCommentId(item.sharpURL),
+        targetUrl: item.sharpURL,
       );
     }
     if (item is NoticeAt) {
@@ -259,6 +375,8 @@ class NoticeDisplayItem {
         titleAction: '提到了你',
         targetArticleId: _extractArticleId(item.content),
         targetUserName: item.userName,
+        targetCommentId: _extractCommentId(item.content),
+        targetUrl: _extractUrl(item.content),
       );
     }
     if (item is NoticeFollow) {
@@ -273,6 +391,8 @@ class NoticeDisplayItem {
         vipUserName: item.author,
         targetArticleId: _extractArticleId(item.url),
         targetUserName: item.author,
+        targetCommentId: _extractCommentId(item.url),
+        targetUrl: item.url,
       );
     }
     if (item is NoticeSystem) {
@@ -283,6 +403,7 @@ class NoticeDisplayItem {
         time: item.createTime,
         hasRead: item.hasRead,
         targetArticleId: _normalizeArticleId(item.dataId),
+        targetUrl: item.dataId,
       );
     }
     if (item is NoticeUnknown) {
@@ -294,6 +415,8 @@ class NoticeDisplayItem {
         avatarURL: item.avatarURL,
         hasRead: item.hasRead,
         targetArticleId: _extractArticleId('${item.title} ${item.content}'),
+        targetCommentId: _extractCommentId('${item.title} ${item.content}'),
+        targetUrl: _extractUrl('${item.title} ${item.content}'),
       );
     }
     return NoticeDisplayItem(
@@ -327,6 +450,33 @@ class NoticeDisplayItem {
     }
 
     return _normalizeArticleId(value);
+  }
+
+  static String _extractCommentId(String raw) {
+    final value = raw.trim();
+    if (value.isEmpty) return '';
+
+    final hashMatch =
+        RegExp(r'#comments?-?([0-9A-Za-z_-]{3,})').firstMatch(value);
+    if (hashMatch != null) return hashMatch.group(1) ?? '';
+
+    final queryMatch = RegExp(r'(?:commentId|commentOId)=([0-9A-Za-z_-]{3,})')
+        .firstMatch(value);
+    if (queryMatch != null) return queryMatch.group(1) ?? '';
+
+    final pathMatch = RegExp(r'/comment/([0-9A-Za-z_-]{3,})').firstMatch(value);
+    if (pathMatch != null) return pathMatch.group(1) ?? '';
+
+    return '';
+  }
+
+  static String _extractUrl(String raw) {
+    final value = raw.trim();
+    if (value.isEmpty) return '';
+    final hrefMatch = RegExp(r'''href=["']([^"']+)["']''').firstMatch(value);
+    if (hrefMatch != null) return hrefMatch.group(1) ?? '';
+    final urlMatch = RegExp(r'''https?://[^\s<>"']+''').firstMatch(value);
+    return urlMatch?.group(0) ?? '';
   }
 
   static String _normalizeArticleId(String raw) {

@@ -57,7 +57,8 @@ void main() {
         'replyArticleTitle': '帖子标题',
         'replyAuthorName': 'someone',
         'replyContent': '<p>收到</p>',
-        'replySharpURL': 'https://fishpi.cn/article/1636516552191#comment-1',
+        'replySharpURL':
+            'https://fishpi.cn/article/1636516552191#comment-cmt_1',
         'commentArticleType': 99,
       }),
     );
@@ -75,6 +76,9 @@ void main() {
     expect(reply.titleAction, '回复了你');
     expect(reply.content, '帖子标题：收到');
     expect(reply.targetArticleId, '1636516552191');
+    expect(reply.targetCommentId, 'cmt_1');
+    expect(reply.targetUrl,
+        'https://fishpi.cn/article/1636516552191#comment-cmt_1');
     expect(reply.targetUserName, 'someone');
     expect(unknown.title, '新通知');
     expect(unknown.vipUserName, isEmpty);
@@ -104,6 +108,28 @@ void main() {
     expect(follow.targetUserName, 'author');
     expect(at.targetArticleId, '1836516552191');
     expect(at.targetUserName, 'friend');
+  });
+
+  testWidgets('无法跳转的通知会展示详情弹层', (tester) async {
+    final logic = Get.put(NoticeLogic(autoLoad: false));
+    final item = NoticeDisplayItem.from(
+      NoticeType.system,
+      NoticeUnknown.from({
+        'oId': 'unknown-2',
+        'title': '系统提示',
+        'content': '<p>这是一条完整通知</p>',
+      }),
+    );
+
+    await tester.pumpWidget(_wrap(const NoticePage()));
+    logic.openNotice(item);
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const ValueKey('notice_detail_sheet')), findsOneWidget);
+    expect(find.text('系统提示'), findsOneWidget);
+    expect(find.text('这是一条完整通知'), findsOneWidget);
+    expect(find.byKey(const ValueKey('notice_detail_copy_button')),
+        findsOneWidget);
   });
 }
 
