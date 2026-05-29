@@ -28,6 +28,7 @@ class ChatInputBox extends StatefulWidget {
   final VoidCallback? onRedPacketTap;
   final VoidCallback? onBarragerTap;
   final VoidCallback? onExtensionTap;
+  final Future<void> Function()? onEmojiPanelOpen;
   final String? topic;
   final VoidCallback? onTopicTap;
   final VoidCallback? onTopicQuoteTap;
@@ -55,6 +56,7 @@ class ChatInputBox extends StatefulWidget {
     this.onRedPacketTap,
     this.onBarragerTap,
     this.onExtensionTap,
+    this.onEmojiPanelOpen,
     this.topic,
     this.onTopicTap,
     this.onTopicQuoteTap,
@@ -579,12 +581,16 @@ class ChatInputBoxState extends State<ChatInputBox> {
   }
 
   void toggleEmoji() {
+    final willShowEmoji = !isShowEmoji;
     setState(() {
-      isShowEmoji = !isShowEmoji;
+      isShowEmoji = willShowEmoji;
       isShowTools = false;
       isShowVoice = false;
       isShowEmoji ? unFocus() : focus();
     });
+    if (willShowEmoji) {
+      widget.onEmojiPanelOpen?.call();
+    }
     Future.delayed(const Duration(milliseconds: 100), () {
       widget.scrollToBottom();
     });

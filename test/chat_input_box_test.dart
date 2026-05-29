@@ -49,6 +49,7 @@ void main() {
     final controller = TextEditingController();
     final focusNode = FocusNode();
     String content = '';
+    var emojiPanelOpenCount = 0;
 
     await tester.pumpWidget(
       _wrap(
@@ -60,12 +61,17 @@ void main() {
           onInput: (text) => content = text,
           clickSend: () async {},
           scrollToBottom: () {},
+          onEmojiPanelOpen: () async {
+            emojiPanelOpenCount++;
+          },
         ),
       ),
     );
 
     await tester.tap(_assetImage('assets/images/face.png'));
     await tester.pumpAndSettle();
+    expect(emojiPanelOpenCount, 1);
+
     await tester.tap(find.byKey(const ValueKey('emoji_default_smile')));
     await tester.pumpAndSettle();
 

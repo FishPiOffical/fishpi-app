@@ -18,19 +18,46 @@ class ChatMusicCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final player = ChatMusicPlayerController.ensure();
     return Obx(() {
+      ChatMusicPlayerController.createdVersion.value;
+      final player = ChatMusicPlayerController.maybeFind();
+      if (player == null) {
+        return _buildCard(
+          loading: false,
+          playing: false,
+          selected: false,
+          onTap: () => ChatMusicPlayerController.ensure().playTrack(track),
+        );
+      }
+
       final selected = player.currentTrack.value?.id == track.id;
       final loading = selected && player.isLoading.value;
       final playing = selected && player.isPlaying.value;
-      return GestureDetector(
+      return _buildCard(
+        loading: loading,
+        playing: playing,
+        selected: selected,
         onTap: () => player.playTrack(track),
-        child: track.isVoice
-            ? _buildVoice(loading: loading, playing: playing)
-            : _buildMusic(
-                loading: loading, playing: playing, selected: selected),
       );
     });
+  }
+
+  Widget _buildCard({
+    required bool loading,
+    required bool playing,
+    required bool selected,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: track.isVoice
+          ? _buildVoice(loading: loading, playing: playing)
+          : _buildMusic(
+              loading: loading,
+              playing: playing,
+              selected: selected,
+            ),
+    );
   }
 
   Widget _buildVoice({

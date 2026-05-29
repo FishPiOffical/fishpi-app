@@ -10,8 +10,10 @@ class ChatMusicMiniPlayer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final player = ChatMusicPlayerController.ensure();
     return Obx(() {
+      ChatMusicPlayerController.createdVersion.value;
+      final player = ChatMusicPlayerController.maybeFind();
+      if (player == null) return const SizedBox.shrink();
       if (player.queue.isEmpty) return const SizedBox.shrink();
       final track = player.currentTrack.value ?? player.queue.first;
       return Container(

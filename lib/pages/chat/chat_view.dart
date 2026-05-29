@@ -38,180 +38,180 @@ class ChatPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Obx(
-      () {
-        final messageGroups = logic.isGroup.value
-            ? ChatMessageUtils.groupConsecutiveDuplicateMessages(
-                logic.messageList,
-              )
-            : logic.messageList
-                .map((message) => ChatMessageGroup(message: message))
-                .toList();
-
-        return Scaffold(
-          appBar: PiTitleBar.back(
-            title: logic.isGroup.value
-                ? '聊天室'
-                : logic.displayNameFor(logic.userName.value),
-            titleWidget: logic.isGroup.value
-                ? null
-                : VipNameText(
-                    userId: logic.userID.value,
-                    userName: logic.userName.value,
-                    style: Styles.titleBarStyle,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    textAlign: TextAlign.center,
-                  ),
-            rightWidget: logic.isGroup.value
-                ? const Icon(
-                    Icons.more_horiz,
-                    key: ValueKey('chat_room_more_button'),
-                    color: Styles.primaryTextColor,
-                  )
-                : null,
-            onRightTap: logic.isGroup.value ? logic.toChatRoomSettings : null,
+    return Scaffold(
+      appBar: _ChatTitleBar(logic: logic),
+      body: Column(
+        children: [
+          Expanded(
+            child: Stack(
+              children: [
+                _buildMessageList(),
+                _buildEmptyState(),
+                _buildBarragerLayer(),
+              ],
+            ),
           ),
-          body: Column(
-            children: [
-              Expanded(
-                child: Stack(
-                  children: [
-                    GestureDetector(
-                      onTap: () {
-                        FocusScope.of(Get.context!).requestFocus(FocusNode());
-                      },
-                      child: Container(
-                        width: 1.sw,
-                        height: 1.sh,
-                        padding: EdgeInsets.symmetric(
-                          horizontal: 16.w,
-                        ),
-                        child: ListView.builder(
-                          controller: logic.chatRoomController,
-                          physics: const AlwaysScrollableScrollPhysics(),
-                          padding: EdgeInsets.symmetric(vertical: 20.h),
-                          itemBuilder: (context, index) {
-                            if (index == 0) return _buildHistoryIndicator();
-                            return _buildChatItem(
-                              context,
-                              messageGroups[index - 1],
-                            );
-                          },
-                          itemCount: messageGroups.length + 1,
-                        ),
-                      ),
-                    ),
-                    if (messageGroups.isEmpty && !logic.isLoadingHistory.value)
-                      Center(
-                        child: Text(
-                          '暂无消息',
-                          style: TextStyle(
-                            color: Styles.secondaryTextColor,
-                            fontSize: 14.sp,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                    if (logic.isGroup.value)
-                      Positioned.fill(
-                        child: ChatBarragerOverlay(
-                          barragers: logic.barragers.toList(),
-                          onFinished: logic.dismissBarrager,
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-              const ChatMusicMiniPlayer(),
-              ChatInputBox(
-                emojiList: logic.emojiList,
-                diyEmojiList: logic.diyEmojiList,
-                controller: logic.chatRoomControllerText,
-                focusNode: logic.chatRoomFocusNode,
-                onInput: logic.onInput,
-                clickSend: logic.clickSend,
-                scrollToBottom: logic.scrollToBottom,
-                enableVoice: logic.isGroup.value,
-                isRecordingVoice: logic.isRecordingVoice.value,
-                isSendingVoice: logic.isSendingVoice.value,
-                voiceRecordSeconds: logic.voiceRecordSeconds.value,
-                onVoiceRecordStart: logic.startVoiceRecord,
-                onVoiceRecordFinish: logic.finishVoiceRecord,
-                onVoiceRecordCancel: logic.cancelVoiceRecord,
-                onImageTap: logic.pickAndSendImages,
-                onCameraTap: logic.takeAndSendImage,
-                onRedPacketTap:
-                    logic.isGroup.value ? _showRedPacketSheet : null,
-                onBarragerTap: logic.isGroup.value ? _showBarragerSheet : null,
-                onExtensionTap:
-                    logic.isGroup.value ? _showExtensionSheet : null,
-                topic: logic.isGroup.value ? logic.currentTopic.value : null,
-                onTopicTap: logic.isGroup.value ? _showTopicSheet : null,
-                onTopicQuoteTap: logic.isGroup.value &&
-                        logic.currentTopic.value.trim().isNotEmpty
-                    ? logic.quoteCurrentTopic
-                    : null,
-                quoteDraft: logic.quoteDraft.value,
-                onClearQuote: logic.clearQuote,
-              ),
-            ],
-          ),
-        );
-      },
+          const ChatMusicMiniPlayer(),
+          _buildInputBox(),
+        ],
+      ),
     );
   }
 
-  Widget _buildChatItem(BuildContext context, ChatMessageGroup group) {
+  Widget _buildMessageList() {
+    return Obx(() {
+      final messageGroups = logic.displayGroups.toList(growable: false);
+      final currentUserName = logic.userInfo.value.userName;
+      return GestureDetector(
+        onTap: () {
+          FocusScope.of(Get.context!).requestFocus(FocusNode());
+        },
+        child: Container(
+          width: 1.sw,
+          height: 1.sh,
+          padding: EdgeInsets.symmetric(
+            horizontal: 16.w,
+          ),
+          child: ListView.builder(
+            controller: logic.chatRoomController,
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: EdgeInsets.symmetric(vertical: 20.h),
+            itemBuilder: (context, index) {
+              if (index == 0) return _buildHistoryIndicator();
+              return _buildChatItem(
+                context,
+                messageGroups[index - 1],
+                currentUserName,
+              );
+            },
+            itemCount: messageGroups.length + 1,
+          ),
+        ),
+      );
+    });
+  }
+
+  Widget _buildEmptyState() {
+    return Obx(() {
+      if (logic.displayGroups.isNotEmpty || logic.isLoadingHistory.value) {
+        return const SizedBox.shrink();
+      }
+      return Center(
+        child: Text(
+          '暂无消息',
+          style: TextStyle(
+            color: Styles.secondaryTextColor,
+            fontSize: 14.sp,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      );
+    });
+  }
+
+  Widget _buildBarragerLayer() {
+    return Obx(() {
+      if (!logic.isGroup.value) return const SizedBox.shrink();
+      return Positioned.fill(
+        child: ChatBarragerOverlay(
+          barragers: logic.barragers.toList(growable: false),
+          onFinished: logic.dismissBarrager,
+        ),
+      );
+    });
+  }
+
+  Widget _buildInputBox() {
+    return Obx(
+      () => ChatInputBox(
+        emojiList: logic.emojiList,
+        diyEmojiList: logic.diyEmojiList.toList(growable: false),
+        controller: logic.chatRoomControllerText,
+        focusNode: logic.chatRoomFocusNode,
+        onInput: logic.onInput,
+        clickSend: logic.clickSend,
+        scrollToBottom: logic.scrollToBottom,
+        enableVoice: logic.isGroup.value,
+        isRecordingVoice: logic.isRecordingVoice.value,
+        isSendingVoice: logic.isSendingVoice.value,
+        voiceRecordSeconds: logic.voiceRecordSeconds.value,
+        onVoiceRecordStart: logic.startVoiceRecord,
+        onVoiceRecordFinish: logic.finishVoiceRecord,
+        onVoiceRecordCancel: logic.cancelVoiceRecord,
+        onImageTap: logic.pickAndSendImages,
+        onCameraTap: logic.takeAndSendImage,
+        onRedPacketTap: logic.isGroup.value ? _showRedPacketSheet : null,
+        onBarragerTap: logic.isGroup.value ? _showBarragerSheet : null,
+        onExtensionTap: logic.isGroup.value ? _showExtensionSheet : null,
+        onEmojiPanelOpen: logic.ensureDiyEmojiRemoteLoaded,
+        topic: logic.isGroup.value ? logic.currentTopic.value : null,
+        onTopicTap: logic.isGroup.value ? _showTopicSheet : null,
+        onTopicQuoteTap:
+            logic.isGroup.value && logic.currentTopic.value.trim().isNotEmpty
+                ? logic.quoteCurrentTopic
+                : null,
+        quoteDraft: logic.quoteDraft.value,
+        onClearQuote: logic.clearQuote,
+      ),
+    );
+  }
+
+  Widget _buildChatItem(
+    BuildContext context,
+    ChatMessageGroup group,
+    String currentUserName,
+  ) {
     ChatRoomMessage chat = group.message;
     return GestureDetector(
       onTap: () {},
       onLongPress: () => _showChatMessageActions(chat),
-      child: chat.userName == logic.userInfo.value.userName
+      child: chat.userName == currentUserName
           ? _buildRight(group)
           : _buildLeft(group),
     );
   }
 
   Widget _buildHistoryIndicator() {
-    if (logic.isLoadingHistory.value) {
-      return SizedBox(
-        height: 32.h,
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            SizedBox(
-              width: 14.w,
-              height: 14.w,
-              child: const CircularProgressIndicator(strokeWidth: 2),
-            ),
-            8.horizontalSpace,
-            Text(
-              '正在加载历史消息',
+    return Obx(() {
+      if (logic.isLoadingHistory.value) {
+        return SizedBox(
+          height: 32.h,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              SizedBox(
+                width: 14.w,
+                height: 14.w,
+                child: const CircularProgressIndicator(strokeWidth: 2),
+              ),
+              8.horizontalSpace,
+              Text(
+                '正在加载历史消息',
+                style: TextStyle(
+                  color: Styles.secondaryTextColor,
+                  fontSize: 12.sp,
+                ),
+              ),
+            ],
+          ),
+        );
+      }
+      if (!logic.hasMoreHistory.value && logic.messageList.isNotEmpty) {
+        return SizedBox(
+          height: 28.h,
+          child: Center(
+            child: Text(
+              '没有更早消息了',
               style: TextStyle(
                 color: Styles.secondaryTextColor,
                 fontSize: 12.sp,
               ),
             ),
-          ],
-        ),
-      );
-    }
-    if (!logic.hasMoreHistory.value && logic.messageList.isNotEmpty) {
-      return SizedBox(
-        height: 28.h,
-        child: Center(
-          child: Text(
-            '没有更早消息了',
-            style: TextStyle(
-              color: Styles.secondaryTextColor,
-              fontSize: 12.sp,
-            ),
           ),
-        ),
-      );
-    }
-    return SizedBox(height: 8.h);
+        );
+      }
+      return SizedBox(height: 8.h);
+    });
   }
 
   Widget _buildRight(ChatMessageGroup group) {
@@ -690,6 +690,44 @@ class ChatPage extends StatelessWidget {
         // 纯图片消息是固定缩略图，使用 cover 保证图片铺满圆角裁剪框，
         // 避免 contain 留白时只裁到外框、没有裁到真实图片边缘。
         fit: BoxFit.cover,
+      ),
+    );
+  }
+}
+
+class _ChatTitleBar extends StatelessWidget implements PreferredSizeWidget {
+  final ChatLogic logic;
+
+  const _ChatTitleBar({required this.logic});
+
+  @override
+  Size get preferredSize => Size.fromHeight(48.h);
+
+  @override
+  Widget build(BuildContext context) {
+    return Obx(
+      () => PiTitleBar.back(
+        title: logic.isGroup.value
+            ? '聊天室'
+            : logic.displayNameFor(logic.userName.value),
+        titleWidget: logic.isGroup.value
+            ? null
+            : VipNameText(
+                userId: logic.userID.value,
+                userName: logic.userName.value,
+                style: Styles.titleBarStyle,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
+              ),
+        rightWidget: logic.isGroup.value
+            ? const Icon(
+                Icons.more_horiz,
+                key: ValueKey('chat_room_more_button'),
+                color: Styles.primaryTextColor,
+              )
+            : null,
+        onRightTap: logic.isGroup.value ? logic.toChatRoomSettings : null,
       ),
     );
   }

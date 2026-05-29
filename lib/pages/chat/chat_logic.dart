@@ -32,9 +32,16 @@ import 'package:record/record.dart';
 
 import '../../core/controller/im.dart';
 
+typedef DiyEmojiRemoteLoader = Future<List<String>> Function();
+
 class ChatLogic extends GetxController {
+  ChatLogic({DiyEmojiRemoteLoader? diyEmojiRemoteLoader})
+      : _diyEmojiRemoteLoader = diyEmojiRemoteLoader;
+
+  final DiyEmojiRemoteLoader? _diyEmojiRemoteLoader;
   final imController = Get.find<IMController>();
   final messageList = <ChatRoomMessage>[].obs;
+  final displayGroups = <ChatMessageGroup>[].obs;
   final chatMsgList = <ChatData>[].obs;
   final userInfo = UserInfo().obs;
 
@@ -84,8 +91,9 @@ class ChatLogic extends GetxController {
   StreamSubscription<void>? _extensionSubscription;
   StreamSubscription<void>? _remarkSubscription;
   bool _scrollListenerAttached = false;
-  final AudioRecorder _voiceRecorder = AudioRecorder();
+  AudioRecorder? _voiceRecorder;
   Timer? _voiceTimer;
+  Timer? _scrollToBottomTimer;
   final Map<String, Timer> _autoGrabTimers = {};
   final Map<String, RedPacketInfo> _redPacketInfoCache = {};
   final Set<String> _autoGrabScheduledIds = {};
@@ -94,6 +102,7 @@ class ChatLogic extends GetxController {
   DateTime? _voiceStartedAt;
   String? _voiceRecordPath;
   bool _isStoppingVoice = false;
+  bool _hasLoadedRemoteEmojis = false;
   int _barragerSequence = 0;
   int _barragerTrack = 0;
   late final ChatRoomExtensionRuntime _extensionRuntime;
@@ -116,13 +125,12 @@ class ChatLogic extends GetxController {
     userName.value = args['userName'] ?? '聊天室';
     userID.value = args['userID'] ?? '';
     if (isGroup.value) {
-      messageList.assignAll(
+      _replaceMessages(
         ChatMessageUtils.trimChatRoomMessages(
           _conversationController?.chatRoomMsg ?? const <ChatRoomMessage>[],
           MemoryLimits.chatRealtimeMessages,
         ),
       );
-      messageList.refresh();
       scrollToBottom(delay: 300);
     }
     imController.fishpi.user.info().then((value) => userInfo.value = value);
@@ -165,8 +173,7 @@ class ChatLogic extends GetxController {
       await _loadChatRoomBlockedUsers();
       await _loadAutoGrabConfig();
       await loadExtensions();
-      messageList.assignAll(_visibleMessages(messageList));
-      messageList.refresh();
+      _replaceMessages(_visibleMessages(messageList));
       if (messageList.isEmpty) {
         await _loadInitialHistory();
       } else {
@@ -227,14 +234,13 @@ class ChatLogic extends GetxController {
     bool shouldScroll = true,
   }) {
     if (_isMessageBlocked(message)) return;
-    messageList.assignAll(
+    _replaceMessages(
       ChatMessageUtils.appendUniqueChatRoomMessage(
         messageList,
         message,
         maxLength: _messageMemoryLimit,
       ),
     );
-    messageList.refresh();
     _scheduleAutoGrabRedPacket(message);
     _triggerReceiveExtensions(message);
     if (shouldScroll) {
@@ -243,17 +249,19 @@ class ChatLogic extends GetxController {
   }
 
   void _removeMessage(String messageId) {
-    messageList.assignAll(
+    _replaceMessages(
       ChatMessageUtils.removeChatRoomMessage(messageList, messageId),
     );
-    messageList.refresh();
   }
 
   void _handleScroll() {
     if (!chatRoomController.hasClients) return;
     final position = chatRoomController.position;
     final distance = position.maxScrollExtent - position.pixels;
-    isSeeHistory.value = distance >= 100;
+    final nextIsSeeHistory = distance >= 100;
+    if (isSeeHistory.value != nextIsSeeHistory) {
+      isSeeHistory.value = nextIsSeeHistory;
+    }
     if (position.pixels <= 80) {
       loadMoreHistory();
     }
@@ -271,13 +279,12 @@ class ChatLogic extends GetxController {
       if (!hasMoreHistory.value) return;
 
       historyPage.value = 1;
-      messageList.assignAll(
+      _replaceMessages(
         ChatMessageUtils.trimChatRoomMessages(
           result.messages,
           MemoryLimits.chatRealtimeMessages,
         ),
       );
-      messageList.refresh();
       _logMemorySnapshot('聊天首屏历史');
     } catch (e) {
       ToastManager.showToast(
@@ -311,14 +318,13 @@ class ChatLogic extends GetxController {
 
       historyPage.value = nextPage;
       final beforeLength = messageList.length;
-      messageList.assignAll(
+      _replaceMessages(
         ChatMessageUtils.prependUniqueChatRoomMessages(
           messageList,
           result.messages,
           maxLength: MemoryLimits.chatHistoryMessages,
         ),
       );
-      messageList.refresh();
       _logMemorySnapshot('聊天分页历史');
 
       if (messageList.length > beforeLength) {
@@ -378,8 +384,12 @@ class ChatLogic extends GetxController {
 
   void scrollToBottom({int? delay}) {
     if (isClose.value || isSeeHistory.value) return;
-    Future.delayed(Duration(milliseconds: delay ?? 200), () {
-      if (chatRoomController.hasClients) {
+    _scrollToBottomTimer?.cancel();
+    _scrollToBottomTimer = Timer(Duration(milliseconds: delay ?? 200), () {
+      _scrollToBottomTimer = null;
+      if (!isClose.value &&
+          !isSeeHistory.value &&
+          chatRoomController.hasClients) {
         chatRoomController.animateTo(
           chatRoomController.position.maxScrollExtent,
           duration: const Duration(milliseconds: 200),
@@ -1058,14 +1068,15 @@ class ChatLogic extends GetxController {
     if (isRecordingVoice.value || isSendingVoice.value) return;
 
     try {
-      final hasPermission = await _voiceRecorder.hasPermission();
+      final recorder = _voiceRecorderInstance;
+      final hasPermission = await recorder.hasPermission();
       if (!hasPermission) {
         ToastManager.showToast('需要麦克风权限才能发送语音消息');
         return;
       }
 
       final path = _voiceTempPath();
-      await _voiceRecorder.start(
+      await recorder.start(
         const RecordConfig(
           encoder: AudioEncoder.aacLc,
           bitRate: 64000,
@@ -1105,7 +1116,7 @@ class ChatLogic extends GetxController {
 
     final duration = _currentVoiceDurationSeconds();
     try {
-      final path = await _voiceRecorder.stop() ?? _voiceRecordPath;
+      final path = await _voiceRecorder?.stop() ?? _voiceRecordPath;
       _stopVoiceTimer();
       isRecordingVoice.value = false;
       voiceRecordSeconds.value = duration;
@@ -1203,7 +1214,7 @@ class ChatLogic extends GetxController {
     _stopVoiceTimer();
     if (cancelRecorder) {
       try {
-        await _voiceRecorder.cancel();
+        await _voiceRecorder?.cancel();
       } catch (_) {}
     }
     _deleteVoiceFile(_voiceRecordPath);
@@ -1214,18 +1225,32 @@ class ChatLogic extends GetxController {
     voiceRecordSeconds.value = 0;
   }
 
-  void loadEmojis() async {
+  AudioRecorder get _voiceRecorderInstance {
+    return _voiceRecorder ??= AudioRecorder();
+  }
+
+  Future<void> loadEmojis() async {
     try {
       await ChatEmojiCache.init();
       final cached = await ChatEmojiCache.getDiyEmojis();
       if (cached.isNotEmpty) {
         diyEmojiList.assignAll(cached);
       }
+    } catch (_) {}
+  }
 
-      final remote = await imController.fishpi.emoji.get();
+  Future<void> ensureDiyEmojiRemoteLoaded() async {
+    if (_hasLoadedRemoteEmojis) return;
+    _hasLoadedRemoteEmojis = true;
+    try {
+      await ChatEmojiCache.init();
+      final remote = await (_diyEmojiRemoteLoader?.call() ??
+          imController.fishpi.emoji.get());
       await ChatEmojiCache.saveDiyEmojis(remote);
       diyEmojiList.assignAll(remote);
-    } catch (_) {}
+    } catch (_) {
+      _hasLoadedRemoteEmojis = false;
+    }
   }
 
   Future<void> _loadBlackUsers() async {
@@ -1292,6 +1317,24 @@ class ChatLogic extends GetxController {
         : MemoryLimits.chatRealtimeMessages;
   }
 
+  void _replaceMessages(Iterable<ChatRoomMessage> messages) {
+    messageList.assignAll(messages);
+    _syncDisplayGroups();
+  }
+
+  void _syncDisplayGroups() {
+    if (isGroup.value) {
+      displayGroups.assignAll(
+        ChatMessageUtils.groupConsecutiveDuplicateMessages(messageList),
+      );
+      return;
+    }
+
+    displayGroups.assignAll(
+      messageList.map((message) => ChatMessageGroup(message: message)),
+    );
+  }
+
   void _logMemorySnapshot(String source) {
     MemorySnapshot.log(
       source: source,
@@ -1301,25 +1344,36 @@ class ChatLogic extends GetxController {
 
   Future<void> _reloadBlackUsersAndFilterMessages() async {
     await _loadBlackUsers();
-    messageList.assignAll(
+    _replaceMessages(
       ChatMessageUtils.trimChatRoomMessages(
         _visibleMessages(messageList),
         _messageMemoryLimit,
       ),
     );
-    messageList.refresh();
   }
 
   Future<void> _reloadChatRoomBlockedUsersAndFilterMessages() async {
     await _loadChatRoomBlockedUsers();
-    messageList.assignAll(
+    _replaceMessages(
       ChatMessageUtils.trimChatRoomMessages(
         _visibleMessages(messageList),
         _messageMemoryLimit,
       ),
     );
-    messageList.refresh();
   }
+
+  @visibleForTesting
+  void debugReplaceMessagesForTest(Iterable<ChatRoomMessage> messages) {
+    _replaceMessages(messages);
+  }
+
+  @visibleForTesting
+  void debugUpdateRedPacketStatusForTest(RedPacketStatusMsg status) {
+    _updateRedPacketStatus(status);
+  }
+
+  @visibleForTesting
+  Timer? get debugScrollToBottomTimer => _scrollToBottomTimer;
 
   Future<void> _loadAutoGrabConfig() async {
     try {
@@ -1344,12 +1398,11 @@ class ChatLogic extends GetxController {
 
   void _updateRedPacketStatus(RedPacketStatusMsg? status) {
     if (status == null || status.oId.isEmpty) return;
-    messageList.assignAll(
+    _replaceMessages(
       messageList
           .map((message) => ChatRedPacketUtils.updateStatus(message, status))
           .toList(),
     );
-    messageList.refresh();
   }
 
   void _appendBarrager(BarragerMsg? message) {
@@ -1388,9 +1441,10 @@ class ChatLogic extends GetxController {
     _extensionSubscription?.cancel();
     _remarkSubscription?.cancel();
     _cancelAutoGrabTimers();
+    _scrollToBottomTimer?.cancel();
     barragers.clear();
     _stopVoiceTimer();
-    _voiceRecorder.dispose();
+    _voiceRecorder?.dispose();
     if (!isGroup.value) {
       imController.unwatchPrivateChat(userName.value);
     }

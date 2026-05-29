@@ -9,6 +9,8 @@ import 'package:get/get.dart';
 import 'package:just_audio/just_audio.dart';
 
 class ChatMusicPlayerController extends GetxController {
+  static final createdVersion = 0.obs;
+
   final AudioPlayer _player = AudioPlayer();
 
   final queue = <ChatMusicTrack>[].obs;
@@ -23,7 +25,14 @@ class ChatMusicPlayerController extends GetxController {
     if (Get.isRegistered<ChatMusicPlayerController>()) {
       return Get.find<ChatMusicPlayerController>();
     }
-    return Get.put(ChatMusicPlayerController(), permanent: true);
+    final controller = Get.put(ChatMusicPlayerController(), permanent: true);
+    createdVersion.value++;
+    return controller;
+  }
+
+  static ChatMusicPlayerController? maybeFind() {
+    if (!Get.isRegistered<ChatMusicPlayerController>()) return null;
+    return Get.find<ChatMusicPlayerController>();
   }
 
   @override

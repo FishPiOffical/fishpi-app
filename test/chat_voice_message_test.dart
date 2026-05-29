@@ -38,6 +38,7 @@ void main() {
     expect(find.byKey(const ValueKey('chat_voice_message')), findsOneWidget);
     expect(find.text('语音消息 5s'), findsOneWidget);
     expect(find.byIcon(Icons.play_arrow), findsOneWidget);
+    expect(ChatMusicPlayerController.maybeFind(), isNull);
   });
 
   testWidgets('音乐卡片展示标题、来源和播放入口', (tester) async {
@@ -65,6 +66,45 @@ void main() {
     expect(find.text('歌名'), findsOneWidget);
     expect(find.text('歌手'), findsOneWidget);
     expect(find.byIcon(Icons.play_arrow), findsOneWidget);
+    expect(ChatMusicPlayerController.maybeFind(), isNull);
+  });
+
+  testWidgets('音乐卡片默认不会主动创建播放器', (tester) async {
+    await tester.pumpWidget(
+      ScreenUtilInit(
+        designSize: const Size(360, 812),
+        builder: (context, _) => const MaterialApp(
+          home: Scaffold(
+            body: ChatMusicCard(
+              track: ChatMusicTrack(
+                id: 'song-2',
+                type: 'music',
+                source: 'https://example.com/song-2.mp3',
+                title: '延迟播放',
+                from: '本地测试',
+              ),
+              isSelf: false,
+            ),
+          ),
+        ),
+      ),
+    );
+
+    expect(ChatMusicPlayerController.maybeFind(), isNull);
+  });
+
+  testWidgets('音乐迷你播放器在播放器未创建时隐藏', (tester) async {
+    await tester.pumpWidget(
+      ScreenUtilInit(
+        designSize: const Size(360, 812),
+        builder: (context, _) => const MaterialApp(
+          home: Scaffold(body: ChatMusicMiniPlayer()),
+        ),
+      ),
+    );
+
+    expect(ChatMusicPlayerController.maybeFind(), isNull);
+    expect(find.byKey(const ValueKey('chat_music_mini_player')), findsNothing);
   });
 
   testWidgets('音乐迷你播放器在队列非空时展示', (tester) async {
