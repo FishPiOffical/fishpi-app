@@ -87,6 +87,16 @@ class _ScanViewState extends State<ScanView> {
     widget.controller?._channel = _channel;
   }
 
+  @override
+  void dispose() {
+    _channel?.setMethodCallHandler(null);
+    if (widget.controller?._channel == _channel) {
+      widget.controller?._channel = null;
+    }
+    _channel = null;
+    super.dispose();
+  }
+
   int _colorValue(double value) {
     return (value * 255.0).round().clamp(0, 255);
   }

@@ -104,7 +104,7 @@ class AppNavigator {
   static void toScan() => Get.to(
         () => const PiScan(),
         transition: Transition.cupertino,
-        popGesture: true,
+        popGesture: false,
       );
 
   /// 扫码结果页面

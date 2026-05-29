@@ -84,6 +84,7 @@ public class ScanViewNew extends BarcodeView implements PluginRegistry.RequestPe
         this.decodeContinuous(new BarcodeCallback() {
             @Override
             public void barcodeResult(BarcodeResult result) {
+                if (captureListener == null || result == null) return;
                 captureListener.onCapture(result.getText());
                 Vibrator myVib = (Vibrator) context.getSystemService(VIBRATOR_SERVICE);
                 if (myVib != null) {
@@ -148,8 +149,13 @@ public class ScanViewNew extends BarcodeView implements PluginRegistry.RequestPe
         this.captureListener = captureListener;
     }
     public void dispose() {
-//        this.stopDecoding();
+        this.stopDecoding();
         _pause();
+        if (activityPluginBinding != null) {
+            activityPluginBinding.removeRequestPermissionsResultListener(this);
+            activityPluginBinding = null;
+        }
+        captureListener = null;
 //        activity.getApplication().unregisterActivityLifecycleCallbacks(lifecycleCallback);
 //        lifecycleCallback = null;
         if (task != null) {

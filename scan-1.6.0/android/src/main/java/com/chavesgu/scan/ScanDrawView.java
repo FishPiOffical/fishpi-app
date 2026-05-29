@@ -82,7 +82,7 @@ public class ScanDrawView extends SurfaceView implements SurfaceHolder.Callback 
         activity.getWindowManager().getDefaultDisplay().getMetrics(dm);
         dpi = dm.density;
 
-        // init animate
+        releaseAnimator();
         final float scanLineWidth = (float) (areaWidth * 0.8);
         final long duration = (long) (areaWidth/175/dpi*1.5*1000);
         positionAnimator = ValueAnimator.ofFloat(0, scanLineWidth);
@@ -102,10 +102,7 @@ public class ScanDrawView extends SurfaceView implements SurfaceHolder.Callback 
 
     @Override
     public void surfaceDestroyed(SurfaceHolder surfaceHolder) {
-        if (positionAnimator!=null) {
-            positionAnimator.removeAllUpdateListeners();
-            positionAnimator = null;
-        }
+        releaseAnimator();
     }
 
     @Override
@@ -204,5 +201,19 @@ public class ScanDrawView extends SurfaceView implements SurfaceHolder.Callback 
         running = false;
         if (positionAnimator!=null)positionAnimator.pause();
         invalidate();
+    }
+
+    public void dispose() {
+        running = false;
+        releaseAnimator();
+        getHolder().removeCallback(this);
+    }
+
+    private void releaseAnimator() {
+        if (positionAnimator != null) {
+            positionAnimator.cancel();
+            positionAnimator.removeAllUpdateListeners();
+            positionAnimator = null;
+        }
     }
 }

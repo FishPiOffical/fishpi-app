@@ -57,7 +57,22 @@ public class ScanPlatformView implements PlatformView, MethodChannel.MethodCallH
 
     @Override
     public void dispose() {
-        this.scanViewNew.dispose();
+        if (channel != null) {
+            channel.setMethodCallHandler(null);
+            channel = null;
+        }
+        if (scanViewNew != null) {
+            scanViewNew.dispose();
+            scanViewNew = null;
+        }
+        if (scanDrawView != null) {
+            scanDrawView.dispose();
+            scanDrawView = null;
+        }
+        if (parentView != null) {
+            parentView.removeAllViews();
+            parentView = null;
+        }
     }
 
     @Override
@@ -72,20 +87,22 @@ public class ScanPlatformView implements PlatformView, MethodChannel.MethodCallH
     }
 
     private void resume() {
-        this.scanViewNew.resume();
-        this.scanDrawView.resume();
+        if (this.scanViewNew != null) this.scanViewNew.resume();
+        if (this.scanDrawView != null) this.scanDrawView.resume();
     }
     private void pause() {
-        this.scanViewNew.pause();
-        this.scanDrawView.pause();
+        if (this.scanViewNew != null) this.scanViewNew.pause();
+        if (this.scanDrawView != null) this.scanDrawView.pause();
     }
     private void toggleTorchMode() {
+        if (this.scanViewNew == null) return;
         this.scanViewNew.toggleTorchMode(!flashlight);
         flashlight = !flashlight;
     }
 
     @Override
     public void onCapture(String text) {
+        if (channel == null) return;
         channel.invokeMethod("onCaptured", text);
         pause();
     }
