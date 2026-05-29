@@ -111,9 +111,11 @@ class PiUtils {
       await clearToken();
       return;
     }
+    final secureSaved = await _safeSecureWrite(_tokenKey, _cachedToken);
     await Future.wait([
-      _safeSecureWrite(_tokenKey, _cachedToken),
-      _prefs?.remove(_tokenKey) ?? Future.value(false),
+      secureSaved
+          ? (_prefs?.remove(_tokenKey) ?? Future.value(false))
+          : (_prefs?.setString(_tokenKey, _cachedToken) ?? Future.value(false)),
       _prefs?.setBool(_loginKey, true) ?? Future.value(false),
     ]);
   }
@@ -154,9 +156,11 @@ class PiUtils {
     }
 
     _cachedToken = legacyToken;
+    final secureSaved = await _safeSecureWrite(_tokenKey, legacyToken);
     await Future.wait([
-      _safeSecureWrite(_tokenKey, legacyToken),
-      _prefs?.remove(_tokenKey) ?? Future.value(false),
+      secureSaved
+          ? (_prefs?.remove(_tokenKey) ?? Future.value(false))
+          : Future.value(false),
       _prefs?.setBool(_loginKey, true) ?? Future.value(false),
     ]);
   }

@@ -42,7 +42,7 @@ class HomeLogic extends GetxController {
 
   @override
   void onInit() {
-    _loadTokenAndInitChat();
+    _loadCachedTokenAndInitChat();
     super.onInit();
   }
 
@@ -65,9 +65,19 @@ class HomeLogic extends GetxController {
     } catch (_) {}
   }
 
+  void _loadCachedTokenAndInitChat() {
+    final cachedToken = PiUtils.getCachedToken();
+    if (cachedToken.isNotEmpty) {
+      token.value = cachedToken;
+      unawaited(initChat());
+      return;
+    }
+    unawaited(_loadTokenAndInitChat());
+  }
+
   Future<void> _loadTokenAndInitChat() async {
     final savedToken = await PiUtils.getToken();
-    if (isClosed) return;
+    if (isClosed || savedToken.isEmpty || savedToken == token.value) return;
     token.value = savedToken;
     await initChat();
   }
