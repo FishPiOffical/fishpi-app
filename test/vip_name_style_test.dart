@@ -117,7 +117,23 @@ void main() {
         VipNameStyle.defaultVip4GradientColors,
         reason: lvCode,
       );
+      expect(style.animatedGradient, isTrue, reason: lvCode);
     }
+  });
+
+  test('非 VIP4 渐变保持静态，避免列表无意义动画', () {
+    final style = VipNameStyle.fromVipInfo(
+      UserVipInfo(
+        state: true,
+        lvCode: 'VIP_YEAR',
+        expiresAt:
+            DateTime.now().add(const Duration(days: 1)).millisecondsSinceEpoch,
+        color: 'linear-gradient(90deg,#D23F31,#E59230,#7C3AED)',
+      ),
+    );
+
+    expect(style.hasGradient, isTrue);
+    expect(style.animatedGradient, isFalse);
   });
 
   test('同一用户 ID 在缓存期内只请求一次 VIP 信息', () async {
@@ -281,9 +297,44 @@ void main() {
 
     expect(
         find.byKey(const ValueKey('vip_name_gradient_mask')), findsOneWidget);
+    expect(find.byKey(const ValueKey('vip_name_gradient_animation')),
+        findsOneWidget);
+    expect(find.byKey(const ValueKey('vip_name_gradient_repaint_boundary')),
+        findsOneWidget);
     final text = tester.widget<Text>(find.text('鱼排(fishpi)'));
     expect(text.style?.fontWeight, FontWeight.w800);
     expect(text.style?.decoration, TextDecoration.underline);
+  });
+
+  testWidgets('VipNameText 可以关闭 VIP4 渐变动画', (tester) async {
+    final service = VipStyleService(
+      vipInfoLoader: (_) async => UserVipInfo(
+        state: true,
+        lvCode: 'VIP4_YEAR',
+        expiresAt:
+            DateTime.now().add(const Duration(days: 1)).millisecondsSinceEpoch,
+      ),
+    );
+
+    await tester.pumpWidget(
+      _wrap(
+        VipNameText(
+          userId: 'u1',
+          userName: 'fishpi',
+          fallback: '鱼排(fishpi)',
+          vipService: service,
+          enableGradientAnimation: false,
+          style: const TextStyle(color: Colors.black),
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 1));
+
+    expect(
+        find.byKey(const ValueKey('vip_name_gradient_mask')), findsOneWidget);
+    expect(find.byKey(const ValueKey('vip_name_gradient_animation')),
+        findsNothing);
   });
 
   testWidgets('VipNameText 普通单色用户不渲染渐变蒙版', (tester) async {

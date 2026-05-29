@@ -110,6 +110,7 @@ class PiArticleItem extends StatelessWidget {
                                     ),
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
+                                    enableGradientAnimation: false,
                                   ),
                                 ),
                                 6.horizontalSpace,

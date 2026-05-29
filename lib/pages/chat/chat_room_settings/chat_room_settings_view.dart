@@ -883,6 +883,7 @@ class ChatRoomSettingsPage extends GetView<ChatRoomSettingsLogic> {
                   fallback: displayName,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
+                  enableGradientAnimation: false,
                   style: TextStyle(
                     color: Styles.primaryTextColor,
                     fontSize: 16.sp,

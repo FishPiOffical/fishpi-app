@@ -161,6 +161,7 @@ class ChatRedPacketDetailSheet extends StatelessWidget {
               fallback: item.userName,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
+              enableGradientAnimation: false,
               style: TextStyle(
                 color: Styles.primaryTextColor,
                 fontSize: 15.sp,

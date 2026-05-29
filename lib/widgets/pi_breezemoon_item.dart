@@ -43,6 +43,7 @@ class PiBreezemoonItem extends StatelessWidget {
                 ),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
+                enableGradientAnimation: false,
               ),
               Expanded(child: 1.horizontalSpace),
               Text(

@@ -295,6 +295,7 @@ class NoticePage extends GetView<NoticeLogic> {
             style: style,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
+            enableGradientAnimation: false,
           ),
         ),
         if (item.titleAction.trim().isNotEmpty)

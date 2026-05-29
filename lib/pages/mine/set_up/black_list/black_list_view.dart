@@ -72,6 +72,7 @@ class BlackListPage extends StatelessWidget {
                       style: TextStyle(fontSize: 20.sp),
                       overflow: TextOverflow.ellipsis,
                       maxLines: 1,
+                      enableGradientAnimation: false,
                     ),
                     4.verticalSpace,
                     VipBadge(

@@ -436,6 +436,7 @@ class ForumDetailPage extends StatelessWidget {
                             fontWeight: FontWeight.bold,
                             color: Styles.primaryTextColor,
                           ),
+                          enableGradientAnimation: false,
                         ),
                         10.horizontalSpace,
                         Text(

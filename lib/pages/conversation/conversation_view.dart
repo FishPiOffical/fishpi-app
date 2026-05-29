@@ -107,6 +107,7 @@ class ConversationPage extends StatelessWidget {
                                     ),
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
+                                    enableGradientAnimation: false,
                                   )
                                 : Text(
                                     '聊天室',

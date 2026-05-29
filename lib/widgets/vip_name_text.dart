@@ -15,6 +15,7 @@ class VipNameText extends StatefulWidget {
   final TextOverflow? overflow;
   final TextAlign? textAlign;
   final VipStyleService? vipService;
+  final bool enableGradientAnimation;
 
   const VipNameText({
     this.userId,
@@ -25,6 +26,7 @@ class VipNameText extends StatefulWidget {
     this.overflow,
     this.textAlign,
     this.vipService,
+    this.enableGradientAnimation = true,
     super.key,
   });
 
@@ -32,9 +34,11 @@ class VipNameText extends StatefulWidget {
   State<VipNameText> createState() => _VipNameTextState();
 }
 
-class _VipNameTextState extends State<VipNameText> {
+class _VipNameTextState extends State<VipNameText>
+    with SingleTickerProviderStateMixin {
   VipNameStyle? _vipStyle;
   StreamSubscription<void>? _remarkSubscription;
+  AnimationController? _gradientController;
   int _loadVersion = 0;
 
   @override
@@ -47,6 +51,12 @@ class _VipNameTextState extends State<VipNameText> {
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _syncGradientAnimation(disableAnimations: _disableAnimationsInContext);
+  }
+
+  @override
   void didUpdateWidget(covariant VipNameText oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.userId != widget.userId ||
@@ -54,11 +64,15 @@ class _VipNameTextState extends State<VipNameText> {
         oldWidget.vipService != widget.vipService) {
       _loadVipStyle();
     }
+    if (oldWidget.enableGradientAnimation != widget.enableGradientAnimation) {
+      _syncGradientAnimation(disableAnimations: _disableAnimationsInContext);
+    }
   }
 
   @override
   void dispose() {
     _remarkSubscription?.cancel();
+    _gradientController?.dispose();
     super.dispose();
   }
 
@@ -80,14 +94,62 @@ class _VipNameTextState extends State<VipNameText> {
       textAlign: widget.textAlign,
     );
 
-    if (vipStyle?.hasGradient != true) return text;
+    final activeVipStyle = vipStyle;
+    if (activeVipStyle == null || !activeVipStyle.hasGradient) return text;
 
+    final controller = _gradientController;
+    final disableAnimations = _disableAnimationsInContext;
+    if (_shouldAnimateGradient && !disableAnimations && controller != null) {
+      return RepaintBoundary(
+        key: const ValueKey('vip_name_gradient_repaint_boundary'),
+        child: AnimatedBuilder(
+          key: const ValueKey('vip_name_gradient_animation'),
+          animation: controller,
+          builder: (context, _) => _buildGradientText(
+            displayName: displayName,
+            style: style,
+            vipStyle: activeVipStyle,
+            progress: controller.value,
+          ),
+        ),
+      );
+    }
+
+    return _buildGradientText(
+      displayName: displayName,
+      style: style,
+      vipStyle: activeVipStyle,
+    );
+  }
+
+  Widget _buildGradientText({
+    required String displayName,
+    required TextStyle style,
+    required VipNameStyle vipStyle,
+    double? progress,
+  }) {
     return ShaderMask(
       key: const ValueKey('vip_name_gradient_mask'),
       blendMode: BlendMode.srcIn,
-      shaderCallback: (bounds) => LinearGradient(
-        colors: vipStyle!.gradientColors,
-      ).createShader(Rect.fromLTWH(0, 0, bounds.width, bounds.height)),
+      shaderCallback: (bounds) {
+        final width = bounds.width <= 0 ? 1.0 : bounds.width;
+        final shaderRect = progress == null
+            ? Rect.fromLTWH(0, 0, width, bounds.height)
+            : Rect.fromLTWH(
+                -width + progress * width * 2,
+                0,
+                width * 3,
+                bounds.height,
+              );
+        return LinearGradient(
+          colors: progress == null
+              ? vipStyle.gradientColors
+              : [
+                  ...vipStyle.gradientColors,
+                  ...vipStyle.gradientColors,
+                ],
+        ).createShader(shaderRect);
+      },
       child: Text(
         displayName,
         key: const ValueKey('vip_name_text'),
@@ -119,11 +181,41 @@ class _VipNameTextState extends State<VipNameText> {
     );
     if (!mounted || version != _loadVersion) return;
     setState(() => _vipStyle = style);
+    _syncGradientAnimation(disableAnimations: _disableAnimationsInContext);
   }
 
   void _clearVipStyle() {
-    if (_vipStyle == null || !mounted) return;
-    setState(() => _vipStyle = null);
+    if (!mounted) return;
+    if (_vipStyle != null) {
+      setState(() => _vipStyle = null);
+    }
+    _syncGradientAnimation();
+  }
+
+  bool get _shouldAnimateGradient {
+    final vipStyle = _vipStyle;
+    return widget.enableGradientAnimation &&
+        vipStyle != null &&
+        vipStyle.animatedGradient &&
+        vipStyle.hasGradient;
+  }
+
+  bool get _disableAnimationsInContext =>
+      MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+
+  void _syncGradientAnimation({bool disableAnimations = false}) {
+    if (disableAnimations || !_shouldAnimateGradient) {
+      _gradientController?.stop();
+      return;
+    }
+
+    final controller = _gradientController ??= AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 3200),
+    );
+    if (!controller.isAnimating) {
+      controller.repeat();
+    }
   }
 
   VipStyleService? _resolveService() {

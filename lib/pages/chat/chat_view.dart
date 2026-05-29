@@ -242,6 +242,7 @@ class ChatPage extends StatelessWidget {
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
+                  enableGradientAnimation: false,
                 ),
                 redpacket != null
                     ? _buildRedpacket(chat, redpacket, true)
@@ -354,6 +355,7 @@ class ChatPage extends StatelessWidget {
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
+                  enableGradientAnimation: false,
                 ),
                 redpacket != null
                     ? _buildRedpacket(chat, redpacket, false)

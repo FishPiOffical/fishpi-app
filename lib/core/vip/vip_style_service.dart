@@ -51,6 +51,7 @@ class VipNameStyle {
   final List<Color> gradientColors;
   final bool bold;
   final bool underline;
+  final bool animatedGradient;
 
   const VipNameStyle({
     required this.isActive,
@@ -58,6 +59,7 @@ class VipNameStyle {
     this.gradientColors = const [],
     this.bold = false,
     this.underline = false,
+    this.animatedGradient = false,
   });
 
   factory VipNameStyle.fromVipInfo(
@@ -71,9 +73,10 @@ class VipNameStyle {
     if (!active) return const VipNameStyle(isActive: false);
 
     final gradientColors = parseGradientColors(info.color);
+    final isVip4 = isVip4Level(info.lvCode);
     final usesVip4Gradient = gradientColors.isNotEmpty
         ? gradientColors
-        : isVip4Level(info.lvCode)
+        : isVip4
             ? defaultVip4GradientColors
             : const <Color>[];
 
@@ -83,6 +86,7 @@ class VipNameStyle {
       gradientColors: usesVip4Gradient,
       bold: info.bold,
       underline: info.underline,
+      animatedGradient: isVip4 && usesVip4Gradient.length >= 2,
     );
   }
 
