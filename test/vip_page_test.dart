@@ -20,7 +20,7 @@ void main() {
     await logic.loadVipInfo(silent: true);
 
     expect(logic.statusText, '已开通');
-    expect(logic.levelText, 'SVIP(包年)');
+    expect(logic.levelText, 'VIP(包年)');
     expect(logic.expiresText, '2026-08-09 到期');
     expect(logic.colorText, '#FFAA00');
     expect(logic.boldText, '已开启');
@@ -43,7 +43,7 @@ void main() {
     expect(find.text('VIP会员'), findsOneWidget);
     expect(find.byKey(const ValueKey('vip_status_card')), findsOneWidget);
     expect(find.text('已开通'), findsOneWidget);
-    expect(find.text('SVIP(包年)'), findsOneWidget);
+    expect(find.text('VIP(包年)'), findsOneWidget);
     expect(find.text('2026-08-09 到期'), findsOneWidget);
     expect(find.byKey(const ValueKey('vip_name_style_card')), findsOneWidget);
     expect(find.text('#FFAA00'), findsOneWidget);
@@ -53,6 +53,32 @@ void main() {
     expect(preview.style?.color, const Color(0xFFFFAA00));
     expect(preview.style?.fontWeight, FontWeight.w800);
     expect(preview.style?.decoration, TextDecoration.underline);
+  });
+
+  testWidgets('VIP 页面展示 VIP4 默认渐变昵称样式', (tester) async {
+    Get.put(
+      VipLogic(
+        autoLoad: false,
+        initialUser: _userInfo(),
+        initialVipInfo: _vipInfo(lvCode: 'VIP4_YEAR', color: ''),
+        nowProvider: () => DateTime(2026, 5, 28),
+      ),
+    );
+
+    await tester.pumpWidget(_wrap(VipPage()));
+    await tester.pump();
+
+    expect(find.text('VIP4(包年)'), findsOneWidget);
+    expect(find.text('VIP4渐变'), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('vip_name_preview_gradient_mask')),
+      findsOneWidget,
+    );
+
+    final swatch = tester
+        .widget<Container>(find.byKey(const ValueKey('vip_color_swatch')));
+    final decoration = swatch.decoration as BoxDecoration;
+    expect(decoration.gradient, isNotNull);
   });
 
   testWidgets('VIP 页面展示未开通状态和禁用编辑入口', (tester) async {
@@ -95,13 +121,16 @@ UserInfo _userInfo() {
   );
 }
 
-UserVipInfo _vipInfo() {
+UserVipInfo _vipInfo({
+  String lvCode = 'VIP_YEAR',
+  String color = '#FFAA00',
+}) {
   return UserVipInfo(
     state: true,
     userId: '100',
-    lvCode: 'SVIP_YEAR',
+    lvCode: lvCode,
     expiresAt: DateTime(2026, 8, 9).millisecondsSinceEpoch,
-    color: '#FFAA00',
+    color: color,
     bold: true,
     underline: true,
     autoCheckin: 1,

@@ -73,6 +73,53 @@ void main() {
     expect(VipNameStyle.parseColor('不是颜色'), isNull);
   });
 
+  test('VIP 样式可以解析服务端渐变颜色', () {
+    final colors = VipNameStyle.parseGradientColors(
+      'linear-gradient(90deg,#D23F31,#E59230,#7C3AED)',
+    );
+
+    expect(colors, [
+      const Color(0xFFD23F31),
+      const Color(0xFFE59230),
+      const Color(0xFF7C3AED),
+    ]);
+
+    final style = VipNameStyle.fromVipInfo(
+      UserVipInfo(
+        state: true,
+        expiresAt:
+            DateTime.now().add(const Duration(days: 1)).millisecondsSinceEpoch,
+        color: 'linear-gradient(90deg,#D23F31,#E59230,#7C3AED)',
+      ),
+    );
+
+    expect(style.hasGradient, isTrue);
+    expect(style.gradientColors, colors);
+    expect(style.color, isNull);
+  });
+
+  test('VIP4 和 SVIP 缺少有效渐变时使用默认渐变', () {
+    for (final lvCode in ['VIP4', 'VIP4_YEAR', 'VIP4_MONTH', 'SVIP']) {
+      final style = VipNameStyle.fromVipInfo(
+        UserVipInfo(
+          state: true,
+          lvCode: lvCode,
+          expiresAt: DateTime.now()
+              .add(const Duration(days: 1))
+              .millisecondsSinceEpoch,
+          color: '不是渐变',
+        ),
+      );
+
+      expect(style.hasGradient, isTrue, reason: lvCode);
+      expect(
+        style.gradientColors,
+        VipNameStyle.defaultVip4GradientColors,
+        reason: lvCode,
+      );
+    }
+  });
+
   test('同一用户 ID 在缓存期内只请求一次 VIP 信息', () async {
     var requestCount = 0;
     final service = VipStyleService(
@@ -130,7 +177,7 @@ void main() {
     final service = VipStyleService(
       vipInfoLoader: (_) async => UserVipInfo(
         state: true,
-        lvCode: 'SVIP_YEAR',
+        lvCode: 'VIP_YEAR',
         expiresAt: expiresAt,
         color: '#FFAA00',
       ),
@@ -138,7 +185,7 @@ void main() {
 
     final profile = await service.loadProfile(userId: 'u1');
 
-    expect(profile?.levelName, 'SVIP(包年)');
+    expect(profile?.levelName, 'VIP(包年)');
     expect(profile?.expiresText, '2026-08-09');
     expect(profile?.nameStyle.color, const Color(0xFFFFAA00));
   });
@@ -204,6 +251,68 @@ void main() {
     final text = tester.widget<Text>(find.text('鱼排(fishpi)'));
     expect(text.style?.color, Colors.black);
     expect(text.style?.decoration, isNull);
+  });
+
+  testWidgets('VipNameText 渐变用户渲染 ShaderMask', (tester) async {
+    final service = VipStyleService(
+      vipInfoLoader: (_) async => UserVipInfo(
+        state: true,
+        lvCode: 'VIP4_YEAR',
+        expiresAt:
+            DateTime.now().add(const Duration(days: 1)).millisecondsSinceEpoch,
+        bold: true,
+        underline: true,
+      ),
+    );
+
+    await tester.pumpWidget(
+      _wrap(
+        VipNameText(
+          userId: 'u1',
+          userName: 'fishpi',
+          fallback: '鱼排(fishpi)',
+          vipService: service,
+          style: const TextStyle(color: Colors.black),
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 1));
+
+    expect(
+        find.byKey(const ValueKey('vip_name_gradient_mask')), findsOneWidget);
+    final text = tester.widget<Text>(find.text('鱼排(fishpi)'));
+    expect(text.style?.fontWeight, FontWeight.w800);
+    expect(text.style?.decoration, TextDecoration.underline);
+  });
+
+  testWidgets('VipNameText 普通单色用户不渲染渐变蒙版', (tester) async {
+    final service = VipStyleService(
+      vipInfoLoader: (_) async => UserVipInfo(
+        state: true,
+        expiresAt:
+            DateTime.now().add(const Duration(days: 1)).millisecondsSinceEpoch,
+        color: '#00AA66',
+      ),
+    );
+
+    await tester.pumpWidget(
+      _wrap(
+        VipNameText(
+          userId: 'u1',
+          userName: 'fishpi',
+          fallback: '鱼排(fishpi)',
+          vipService: service,
+          style: const TextStyle(color: Colors.black),
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 1));
+
+    expect(find.byKey(const ValueKey('vip_name_gradient_mask')), findsNothing);
+    final text = tester.widget<Text>(find.text('鱼排(fishpi)'));
+    expect(text.style?.color, const Color(0xFF00AA66));
   });
 
   testWidgets('VipBadge 只在有效会员时展示等级和到期时间', (tester) async {

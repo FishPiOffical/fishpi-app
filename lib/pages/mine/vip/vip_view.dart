@@ -171,6 +171,7 @@ class VipPage extends StatelessWidget {
       now: logic.nowProvider(),
     );
     final color = style.color;
+    final gradientColors = style.gradientColors;
 
     return _buildCard(
       key: const ValueKey('vip_name_style_card'),
@@ -191,24 +192,19 @@ class VipPage extends StatelessWidget {
               border: Styles.commonBorder,
               borderRadius: BorderRadius.circular(12.r),
             ),
-            child: Text(
-              logic.previewName,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: style.mergeInto(
-                TextStyle(
-                  color: Styles.primaryTextColor,
-                  fontSize: 20.sp,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
+            child: _buildVipNamePreview(
+              text: logic.previewName,
+              style: style,
             ),
           ),
           14.verticalSpace,
           _buildInfoRow(
             '昵称颜色',
             logic.colorText,
-            trailing: _buildColorSwatch(color),
+            trailing: _buildColorSwatch(
+              color: color,
+              gradientColors: gradientColors,
+            ),
           ),
           _buildDivider(),
           _buildInfoRow('粗体', logic.boldText),
@@ -358,13 +354,60 @@ class VipPage extends StatelessWidget {
     );
   }
 
-  Widget _buildColorSwatch(Color? color) {
+  Widget _buildVipNamePreview({
+    required String text,
+    required VipNameStyle style,
+  }) {
+    final textStyle = style.mergeInto(
+      TextStyle(
+        color: Styles.primaryTextColor,
+        fontSize: 20.sp,
+        fontWeight: FontWeight.bold,
+      ),
+    );
+    if (!style.hasGradient) {
+      return Text(
+        text,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: textStyle,
+      );
+    }
+
+    return ShaderMask(
+      key: const ValueKey('vip_name_preview_gradient_mask'),
+      blendMode: BlendMode.srcIn,
+      shaderCallback: (bounds) => LinearGradient(
+        colors: style.gradientColors,
+      ).createShader(Rect.fromLTWH(0, 0, bounds.width, bounds.height)),
+      child: Text(
+        text,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: textStyle.copyWith(
+          color: Colors.white,
+          decorationColor: textStyle.decoration == TextDecoration.underline
+              ? Colors.white
+              : textStyle.decorationColor,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildColorSwatch({
+    required Color? color,
+    required List<Color> gradientColors,
+  }) {
     return Container(
       key: const ValueKey('vip_color_swatch'),
       width: 22.w,
       height: 22.w,
       decoration: BoxDecoration(
-        color: color ?? Styles.titleBarColor,
+        color:
+            gradientColors.length >= 2 ? null : color ?? Styles.titleBarColor,
+        gradient: gradientColors.length >= 2
+            ? LinearGradient(colors: gradientColors)
+            : null,
         border: Border.all(color: Colors.black, width: 2),
         borderRadius: BorderRadius.circular(7.r),
       ),

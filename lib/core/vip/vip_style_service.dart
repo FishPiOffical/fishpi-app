@@ -40,14 +40,22 @@ class VipProfile {
 }
 
 class VipNameStyle {
+  static const List<Color> defaultVip4GradientColors = [
+    Color(0xFFD23F31),
+    Color(0xFFE59230),
+    Color(0xFF7C3AED),
+  ];
+
   final bool isActive;
   final Color? color;
+  final List<Color> gradientColors;
   final bool bold;
   final bool underline;
 
   const VipNameStyle({
     required this.isActive,
     this.color,
+    this.gradientColors = const [],
     this.bold = false,
     this.underline = false,
   });
@@ -62,13 +70,23 @@ class VipNameStyle {
     final active = info.state && notExpired;
     if (!active) return const VipNameStyle(isActive: false);
 
+    final gradientColors = parseGradientColors(info.color);
+    final usesVip4Gradient = gradientColors.isNotEmpty
+        ? gradientColors
+        : isVip4Level(info.lvCode)
+            ? defaultVip4GradientColors
+            : const <Color>[];
+
     return VipNameStyle(
       isActive: true,
-      color: parseColor(info.color),
+      color: usesVip4Gradient.isEmpty ? parseColor(info.color) : null,
+      gradientColors: usesVip4Gradient,
       bold: info.bold,
       underline: info.underline,
     );
   }
+
+  bool get hasGradient => gradientColors.length >= 2;
 
   static Color? parseColor(String value) {
     var normalized = value.trim();
@@ -87,6 +105,30 @@ class VipNameStyle {
     final colorValue = int.tryParse(normalized, radix: 16);
     if (colorValue == null) return null;
     return Color(colorValue);
+  }
+
+  static List<Color> parseGradientColors(String value) {
+    final normalized = value.trim();
+    if (normalized.isEmpty) return const [];
+
+    final matches = RegExp(r'(?:#|0x)?[0-9a-fA-F]{6}(?:[0-9a-fA-F]{2})?')
+        .allMatches(normalized);
+    final colors = <Color>[];
+    for (final match in matches) {
+      final color = parseColor(match.group(0) ?? '');
+      if (color != null) colors.add(color);
+    }
+    return colors.length >= 2 ? colors : const [];
+  }
+
+  static bool isVip4Level(String value) {
+    final normalized = value.trim().toUpperCase();
+    return normalized == 'VIP4' ||
+        normalized == 'VIP4_YEAR' ||
+        normalized == 'VIP4_MONTH' ||
+        normalized == 'SVIP' ||
+        normalized == 'SVIP_YEAR' ||
+        normalized == 'SVIP_MONTH';
   }
 
   TextStyle mergeInto(TextStyle baseStyle) {

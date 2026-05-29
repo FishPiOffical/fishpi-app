@@ -82,7 +82,21 @@ class VipLogic extends GetxController {
   }
 
   String get colorText {
-    final color = profile.value?.info.color.trim() ?? '';
+    final current = profile.value;
+    if (current == null) return '未设置';
+
+    final style = VipNameStyle.fromVipInfo(
+      current.info,
+      now: nowProvider(),
+    );
+    final rawColor = current.info.color.trim();
+    if (style.hasGradient) {
+      return VipNameStyle.parseGradientColors(rawColor).isEmpty
+          ? 'VIP4渐变'
+          : rawColor;
+    }
+
+    final color = rawColor;
     return color.isEmpty ? '未设置' : color;
   }
 

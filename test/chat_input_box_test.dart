@@ -442,8 +442,8 @@ void main() {
           quoteDraft: const ChatQuoteDraft(
             type: ChatQuoteType.topic,
             title: '引用话题',
-            preview: '# 今天吃什么',
-            markdown: '> # 今天吃什么',
+            preview: '#今天吃什么#',
+            markdown: '#今天吃什么#',
           ),
         ),
       ),
@@ -451,7 +451,7 @@ void main() {
 
     expect(find.byKey(const ValueKey('chat_topic_assist_bar')), findsOneWidget);
     expect(find.text('# 当前话题已引用'), findsOneWidget);
-    expect(find.text('# 今天吃什么'), findsOneWidget);
+    expect(find.text('#今天吃什么#'), findsOneWidget);
     expect(find.byKey(const ValueKey('chat_topic_quote_button')), findsNothing);
 
     focusNode.dispose();

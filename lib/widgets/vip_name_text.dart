@@ -69,15 +69,38 @@ class _VipNameTextState extends State<VipNameText> {
       fallback: widget.fallback,
     );
     final baseStyle = widget.style ?? DefaultTextStyle.of(context).style;
-    final style = _vipStyle?.mergeInto(baseStyle) ?? baseStyle;
-
-    return Text(
+    final vipStyle = _vipStyle;
+    final style = vipStyle?.mergeInto(baseStyle) ?? baseStyle;
+    final text = Text(
       displayName,
       key: const ValueKey('vip_name_text'),
       style: style,
       maxLines: widget.maxLines,
       overflow: widget.overflow,
       textAlign: widget.textAlign,
+    );
+
+    if (vipStyle?.hasGradient != true) return text;
+
+    return ShaderMask(
+      key: const ValueKey('vip_name_gradient_mask'),
+      blendMode: BlendMode.srcIn,
+      shaderCallback: (bounds) => LinearGradient(
+        colors: vipStyle!.gradientColors,
+      ).createShader(Rect.fromLTWH(0, 0, bounds.width, bounds.height)),
+      child: Text(
+        displayName,
+        key: const ValueKey('vip_name_text'),
+        style: style.copyWith(
+          color: Colors.white,
+          decorationColor: style.decoration == TextDecoration.underline
+              ? Colors.white
+              : style.decorationColor,
+        ),
+        maxLines: widget.maxLines,
+        overflow: widget.overflow,
+        textAlign: widget.textAlign,
+      ),
     );
   }
 

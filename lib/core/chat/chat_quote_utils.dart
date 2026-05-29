@@ -27,12 +27,12 @@ class ChatQuoteUtils {
   static ChatQuoteDraft? fromTopic(String topic) {
     final text = topic.trim();
     if (text.isEmpty) return null;
-    final preview = '# $text';
+    final preview = '#$text#';
     return ChatQuoteDraft(
       type: ChatQuoteType.topic,
       title: '引用话题',
       preview: preview,
-      markdown: _blockquote(preview),
+      markdown: preview,
     );
   }
 
@@ -57,6 +57,9 @@ class ChatQuoteUtils {
   }) {
     final body = text.trim();
     if (quote == null) return body;
+    if (quote.type == ChatQuoteType.topic) {
+      return '$body\n\n${quote.markdown}';
+    }
     return '${quote.markdown}\n\n$body';
   }
 
