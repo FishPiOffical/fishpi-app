@@ -439,7 +439,7 @@ class ChatLogic extends GetxController {
   void quoteMessage(ChatRoomMessage message) {
     quoteDraft.value = ChatQuoteUtils.fromMessage(
       message: message,
-      displayName: displayNameFor(message.userName, fallback: message.allName),
+      displayName: chatUserDisplayNameFor(message),
     );
     chatRoomFocusNode.requestFocus();
   }
@@ -455,8 +455,7 @@ class ChatLogic extends GetxController {
       ChatRoomBlockedUser.fromChatRoomMessage(message),
     );
     await _reloadChatRoomBlockedUsersAndFilterMessages();
-    final displayName =
-        displayNameFor(message.userName, fallback: message.allName);
+    final displayName = chatUserDisplayNameFor(message);
     ToastManager.showToast('已在聊天室屏蔽$displayName');
   }
 
@@ -469,6 +468,23 @@ class ChatLogic extends GetxController {
     // 让 Obx 感知备注变更，触发当前聊天页的昵称刷新。
     remarkVersion.value;
     return UserRemark.displayName(userName, fallback: fallback);
+  }
+
+  String chatUserDisplayNameFor(ChatRoomMessage message) {
+    return displayNameFor(
+      message.userName,
+      fallback: chatUserFallbackNameFor(message),
+    );
+  }
+
+  String chatUserFallbackNameFor(ChatRoomMessage message) {
+    final nickname = message.nickname.trim();
+    if (nickname.isNotEmpty) return nickname;
+
+    final userName = message.userName.trim();
+    if (userName.isNotEmpty) return userName;
+
+    return '';
   }
 
   Future<void> clickSend() async {
@@ -672,7 +688,7 @@ class ChatLogic extends GetxController {
       Get.context!,
       PopRoute(
         child: PiTransferPage(
-          user: displayNameFor(targetUserName, fallback: message.allName),
+          user: chatUserDisplayNameFor(message),
           userId: message.userOId > 0 ? message.userOId.toString() : '',
           userName: targetUserName,
           onEditingCompleteText: (text) async {

@@ -4,6 +4,7 @@ import 'package:fishpi/types/chatroom.dart';
 import 'package:fishpi/types/redpacket.dart';
 import 'package:fishpi_app/core/controller/im.dart';
 import 'package:fishpi_app/core/sql/chat_emoji_cache.dart';
+import 'package:fishpi_app/core/sql/user_remark.dart';
 import 'package:fishpi_app/pages/chat/chat_logic.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
@@ -22,10 +23,13 @@ void main() {
     Get.put(IMController());
     await ChatEmojiCache.init();
     await ChatEmojiCache.clear();
+    await UserRemark.init();
+    await UserRemark.clear();
   });
 
   tearDown(() async {
     await ChatEmojiCache.dispose();
+    await UserRemark.dispose();
     if (Get.isRegistered<IMController>()) {
       await Get.delete<IMController>(force: true);
     }
@@ -108,5 +112,24 @@ void main() {
 
     expect(remoteRequestCount, 1);
     expect(logic.diyEmojiList, ['https://example.com/remote.png']);
+  });
+
+  test('聊天用户显示名优先备注、昵称，最后回退用户名', () async {
+    final logic = ChatLogic();
+    final message = ChatRoomMessage(
+      userName: 'fishpi',
+      nickname: '鱼排',
+    );
+
+    expect(logic.chatUserFallbackNameFor(message), '鱼排');
+    expect(logic.chatUserDisplayNameFor(message), '鱼排');
+
+    await UserRemark.setRemark(userName: 'fishpi', remark: '摸鱼搭子');
+    expect(logic.chatUserDisplayNameFor(message), '摸鱼搭子');
+
+    expect(
+      logic.chatUserDisplayNameFor(ChatRoomMessage(userName: 'no_nickname')),
+      'no_nickname',
+    );
   });
 }

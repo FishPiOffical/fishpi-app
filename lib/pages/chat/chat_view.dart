@@ -234,7 +234,7 @@ class ChatPage extends StatelessWidget {
                 VipNameText(
                   userId: _chatVipUserId(chat),
                   userName: chat.userName,
-                  fallback: chat.allName,
+                  fallback: logic.chatUserFallbackNameFor(chat),
                   style: TextStyle(
                     color: Styles.primaryTextColor,
                     fontWeight: FontWeight.bold,
@@ -346,7 +346,7 @@ class ChatPage extends StatelessWidget {
                 VipNameText(
                   userId: _chatVipUserId(chat),
                   userName: chat.userName,
-                  fallback: chat.allName,
+                  fallback: logic.chatUserFallbackNameFor(chat),
                   style: TextStyle(
                     color: Styles.primaryTextColor,
                     fontWeight: FontWeight.bold,
@@ -429,10 +429,7 @@ class ChatPage extends StatelessWidget {
   }
 
   void _showChatMessageActions(ChatRoomMessage chat) {
-    final displayName = logic.displayNameFor(
-      chat.userName,
-      fallback: chat.allName,
-    );
+    final displayName = logic.chatUserDisplayNameFor(chat);
     Get.bottomSheet(
       ChatMessageActionSheet(
         displayName: displayName,
