@@ -21,6 +21,8 @@ class ConversationPage extends StatelessWidget {
     return Obx(
       () => Scaffold(
         body: RefreshIndicator(
+          color: Styles.primaryColor,
+          backgroundColor: Colors.white,
           onRefresh: logic.refreshConversations,
           child: ListView.builder(
             physics: const AlwaysScrollableScrollPhysics(),

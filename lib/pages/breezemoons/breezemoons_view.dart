@@ -19,24 +19,25 @@ class BreezemoonsPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Container(
-        width: 1.sw,
-        height: 1.sh,
-        padding: EdgeInsets.symmetric(
-          horizontal: 16.w,
-        ),
-        child: SmartRefresher(
-          controller: logic.refresherController,
-          header: Views.buildHeader(),
-          footer: Views.buildFooter(),
-          enablePullUp: true,
-          enablePullDown: true,
-          onRefresh: logic.onRefresh,
-          onLoading: logic.onLoading,
-          child: Obx(
-            () => ListView.builder(
+      body: Obx(
+        () => Container(
+          width: 1.sw,
+          height: 1.sh,
+          padding: EdgeInsets.symmetric(
+            horizontal: 16.w,
+          ),
+          child: SmartRefresher(
+            controller: logic.refresherController,
+            header: Views.buildHeader(),
+            footer: Views.buildFooter(),
+            enablePullUp: true,
+            enablePullDown: true,
+            onRefresh: logic.onRefresh,
+            onLoading: logic.onLoading,
+            child: ListView.builder(
+              key: const ValueKey('breezemoon_scroll_list'),
+              physics: const AlwaysScrollableScrollPhysics(),
               padding: EdgeInsets.only(top: 20.h),
-              shrinkWrap: true,
               itemBuilder: _buildBreezemoonList,
               itemCount: logic.list.isEmpty ? 2 : logic.list.length + 1,
             ),

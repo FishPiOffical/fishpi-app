@@ -11,6 +11,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 import 'package:hive/hive.dart';
+import 'package:pull_to_refresh/pull_to_refresh.dart';
 
 void main() {
   late Directory tempDir;
@@ -99,6 +100,23 @@ void main() {
     expect(find.text('0/280'), findsOneWidget);
     expect(find.byKey(const ValueKey('breezemoon_list_state')), findsOneWidget);
     expect(find.text('暂无清风明月'), findsOneWidget);
+  });
+
+  testWidgets('清风明月页刷新组件直接持有可滚动列表', (tester) async {
+    Get.put(BreezemoonsLogic(autoLoad: false));
+
+    await tester.pumpWidget(_wrap(BreezemoonsPage()));
+    await tester.pump();
+
+    final refresher = tester.widget<SmartRefresher>(
+      find.byType(SmartRefresher),
+    );
+    expect(refresher.child, isA<ListView>());
+
+    final listView = refresher.child as ListView;
+    expect(listView.key, const ValueKey('breezemoon_scroll_list'));
+    expect(listView.shrinkWrap, isFalse);
+    expect(listView.physics, isA<AlwaysScrollableScrollPhysics>());
   });
 
   testWidgets('清风明月发布框输入后更新字数提示', (tester) async {

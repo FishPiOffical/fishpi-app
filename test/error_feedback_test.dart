@@ -6,6 +6,7 @@ import 'package:fishpi_app/pages/conversation/conversation_logic.dart';
 import 'package:fishpi_app/pages/conversation/conversation_view.dart';
 import 'package:fishpi_app/pages/mine/mine_logic.dart';
 import 'package:fishpi_app/pages/mine/mine_view.dart';
+import 'package:fishpi_app/res/styles.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -53,6 +54,12 @@ void main() {
     expect(find.text('网络连接失败，请检查网络后重试'), findsOneWidget);
     expect(find.byKey(const ValueKey('conversation_retry_button')),
         findsOneWidget);
+
+    final refreshIndicator = tester.widget<RefreshIndicator>(
+      find.byType(RefreshIndicator),
+    );
+    expect(refreshIndicator.color, Styles.primaryColor);
+    expect(refreshIndicator.backgroundColor, Colors.white);
   });
 
   testWidgets('我的页加载失败时显示可重试提示', (tester) async {
@@ -65,6 +72,12 @@ void main() {
     expect(find.byKey(const ValueKey('mine_error_banner')), findsOneWidget);
     expect(find.text('网络连接超时，请检查网络后重试'), findsOneWidget);
     expect(find.byKey(const ValueKey('mine_retry_button')), findsOneWidget);
+
+    final refreshIndicator = tester.widget<RefreshIndicator>(
+      find.byType(RefreshIndicator),
+    );
+    expect(refreshIndicator.color, Styles.primaryColor);
+    expect(refreshIndicator.backgroundColor, Colors.white);
   });
 }
 

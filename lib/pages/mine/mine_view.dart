@@ -19,6 +19,8 @@ class MinePage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       body: RefreshIndicator(
+        color: Styles.primaryColor,
+        backgroundColor: Colors.white,
         onRefresh: logic.refreshUserInfo,
         child: LayoutBuilder(
           builder: (context, constraints) {
