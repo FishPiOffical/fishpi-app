@@ -212,7 +212,7 @@ class LoginPage extends StatelessWidget {
     logic.onPinChange('');
     try {
       final token = await logic.login(mfaCb: _showMfaCodeDialog);
-      _finishLogin(token);
+      await _finishLogin(token);
     } catch (e) {
       final message = e.toString();
       if (message == '请输入正确的二次验证码') return;
@@ -234,7 +234,7 @@ class LoginPage extends StatelessWidget {
       if (navigator.mounted && navigator.canPop()) {
         navigator.pop();
       }
-      _finishLogin(token);
+      await _finishLogin(token);
     } catch (e) {
       logic.pinEditingController.clear();
       logic.onPinChange('');
@@ -242,10 +242,9 @@ class LoginPage extends StatelessWidget {
     }
   }
 
-  void _finishLogin(String token) {
+  Future<void> _finishLogin(String token) async {
     ToastManager.showToast('登录成功');
-    PiUtils.setString('token', token);
-    PiUtils.setBool('isLogin', true);
+    await PiUtils.saveToken(token);
     AppNavigator.closeAllToHome();
   }
 

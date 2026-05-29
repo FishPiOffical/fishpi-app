@@ -42,8 +42,7 @@ class HomeLogic extends GetxController {
 
   @override
   void onInit() {
-    token.value = PiUtils.getString('token');
-    initChat();
+    _loadTokenAndInitChat();
     super.onInit();
   }
 
@@ -64,6 +63,13 @@ class HomeLogic extends GetxController {
     try {
       await imController.chatInit();
     } catch (_) {}
+  }
+
+  Future<void> _loadTokenAndInitChat() async {
+    final savedToken = await PiUtils.getToken();
+    if (isClosed) return;
+    token.value = savedToken;
+    await initChat();
   }
 
   void scheduleDeferredTabPreload() {

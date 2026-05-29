@@ -1,45 +1,69 @@
+import 'dart:async';
 import 'dart:math';
 
 import 'package:fishpi_app/core/chat/chat_message_utils.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../widgets/pi_msg_dom.dart';
 
 class PiUtils {
+  static const _tokenKey = 'token';
+  static const _loginKey = 'isLogin';
+  static const _secureStorage = FlutterSecureStorage(
+    aOptions: AndroidOptions(encryptedSharedPreferences: true),
+  );
+
   static SharedPreferences? _prefs;
+  static String _cachedToken = '';
 
   static PiUtils? _instance;
 
   static Future<PiUtils?> getInstance() async {
-    _instance ??= await PiUtils._()._init();
+    if (_instance == null) {
+      final instance = PiUtils._();
+      await instance._init();
+      _instance = instance;
+    }
 
     return _instance;
   }
 
   PiUtils._();
 
-  Future _init() async {
+  Future<void> _init() async {
     _prefs = await SharedPreferences.getInstance();
+    await _migrateLegacyTokenIfNeeded();
   }
 
   static String getString(String key, {String defValue = ''}) {
+    if (key == _tokenKey) return _cachedToken.isEmpty ? defValue : _cachedToken;
     if (_prefs == null) return defValue;
     return _prefs?.getString(key) ?? defValue;
   }
 
   static Future<bool>? setString(String key, String value) {
+    if (key == _tokenKey) {
+      unawaited(saveToken(value));
+      return Future.value(true);
+    }
     if (_prefs == null) return null;
     return _prefs?.setString(key, value);
   }
 
   static bool getBool(String key, {bool defValue = false}) {
+    if (key == _loginKey) return _cachedToken.isNotEmpty;
     if (_prefs == null) return defValue;
     return _prefs?.getBool(key) ?? defValue;
   }
 
   static Future<bool>? setBool(String key, bool value) {
+    if (key == _loginKey) {
+      if (!value) unawaited(clearToken());
+      return _prefs?.setBool(key, value) ?? Future.value(true);
+    }
     if (_prefs == null) return null;
     return _prefs?.setBool(key, value);
   }
@@ -65,13 +89,102 @@ class PiUtils {
   }
 
   static Future<bool>? remove(String key) {
+    if (key == _tokenKey) {
+      unawaited(clearToken());
+      return Future.value(true);
+    }
     if (_prefs == null) return null;
     return _prefs?.remove(key);
   }
 
-  static Future<bool>? clear() {
-    if (_prefs == null) return null;
-    return _prefs?.clear();
+  static Future<void> clear() async {
+    _cachedToken = '';
+    await Future.wait([
+      _safeSecureDelete(_tokenKey),
+      _prefs?.clear() ?? Future.value(false),
+    ]);
+  }
+
+  static Future<void> saveToken(String token) async {
+    _cachedToken = token.trim();
+    if (_cachedToken.isEmpty) {
+      await clearToken();
+      return;
+    }
+    await Future.wait([
+      _safeSecureWrite(_tokenKey, _cachedToken),
+      _prefs?.remove(_tokenKey) ?? Future.value(false),
+      _prefs?.setBool(_loginKey, true) ?? Future.value(false),
+    ]);
+  }
+
+  static Future<String> getToken() async {
+    if (_cachedToken.isNotEmpty) return _cachedToken;
+    await _migrateLegacyTokenIfNeeded();
+    return _cachedToken;
+  }
+
+  static String getCachedToken() => _cachedToken;
+
+  static Future<bool> hasToken() async => (await getToken()).isNotEmpty;
+
+  static Future<void> clearToken() async {
+    _cachedToken = '';
+    await Future.wait([
+      _safeSecureDelete(_tokenKey),
+      _prefs?.remove(_tokenKey) ?? Future.value(false),
+      _prefs?.setBool(_loginKey, false) ?? Future.value(false),
+    ]);
+  }
+
+  static Future<void> _migrateLegacyTokenIfNeeded() async {
+    final secureToken = await _safeSecureRead(_tokenKey);
+    if (secureToken.trim().isNotEmpty) {
+      _cachedToken = secureToken.trim();
+      await _prefs?.remove(_tokenKey);
+      await _prefs?.setBool(_loginKey, true);
+      return;
+    }
+
+    final legacyToken = _prefs?.getString(_tokenKey)?.trim() ?? '';
+    if (legacyToken.isEmpty) {
+      _cachedToken = '';
+      await _prefs?.setBool(_loginKey, false);
+      return;
+    }
+
+    _cachedToken = legacyToken;
+    await Future.wait([
+      _safeSecureWrite(_tokenKey, legacyToken),
+      _prefs?.remove(_tokenKey) ?? Future.value(false),
+      _prefs?.setBool(_loginKey, true) ?? Future.value(false),
+    ]);
+  }
+
+  static Future<String> _safeSecureRead(String key) async {
+    try {
+      return await _secureStorage.read(key: key) ?? '';
+    } catch (_) {
+      return '';
+    }
+  }
+
+  static Future<bool> _safeSecureWrite(String key, String value) async {
+    try {
+      await _secureStorage.write(key: key, value: value);
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  static Future<bool> _safeSecureDelete(String key) async {
+    try {
+      await _secureStorage.delete(key: key);
+      return true;
+    } catch (_) {
+      return false;
+    }
   }
 
   static getBlackList() async {

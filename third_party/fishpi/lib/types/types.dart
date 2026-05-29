@@ -32,11 +32,15 @@ class LoginData {
         passwd = data['passwd'] ?? '',
         mfaCode = data['mfaCode'];
 
-  toJson() => {'nameOrEmail': username, 'userPassword': passwd.toMD5(), 'mfaCode': mfaCode ?? ''};
+  toJson() => {
+        'nameOrEmail': username,
+        'userPassword': passwd.toMD5(),
+        'mfaCode': mfaCode ?? ''
+      };
 
   @override
   toString() {
-    return "LoginData{username=$username, passwd=$passwd, mfaCode=$mfaCode}";
+    return "LoginData{username=$username, passwd=***, mfaCode=${mfaCode == null ? null : '***'}}";
   }
 }
 
@@ -67,11 +71,16 @@ class PreRegisterInfo {
         invitecode = data['invitecode'] ?? '',
         captcha = data['captcha'] ?? '';
 
-  toJson() => {'userName': username, 'userPhone': phone, 'invitecode': invitecode ?? '', 'captcha': captcha};
+  toJson() => {
+        'userName': username,
+        'userPhone': phone,
+        'invitecode': invitecode ?? '',
+        'captcha': captcha
+      };
 
   @override
   toString() {
-    return "PreRegisterInfo{username=$username, phone=$phone, invitecode=$invitecode, captcha=$captcha}";
+    return "PreRegisterInfo{username=$username, phone=${_maskPhone(phone)}, invitecode=$invitecode, captcha=***}";
   }
 }
 
@@ -111,8 +120,14 @@ class RegisterInfo {
 
   @override
   toString() {
-    return 'RegisterInfo{role: $role, passwd: $passwd, userId: $userId, r: $r}';
+    return 'RegisterInfo{role: $role, passwd=***, userId: $userId, r: $r}';
   }
+}
+
+String _maskPhone(String phone) {
+  final trimmed = phone.trim();
+  if (trimmed.length < 7) return '***';
+  return '${trimmed.substring(0, 3)}****${trimmed.substring(trimmed.length - 4)}';
 }
 
 /// 执行结果
@@ -272,7 +287,8 @@ class UserVipInfo {
   get expiresDate => DateTime.fromMillisecondsSinceEpoch(expiresAt);
   get createdDate => DateTime.fromMillisecondsSinceEpoch(createdAt);
   get updatedDate => DateTime.fromMillisecondsSinceEpoch(updatedAt);
-  get VipName => lvCode.replaceAll('_YEAR', '(包年)').replaceAll('_MONTH', '(包月)');
+  get VipName =>
+      lvCode.replaceAll('_YEAR', '(包年)').replaceAll('_MONTH', '(包月)');
 
   UserVipInfo({
     this.jointVip = false,

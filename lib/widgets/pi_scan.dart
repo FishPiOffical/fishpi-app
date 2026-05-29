@@ -166,7 +166,7 @@ class _PiScanState extends State<PiScan> {
   Future<void> getResult(String result) async {
     final imController = Get.find<IMController>();
     if (result.startsWith('login')) {
-      bool isLogin = PiUtils.getBool('isLogin');
+      bool isLogin = await PiUtils.hasToken();
       if (isLogin) {
         ToastManager.showToast('请先退出当前帐号!');
         _closeScanner();
@@ -180,12 +180,11 @@ class _PiScanState extends State<PiScan> {
       }
       await imController.init(token);
       ToastManager.showToast('登录成功');
-      PiUtils.setString('token', token);
-      PiUtils.setBool('isLogin', true);
+      await PiUtils.saveToken(token);
       _markClosing();
       AppNavigator.closeAllToHome();
     } else if (result.startsWith('web')) {
-      bool isLogin = PiUtils.getBool('isLogin');
+      bool isLogin = await PiUtils.hasToken();
       if (!isLogin) {
         ToastManager.showToast('请登录后尝试!');
         _closeScanner();
@@ -204,7 +203,7 @@ class _PiScanState extends State<PiScan> {
           "targetId": targetId,
         }));
         await Future.delayed(const Duration(seconds: 1));
-        String apiKey = PiUtils.getString('token');
+        String apiKey = await PiUtils.getToken();
         LoginIM.send(jsonEncode({
           "type": 2,
           "targetId": targetId,

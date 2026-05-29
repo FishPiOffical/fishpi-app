@@ -179,7 +179,7 @@ class CollectionListLogic extends GetxController {
   String _currentApiKey() {
     final token = imController.fishpi.token.isNotEmpty
         ? imController.fishpi.token
-        : PiUtils.getString('token');
+        : PiUtils.getCachedToken();
     apikey.value = token;
     return token;
   }

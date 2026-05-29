@@ -40,9 +40,9 @@ class SetUpLogic extends GetxController {
     }
   }
 
-  void logout() {
+  Future<void> logout() async {
     VipStyleService.clearSharedCache();
-    PiUtils.clear();
+    await PiUtils.clear();
     AppNavigator.startLogin();
   }
 }

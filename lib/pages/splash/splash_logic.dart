@@ -14,7 +14,7 @@ class SplashLogic extends GetxController {
 
   @override
   void onInit() {
-    isLogin.value = PiUtils.getBool('isLogin');
+    _loadLoginState();
     super.onInit();
   }
 
@@ -22,7 +22,16 @@ class SplashLogic extends GetxController {
     try {
       await dio.getUri(Uri.parse('https://fishpi.cn/privacy'));
     } catch (_) {}
+    final hasLoginToken = await PiUtils.hasToken();
+    if (isClosed) return;
+    isLogin.value = hasLoginToken;
     isLogin.value ? AppNavigator.closeAllToHome() : AppNavigator.startLogin();
+  }
+
+  Future<void> _loadLoginState() async {
+    final hasLoginToken = await PiUtils.hasToken();
+    if (isClosed) return;
+    isLogin.value = hasLoginToken;
   }
 
   @override
