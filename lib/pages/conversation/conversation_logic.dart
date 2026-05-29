@@ -22,12 +22,15 @@ class ConversationLogic extends GetxController {
   final chatRoomLastMsg = ChatRoomMessage().obs;
   final currentUser = UserInfo().obs;
   final remarkVersion = 0.obs;
+  final privatePeerNicknames = <String, String>{}.obs;
   final isLoading = false.obs;
   final errorText = ''.obs;
   final showItem = "";
   final chatRoomMsg = <ChatRoomMessage>[].obs;
   final List<BlackUser> _blackUsers = [];
   final List<ChatRoomBlockedUser> _chatRoomBlockedUsers = [];
+  final Set<String> _loadingPrivatePeerNicknames = {};
+  final Map<String, DateTime> _privatePeerNicknameFailures = {};
   StreamSubscription<ChatRoomData>? _chatRoomSubscription;
   StreamSubscription<PrivateChatEvent>? _privateChatSubscription;
   StreamSubscription<void>? _blackListSubscription;
@@ -52,6 +55,7 @@ class ConversationLogic extends GetxController {
     try {
       final list = await imController.fishpi.chat.list();
       chatList.assignAll(list);
+      _warmPrivatePeerNicknames(list);
     } catch (e) {
       errors.add(
         AppErrorMessage.friendly(e, fallback: '私聊会话加载失败'),
@@ -107,6 +111,37 @@ class ConversationLogic extends GetxController {
     return UserRemark.displayName(userName, fallback: fallback);
   }
 
+  String privatePeerDisplayName(ChatData chat) {
+    return displayNameFor(
+      privatePeerName(chat),
+      fallback: privatePeerFallbackName(chat),
+    );
+  }
+
+  String privatePeerFallbackName(
+    ChatData chat, {
+    bool loadIfMissing = true,
+  }) {
+    final nickname = _privatePeerNicknameFromChat(chat).trim();
+    if (nickname.isNotEmpty) return nickname;
+
+    final peerName = privatePeerName(chat).trim();
+    final cachedNickname = privatePeerNicknames[peerName]?.trim() ?? '';
+    if (cachedNickname.isNotEmpty) return cachedNickname;
+
+    if (loadIfMissing) {
+      _ensurePrivatePeerNickname(peerName);
+    }
+    return peerName;
+  }
+
+  String chatRoomSenderDisplayName(ChatRoomMessage message) {
+    final fallback = message.nickname.trim().isNotEmpty
+        ? message.nickname.trim()
+        : message.userName.trim();
+    return displayNameFor(message.userName, fallback: fallback);
+  }
+
   String privatePeerName(ChatData chat) {
     final currentName = currentUser.value.userName.trim();
     if (currentName.isNotEmpty) {
@@ -159,6 +194,67 @@ class ConversationLogic extends GetxController {
         : chat.senderAvatar;
   }
 
+  String _privatePeerNicknameFromChat(ChatData chat) {
+    final currentName = currentUser.value.userName.trim();
+    if (currentName.isNotEmpty) {
+      if (chat.senderUserName == currentName) return chat.receiverNickname;
+      if (chat.receiverUserName == currentName) return chat.senderNickname;
+    }
+
+    final currentId = currentUser.value.oId.trim();
+    if (currentId.isNotEmpty) {
+      if (chat.fromId == currentId) return chat.receiverNickname;
+      if (chat.toId == currentId) return chat.senderNickname;
+    }
+
+    return chat.receiverNickname.trim().isNotEmpty
+        ? chat.receiverNickname
+        : chat.senderNickname;
+  }
+
+  void _warmPrivatePeerNicknames(Iterable<ChatData> chats) {
+    for (final chat in chats.take(20)) {
+      final peerName = privatePeerName(chat).trim();
+      final nickname = _privatePeerNicknameFromChat(chat).trim();
+      if (peerName.isEmpty) continue;
+      if (nickname.isNotEmpty) {
+        privatePeerNicknames[peerName] = nickname;
+      } else {
+        _ensurePrivatePeerNickname(peerName);
+      }
+    }
+  }
+
+  void _ensurePrivatePeerNickname(String userName) {
+    final normalizedUserName = userName.trim();
+    if (normalizedUserName.isEmpty) return;
+    if ((privatePeerNicknames[normalizedUserName]?.trim() ?? '').isNotEmpty) {
+      return;
+    }
+    if (_loadingPrivatePeerNicknames.contains(normalizedUserName)) return;
+
+    final failedAt = _privatePeerNicknameFailures[normalizedUserName];
+    if (failedAt != null &&
+        DateTime.now().difference(failedAt) < const Duration(minutes: 5)) {
+      return;
+    }
+
+    _loadingPrivatePeerNicknames.add(normalizedUserName);
+    unawaited(
+      imController.fishpi.getUser(normalizedUserName).then((user) {
+        final nickname = user.nickname.trim();
+        if (nickname.isNotEmpty) {
+          privatePeerNicknames[normalizedUserName] = nickname;
+          _privatePeerNicknameFailures.remove(normalizedUserName);
+        }
+      }).catchError((_) {
+        _privatePeerNicknameFailures[normalizedUserName] = DateTime.now();
+      }).whenComplete(() {
+        _loadingPrivatePeerNicknames.remove(normalizedUserName);
+      }),
+    );
+  }
+
   void _onChatRoom(ChatRoomData data) {
     if (data.type == ChatRoomMessageType.revoke) {
       chatRoomMsg.assignAll(
@@ -205,6 +301,7 @@ class ConversationLogic extends GetxController {
       chatList.assignAll(
         ChatMessageUtils.upsertPrivateConversation(chatList, data),
       );
+      _warmPrivatePeerNicknames([data]);
       chatList.refresh();
       return;
     }
@@ -216,7 +313,9 @@ class ConversationLogic extends GetxController {
 
   Future<void> _refreshChatList() async {
     try {
-      chatList.assignAll(await imController.fishpi.chat.list());
+      final list = await imController.fishpi.chat.list();
+      chatList.assignAll(list);
+      _warmPrivatePeerNicknames(list);
       errorText.value = '';
     } catch (e) {
       errorText.value = AppErrorMessage.friendly(

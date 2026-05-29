@@ -1,17 +1,53 @@
+import 'dart:io';
+
 import 'package:fishpi/types/chat.dart';
 import 'package:fishpi/types/user.dart';
 import 'package:fishpi_app/core/controller/im.dart';
+import 'package:fishpi_app/core/sql/user_remark.dart';
 import 'package:fishpi_app/pages/conversation/conversation_logic.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
+import 'package:hive/hive.dart';
 
 void main() {
-  setUp(() {
-    Get.testMode = true;
-    Get.put(IMController());
+  late Directory tempDir;
+
+  setUpAll(() {
+    tempDir = Directory.systemTemp.createTempSync('conversation_peer_test_');
+    Hive.init(tempDir.path);
   });
 
-  tearDown(Get.reset);
+  setUp(() async {
+    Get.testMode = true;
+    Get.put(IMController());
+    await UserRemark.init();
+    await UserRemark.clear();
+  });
+
+  tearDown(() async {
+    await UserRemark.dispose();
+    Get.reset();
+  });
+
+  tearDownAll(() {
+    if (tempDir.existsSync()) {
+      tempDir.deleteSync(recursive: true);
+    }
+  });
+
+  test('私聊数据会解析发送者和接收者昵称字段', () {
+    final chat = ChatData.from({
+      'fromId': '2',
+      'toId': '1',
+      'senderUserName': 'other',
+      'senderUserNickname': '小鱼',
+      'receiverUserName': 'me',
+      'receiverUserNickname': '我',
+    });
+
+    expect(chat.senderNickname, '小鱼');
+    expect(chat.receiverNickname, '我');
+  });
 
   test('私聊会话中当前用户是接收者时跳转发送者', () {
     final logic = ConversationLogic();
@@ -46,13 +82,48 @@ void main() {
     expect(logic.privatePeerId(chat), '2');
     expect(logic.privatePeerAvatar(chat), 'other.png');
   });
+
+  test('私聊会话显示名优先备注、昵称，最后回退用户名', () async {
+    final logic = ConversationLogic();
+    logic.currentUser.value = UserInfo(oId: '1', userName: 'me');
+    final chat = _chatData(
+      fromId: '2',
+      toId: '1',
+      senderUserName: 'other',
+      senderNickname: '小鱼',
+      receiverUserName: 'me',
+      senderAvatar: 'other.png',
+      receiverAvatar: 'me.png',
+    );
+
+    expect(logic.privatePeerFallbackName(chat), '小鱼');
+    expect(logic.privatePeerDisplayName(chat), '小鱼');
+
+    await UserRemark.setRemark(userName: 'other', remark: '摸鱼搭子');
+    expect(logic.privatePeerDisplayName(chat), '摸鱼搭子');
+
+    final noNicknameChat = _chatData(
+      fromId: '2',
+      toId: '1',
+      senderUserName: 'other',
+      receiverUserName: 'me',
+      senderAvatar: 'other.png',
+      receiverAvatar: 'me.png',
+    );
+    expect(
+      logic.privatePeerFallbackName(noNicknameChat, loadIfMissing: false),
+      'other',
+    );
+  });
 }
 
 ChatData _chatData({
   required String fromId,
   required String toId,
   required String senderUserName,
+  String senderNickname = '',
   required String receiverUserName,
+  String receiverNickname = '',
   required String senderAvatar,
   required String receiverAvatar,
 }) {
@@ -67,7 +138,9 @@ ChatData _chatData({
     time: '2026-05-26T00:00:00.000Z',
     fromId: fromId,
     senderUserName: senderUserName,
+    senderNickname: senderNickname,
     content: '<p>你好</p>',
     receiverUserName: receiverUserName,
+    receiverNickname: receiverNickname,
   );
 }

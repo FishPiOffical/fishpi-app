@@ -30,11 +30,17 @@ class ChatData {
   /// 发送者用户名
   String senderUserName;
 
+  /// 发送者昵称
+  String senderNickname;
+
   /// 内容
   String content;
 
   /// 接收者用户名
   String receiverUserName;
+
+  /// 接收者昵称
+  String receiverNickname;
 
   ChatData({
     required this.toId,
@@ -47,8 +53,10 @@ class ChatData {
     required this.time,
     required this.fromId,
     required this.senderUserName,
+    this.senderNickname = '',
     required this.content,
     required this.receiverUserName,
+    this.receiverNickname = '',
   });
 
   ChatData.from(Map<String, dynamic> data)
@@ -62,8 +70,24 @@ class ChatData {
         time = data['time'] ?? '',
         fromId = data['fromId'] ?? '',
         senderUserName = data['senderUserName'] ?? '',
+        senderNickname = _readNickname(
+          data,
+          const [
+            'senderNickname',
+            'senderUserNickname',
+            'senderUserNickName',
+          ],
+        ),
         content = data['content'] ?? '',
-        receiverUserName = data['receiverUserName'] ?? '';
+        receiverUserName = data['receiverUserName'] ?? '',
+        receiverNickname = _readNickname(
+          data,
+          const [
+            'receiverNickname',
+            'receiverUserNickname',
+            'receiverUserNickName',
+          ],
+        );
 
   Map<String, dynamic> toJson() => {
         'toId': toId,
@@ -76,14 +100,24 @@ class ChatData {
         'time': time,
         'fromId': fromId,
         'senderUserName': senderUserName,
+        'senderNickname': senderNickname,
         'content': content,
         'receiverUserName': receiverUserName,
+        'receiverNickname': receiverNickname,
       };
 
   @override
   String toString() {
-    return 'ChatData{ toId: $toId, preview: $preview, userSession: $userSession, senderAvatar: $senderAvatar, markdown: $markdown, receiverAvatar: $receiverAvatar, oId: $oId, time: $time, fromId: $fromId, senderUserName: $senderUserName, content: $content, receiverUserName: $receiverUserName }';
+    return 'ChatData{ toId: $toId, preview: $preview, userSession: $userSession, senderAvatar: $senderAvatar, markdown: $markdown, receiverAvatar: $receiverAvatar, oId: $oId, time: $time, fromId: $fromId, senderUserName: $senderUserName, senderNickname: $senderNickname, content: $content, receiverUserName: $receiverUserName, receiverNickname: $receiverNickname }';
   }
+}
+
+String _readNickname(Map<String, dynamic> data, List<String> keys) {
+  for (final key in keys) {
+    final value = data[key]?.toString().trim() ?? '';
+    if (value.isNotEmpty) return value;
+  }
+  return '';
 }
 
 /// 私聊通知

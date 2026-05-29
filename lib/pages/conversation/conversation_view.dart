@@ -98,6 +98,8 @@ class ConversationPage extends StatelessWidget {
                                 ? VipNameText(
                                     userId: logic.privatePeerId(chat),
                                     userName: peerName,
+                                    fallback:
+                                        logic.privatePeerFallbackName(chat),
                                     style: TextStyle(
                                       fontSize: 16.sp,
                                       color: Styles.primaryTextColor,
@@ -211,10 +213,7 @@ class ConversationPage extends StatelessWidget {
   String _chatRoomPreview() {
     final message = logic.chatRoomLastMsg.value;
     if (message.oId.isEmpty && message.content.isEmpty) return '暂无消息';
-    final name = logic.displayNameFor(
-      message.userName,
-      fallback: message.allName,
-    );
+    final name = logic.chatRoomSenderDisplayName(message);
     return '$name:${PiUtils.getConversationPreview(message.content)}';
   }
 }
