@@ -1,5 +1,7 @@
 // ignore_for_file: constant_identifier_names
 
+import 'dart:convert';
+
 import 'package:fishpi/src/request.dart';
 import 'package:fishpi/src/utils.dart';
 
@@ -276,4 +278,273 @@ class UserInfo {
   toString() {
     return "{ oId=$oId, userNo=$userNo, userName=$userName, userNickname=$nickname, userURL=$userURL, userCity=$city, userIntro=$intro, userOnlineFlag=$isOnline, userPoint=$point, userRole=$role, userAppRole=$appRole, userAvatarURL=$avatarURL, cardBg=$cardBg, followingUserCount=$followingCnt, followerCount=$followerCnt, onlineMinute=$onlineMinute, canFollow=$canFollow, allMetalOwned=$allMetals, sysMetal=$sysMetal }";
   }
+}
+
+/// 用户资料更新参数。
+class UpdateUserParams {
+  /// 昵称
+  String? userNickname;
+
+  /// 用户标签
+  String? userTags;
+
+  /// 个人主页 URL
+  String? userURL;
+
+  /// 个性签名
+  String? userIntro;
+
+  /// MBTI
+  String? mbti;
+
+  UpdateUserParams({
+    this.userNickname,
+    this.userTags,
+    this.userURL,
+    this.userIntro,
+    this.mbti,
+  });
+
+  UpdateUserParams.from(Map data)
+      : userNickname = data['userNickname']?.toString(),
+        userTags = data['userTags']?.toString(),
+        userURL = data['userURL']?.toString(),
+        userIntro = data['userIntro']?.toString(),
+        mbti = data['mbti']?.toString();
+
+  Map<String, dynamic> toJson() => {
+        'userNickname': userNickname,
+        'userTags': userTags,
+        'userURL': userURL,
+        'userIntro': userIntro,
+        'mbti': mbti,
+      };
+
+  @override
+  String toString() {
+    return '{ userNickname=$userNickname, userTags=$userTags, userURL=$userURL, userIntro=$userIntro, mbti=$mbti }';
+  }
+}
+
+/// VIP 套餐信息。
+class MembershipLevel {
+  /// 套餐 ID
+  int oId;
+
+  /// 套餐代码，如 VIP1_MONTH、VIP2_YEAR
+  String lvCode;
+
+  /// 套餐名称
+  String lvName;
+
+  /// 价格，单位为积分
+  int price;
+
+  /// 时长类型
+  String durationType;
+
+  /// 功能说明，服务端返回 JSON 字符串
+  String benefits;
+
+  MembershipLevel({
+    required this.oId,
+    required this.lvCode,
+    required this.lvName,
+    required this.price,
+    required this.durationType,
+    required this.benefits,
+  });
+
+  MembershipLevel.from(Map<String, dynamic> data)
+      : oId = _readInt(data['oId']),
+        lvCode = data['lvCode']?.toString() ?? '',
+        lvName = data['lvName']?.toString() ?? '',
+        price = _readInt(data['price']),
+        durationType = data['durationType']?.toString() ?? '',
+        benefits = data['benefits']?.toString() ?? '';
+
+  Map<String, dynamic> toJson() => {
+        'oId': oId,
+        'lvCode': lvCode,
+        'lvName': lvName,
+        'price': price,
+        'durationType': durationType,
+        'benefits': benefits,
+      };
+
+  @override
+  String toString() {
+    return '{ oId=$oId, lvCode=$lvCode, lvName=$lvName, price=$price, durationType=$durationType, benefits=$benefits }';
+  }
+}
+
+/// 用户 VIP 信息。
+class MembershipInfo {
+  /// 用户 ID
+  String oId;
+
+  /// VIP 等级和类型，如 VIP2_MONTH
+  String lvCode;
+
+  /// 状态：0 为非 VIP，非 0 为 VIP 状态
+  int state;
+
+  /// 过期时间，服务端 ISO 字符串
+  String expiresAt;
+
+  /// 昵称样式配置 JSON
+  String configJson;
+
+  MembershipInfo({
+    required this.oId,
+    required this.lvCode,
+    required this.state,
+    required this.expiresAt,
+    required this.configJson,
+  });
+
+  MembershipInfo.from(Map<String, dynamic> data)
+      : oId = data['oId']?.toString() ?? '',
+        lvCode = data['lvCode']?.toString() ?? '',
+        state = _readInt(data['state']),
+        expiresAt = data['expiresAt']?.toString() ?? '',
+        configJson = data['configJson']?.toString() ?? '';
+
+  Map<String, dynamic> toJson() => {
+        'oId': oId,
+        'lvCode': lvCode,
+        'state': state,
+        'expiresAt': expiresAt,
+        'configJson': configJson,
+      };
+
+  @override
+  String toString() {
+    return '{ oId=$oId, lvCode=$lvCode, state=$state, expiresAt=$expiresAt, configJson=$configJson }';
+  }
+}
+
+/// VIP 用户配置信息，用于批量查询昵称样式。
+class MembershipUserConfig {
+  /// 用户 ID
+  String userId;
+
+  /// 昵称样式配置 JSON 字符串
+  String configJson;
+
+  /// 解析后的配置对象
+  MembershipConfig? config;
+
+  MembershipUserConfig({
+    required this.userId,
+    required this.configJson,
+    this.config,
+  });
+
+  MembershipUserConfig.from(Map<String, dynamic> data)
+      : userId = data['userId']?.toString() ?? '',
+        configJson = data['configJson']?.toString() ?? '',
+        config = _parseMembershipConfig(data['configJson']);
+
+  Map<String, dynamic> toJson() => {
+        'userId': userId,
+        'configJson': configJson,
+      };
+
+  @override
+  String toString() {
+    return '{ userId=$userId, configJson=$configJson, config=$config }';
+  }
+}
+
+/// VIP 配置参数。
+class MembershipConfig {
+  /// 是否开启联合会员
+  bool? jointVip;
+
+  /// 昵称颜色或渐变配置
+  String? color;
+
+  /// 是否显示下划线
+  bool? underline;
+
+  /// 是否显示会员勋章
+  bool? metal;
+
+  /// 自动签到，0 为关闭，1 为开启
+  int? autoCheckin;
+
+  /// 是否加粗
+  bool? bold;
+
+  /// 免签卡数量
+  int? checkinCard;
+
+  MembershipConfig({
+    this.jointVip,
+    this.color,
+    this.underline,
+    this.metal,
+    this.autoCheckin,
+    this.bold,
+    this.checkinCard,
+  });
+
+  MembershipConfig.from(Map<String, dynamic> data)
+      : jointVip = _readBoolOrNull(data['jointVip']),
+        color = data['color']?.toString(),
+        underline = _readBoolOrNull(data['underline']),
+        metal = _readBoolOrNull(data['metal']),
+        autoCheckin = data.containsKey('autoCheckin')
+            ? _readInt(data['autoCheckin'])
+            : null,
+        bold = _readBoolOrNull(data['bold']),
+        checkinCard = data.containsKey('checkinCard')
+            ? _readInt(data['checkinCard'])
+            : null;
+
+  Map<String, dynamic> toJson() => {
+        if (jointVip != null) 'jointVip': jointVip,
+        if (color != null) 'color': color,
+        if (underline != null) 'underline': underline,
+        if (metal != null) 'metal': metal,
+        if (autoCheckin != null) 'autoCheckin': autoCheckin,
+        if (bold != null) 'bold': bold,
+        if (checkinCard != null) 'checkinCard': checkinCard,
+      };
+
+  @override
+  String toString() {
+    return '{ jointVip=$jointVip, color=$color, underline=$underline, metal=$metal, autoCheckin=$autoCheckin, bold=$bold, checkinCard=$checkinCard }';
+  }
+}
+
+MembershipConfig? _parseMembershipConfig(dynamic value) {
+  if (value == null) return null;
+  if (value is Map) {
+    return MembershipConfig.from(Map<String, dynamic>.from(value));
+  }
+  try {
+    final decoded = jsonDecode(value.toString());
+    if (decoded is Map<String, dynamic>) {
+      return MembershipConfig.from(decoded);
+    }
+  } catch (_) {}
+  return null;
+}
+
+int _readInt(dynamic value) {
+  if (value is int) return value;
+  if (value is num) return value.toInt();
+  return int.tryParse(value?.toString() ?? '') ?? 0;
+}
+
+bool? _readBoolOrNull(dynamic value) {
+  if (value == null) return null;
+  if (value is bool) return value;
+  if (value is num) return value != 0;
+  final normalized = value.toString().trim().toLowerCase();
+  if (normalized == 'true' || normalized == '1') return true;
+  if (normalized == 'false' || normalized == '0') return false;
+  return null;
 }

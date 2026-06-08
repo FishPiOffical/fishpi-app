@@ -2,6 +2,7 @@ import 'package:fishpi/fishpi.dart';
 import 'package:fishpi_app/pages/mine/vip/vip_logic.dart';
 import 'package:fishpi_app/pages/mine/vip/vip_view.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_easyloading/flutter_easyloading.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
@@ -33,6 +34,7 @@ void main() {
         autoLoad: false,
         initialUser: _userInfo(),
         initialVipInfo: _vipInfo(),
+        initialMembershipLevels: [_membershipLevel()],
         nowProvider: () => DateTime(2026, 5, 28),
       ),
     );
@@ -45,6 +47,17 @@ void main() {
     expect(find.text('已开通'), findsOneWidget);
     expect(find.text('VIP(包年)'), findsOneWidget);
     expect(find.text('2026-08-09 到期'), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('vip_membership_levels_card')),
+      findsOneWidget,
+    );
+    expect(find.text('基础版 · VIP_YEAR'), findsOneWidget);
+    await tester.scrollUntilVisible(
+      find.byKey(const ValueKey('vip_name_style_card')),
+      220,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.pump();
     expect(find.byKey(const ValueKey('vip_name_style_card')), findsOneWidget);
     expect(find.text('#FFAA00'), findsOneWidget);
     expect(find.text('已开启'), findsWidgets);
@@ -69,6 +82,12 @@ void main() {
     await tester.pump();
 
     expect(find.text('VIP4(包年)'), findsOneWidget);
+    await tester.scrollUntilVisible(
+      find.byKey(const ValueKey('vip_name_style_card')),
+      220,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.pump();
     expect(find.text('VIP4渐变'), findsOneWidget);
     expect(
       find.byKey(const ValueKey('vip_name_preview_gradient_mask')),
@@ -81,7 +100,7 @@ void main() {
     expect(decoration.gradient, isNotNull);
   });
 
-  testWidgets('VIP 页面展示未开通状态和禁用编辑入口', (tester) async {
+  testWidgets('VIP 页面展示未开通状态和开通后可编辑入口', (tester) async {
     Get.put(
       VipLogic(
         autoLoad: false,
@@ -99,15 +118,97 @@ void main() {
     expect(find.text('暂无到期时间'), findsOneWidget);
     await tester.drag(find.byType(ListView), const Offset(0, -320));
     await tester.pump();
+    expect(find.byKey(const ValueKey('vip_edit_style_button')), findsOneWidget);
+    expect(find.text('开通后可编辑'), findsOneWidget);
+  });
+
+  testWidgets('VIP 页面可以打开样式编辑并保存配置', (tester) async {
+    Get.testMode = true;
+    MembershipConfig? savedConfig;
+    Get.put(
+      VipLogic(
+        autoLoad: false,
+        initialUser: _userInfo(),
+        initialVipInfo: _vipInfo(),
+        nowProvider: () => DateTime(2026, 5, 28),
+        membershipConfigSaver: (config) async {
+          savedConfig = config;
+          return ResponseResult(success: true, msg: 'ok');
+        },
+        vipInfoLoader: (_) async => _vipInfo(color: '#00AA66'),
+        userInfoLoader: () async => _userInfo(),
+      ),
+    );
+
+    await tester.pumpWidget(_wrap(VipPage()));
+    await tester.pump();
+
+    await tester.scrollUntilVisible(
+      find.byKey(const ValueKey('vip_edit_style_button')),
+      220,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.pump();
+    await tester.tap(find.byKey(const ValueKey('vip_edit_style_button')));
+    await tester.pumpAndSettle();
+
     expect(
-        find.byKey(const ValueKey('vip_edit_disabled_button')), findsOneWidget);
+        find.byKey(const ValueKey('vip_style_editor_sheet')), findsOneWidget);
+    await tester.enterText(
+      find.byKey(const ValueKey('vip_style_color_input')),
+      '#00AA66',
+    );
+    await tester.pump();
+    await tester.tap(find.byKey(const ValueKey('vip_style_underline_switch')));
+    await tester.pump();
+    await tester.scrollUntilVisible(
+      find.byKey(const ValueKey('vip_style_save_button')),
+      160,
+      scrollable: find.byType(Scrollable).last,
+    );
+    await tester.pump();
+    await tester.tap(find.byKey(const ValueKey('vip_style_save_button')));
+    await tester.pumpAndSettle();
+
+    expect(savedConfig?.color, '#00AA66');
+    expect(savedConfig?.bold, isTrue);
+    expect(savedConfig?.underline, isFalse);
+    expect(savedConfig?.metal, isTrue);
+    expect(savedConfig?.autoCheckin, 1);
+    expect(find.byKey(const ValueKey('vip_style_editor_sheet')), findsNothing);
+  });
+
+  test('VIP 购买成功后会刷新状态', () async {
+    Get.testMode = true;
+    var openedId = 0;
+    var loadCount = 0;
+    final logic = VipLogic(
+      autoLoad: false,
+      userInfoLoader: () async => _userInfo(),
+      vipInfoLoader: (_) async {
+        loadCount++;
+        return _vipInfo();
+      },
+      membershipOpener: (oId) async {
+        openedId = oId;
+        return ResponseResult(success: true);
+      },
+    );
+
+    await logic.openMembership(_membershipLevel(), requireConfirm: false);
+
+    expect(openedId, 9);
+    expect(loadCount, 1);
   });
 }
 
 Widget _wrap(Widget child) {
   return ScreenUtilInit(
     designSize: const Size(360, 812),
-    builder: (context, _) => GetMaterialApp(home: child),
+    builder: (context, _) => GetMaterialApp(
+      home: child,
+      builder: EasyLoading.init(),
+    ),
   );
 }
 
@@ -136,5 +237,16 @@ UserVipInfo _vipInfo({
     autoCheckin: 1,
     jointVip: true,
     metal: true,
+  );
+}
+
+MembershipLevel _membershipLevel() {
+  return MembershipLevel(
+    oId: 9,
+    lvCode: 'VIP_YEAR',
+    lvName: '基础版',
+    price: 1200,
+    durationType: '年卡',
+    benefits: '["昵称样式","自动签到"]',
   );
 }

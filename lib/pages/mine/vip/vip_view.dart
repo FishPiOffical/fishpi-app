@@ -1,6 +1,7 @@
 import 'package:fishpi/fishpi.dart';
 import 'package:fishpi_app/core/vip/vip_style_service.dart';
 import 'package:fishpi_app/res/styles.dart';
+import 'package:fishpi_app/widgets/pi_input.dart';
 import 'package:fishpi_app/widgets/pi_title_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -36,9 +37,9 @@ class VipPage extends StatelessWidget {
                 else ...[
                   _buildStatusCard(),
                   14.verticalSpace,
-                  _buildNameStyleCard(),
+                  _buildMembershipLevelsCard(),
                   14.verticalSpace,
-                  _buildEditNoticeCard(),
+                  _buildNameStyleCard(context),
                 ],
               ],
             ),
@@ -164,7 +165,7 @@ class VipPage extends StatelessWidget {
     );
   }
 
-  Widget _buildNameStyleCard() {
+  Widget _buildNameStyleCard(BuildContext context) {
     final profile = logic.profile.value;
     final style = VipNameStyle.fromVipInfo(
       profile?.info ?? _emptyVipInfo(),
@@ -210,39 +211,133 @@ class VipPage extends StatelessWidget {
           _buildInfoRow('粗体', logic.boldText),
           _buildDivider(),
           _buildInfoRow('下划线', logic.underlineText),
+          _buildDivider(),
+          _buildInfoRow('会员勋章', logic.medalEnabled ? '已开启' : '未开启'),
+          12.verticalSpace,
+          _buildPrimaryButton(
+            key: const ValueKey('vip_edit_style_button'),
+            text: logic.editButtonText,
+            icon: logic.canEditStyle ? Icons.edit_outlined : Icons.lock_outline,
+            onTap: logic.canEditStyle ? () => _openStyleEditor(context) : null,
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildEditNoticeCard() {
+  Widget _buildMembershipLevelsCard() {
+    final levels = logic.membershipLevels;
     return _buildCard(
-      key: const ValueKey('vip_edit_notice_card'),
+      key: const ValueKey('vip_membership_levels_card'),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _buildCardTitle(
-            icon: Icons.tune_outlined,
-            title: '昵称样式修改',
+            icon: Icons.local_activity_outlined,
+            title: '开通与续费',
           ),
-          10.verticalSpace,
+          12.verticalSpace,
+          if (logic.isLoadingLevels.value && levels.isEmpty)
+            SizedBox(
+              height: 72.h,
+              child: const Center(
+                child: CircularProgressIndicator(color: Colors.black),
+              ),
+            )
+          else if (levels.isEmpty)
+            _buildEmptyLevels()
+          else
+            ...levels.map(_buildMembershipLevelItem),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEmptyLevels() {
+    final error = logic.levelsErrorText.value.trim();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          error.isEmpty ? '暂无可购买套餐' : error,
+          style: TextStyle(
+            color: Styles.secondaryTextColor,
+            fontSize: 13.sp,
+            fontWeight: FontWeight.bold,
+            height: 1.35,
+          ),
+        ),
+        12.verticalSpace,
+        _buildPrimaryButton(
+          key: const ValueKey('vip_levels_reload_button'),
+          text: '刷新套餐',
+          icon: Icons.refresh,
+          onTap: () => logic.loadMembershipLevels(),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildMembershipLevelItem(MembershipLevel level) {
+    final isOpening = logic.isOpeningMembership.value;
+    return Container(
+      key: ValueKey('vip_membership_level_${level.oId}'),
+      margin: EdgeInsets.only(bottom: 10.h),
+      padding: EdgeInsets.all(10.w),
+      decoration: BoxDecoration(
+        color: Styles.titleBarColor,
+        border: Styles.commonBorder,
+        borderRadius: BorderRadius.circular(12.r),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      logic.membershipLevelTitle(level),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: Styles.primaryTextColor,
+                        fontSize: 15.sp,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    4.verticalSpace,
+                    Text(
+                      logic.membershipLevelMeta(level),
+                      style: TextStyle(
+                        color: Styles.secondaryTextColor,
+                        fontSize: 12.sp,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              10.horizontalSpace,
+              _buildSmallActionButton(
+                key: ValueKey('vip_membership_open_${level.oId}'),
+                text: logic.isVipActive ? '续费' : '开通',
+                onTap: isOpening ? null : () => logic.openMembership(level),
+              ),
+            ],
+          ),
+          8.verticalSpace,
           Text(
-            '当前已支持展示鱼派服务端返回的昵称颜色、粗体和下划线。修改入口会在服务端写入接口明确后接入。',
+            logic.membershipBenefitsText(level),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
             style: TextStyle(
               color: Styles.secondaryTextColor,
-              fontSize: 13.sp,
-              fontWeight: FontWeight.bold,
-              height: 1.4,
-            ),
-          ),
-          14.verticalSpace,
-          Opacity(
-            opacity: 0.55,
-            child: _buildPrimaryButton(
-              key: const ValueKey('vip_edit_disabled_button'),
-              text: '暂不可编辑',
-              icon: Icons.lock_outline,
-              onTap: null,
+              fontSize: 12.sp,
+              height: 1.35,
             ),
           ),
         ],
@@ -420,29 +515,238 @@ class VipPage extends StatelessWidget {
     required IconData icon,
     required VoidCallback? onTap,
   }) {
+    final enabled = onTap != null;
     return GestureDetector(
       key: key,
       onTap: onTap,
-      child: Container(
-        width: 1.sw - 60.w,
-        height: 44.h,
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          color: Colors.black,
-          borderRadius: BorderRadius.circular(12.r),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, color: Colors.white, size: 18.w),
-            6.horizontalSpace,
-            Text(
-              text,
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 15.sp,
-                fontWeight: FontWeight.bold,
+      child: Opacity(
+        opacity: enabled ? 1 : 0.5,
+        child: Container(
+          width: double.infinity,
+          height: 44.h,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: Colors.black,
+            borderRadius: BorderRadius.circular(12.r),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, color: Colors.white, size: 18.w),
+              6.horizontalSpace,
+              Text(
+                text,
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 15.sp,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSmallActionButton({
+    required Key key,
+    required String text,
+    required VoidCallback? onTap,
+  }) {
+    final enabled = onTap != null;
+    return GestureDetector(
+      key: key,
+      onTap: onTap,
+      child: Opacity(
+        opacity: enabled ? 1 : 0.5,
+        child: Container(
+          constraints: BoxConstraints(minWidth: 58.w),
+          height: 34.h,
+          padding: EdgeInsets.symmetric(horizontal: 12.w),
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: Colors.black,
+            borderRadius: BorderRadius.circular(10.r),
+          ),
+          child: Text(
+            text,
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 13.sp,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _openStyleEditor(BuildContext context) {
+    logic.prepareEditConfig();
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) {
+        return Obx(
+          () => Padding(
+            padding: EdgeInsets.only(
+              left: 12.w,
+              right: 12.w,
+              bottom: MediaQuery.of(sheetContext).viewInsets.bottom + 12.h,
+            ),
+            child: Container(
+              key: const ValueKey('vip_style_editor_sheet'),
+              padding: EdgeInsets.all(14.w),
+              decoration: BoxDecoration(
+                color: Styles.titleBarColor,
+                border: Styles.commonBorder,
+                borderRadius: BorderRadius.circular(18.r),
+              ),
+              child: SafeArea(
+                top: false,
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              '编辑昵称样式',
+                              style: TextStyle(
+                                color: Styles.primaryTextColor,
+                                fontSize: 20.sp,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                          GestureDetector(
+                            onTap: () => Navigator.pop(sheetContext),
+                            child: Icon(
+                              Icons.close,
+                              size: 22.w,
+                              color: Styles.primaryTextColor,
+                            ),
+                          ),
+                        ],
+                      ),
+                      12.verticalSpace,
+                      Container(
+                        width: double.infinity,
+                        padding: EdgeInsets.all(12.w),
+                        decoration: Styles.cardDecoration(),
+                        child: _buildVipNamePreview(
+                          text: logic.previewName,
+                          style: logic.editingPreviewStyle,
+                        ),
+                      ),
+                      12.verticalSpace,
+                      SizedBox(
+                        height: Styles.compactButtonHeight,
+                        child: PiInput(
+                          key: const ValueKey('vip_style_color_input'),
+                          controller: logic.editColorController,
+                          hintText: '昵称颜色，如 #FFAA00',
+                          textAlign: TextAlign.left,
+                          onInputChanged: logic.updateEditColor,
+                        ),
+                      ),
+                      6.verticalSpace,
+                      Text(
+                        '支持 #RRGGBB、RRGGBB 或 linear-gradient(...)；留空为默认样式。',
+                        style: TextStyle(
+                          color: Styles.secondaryTextColor,
+                          fontSize: 12.sp,
+                          fontWeight: FontWeight.bold,
+                          height: 1.35,
+                        ),
+                      ),
+                      12.verticalSpace,
+                      _buildSwitchRow(
+                        key: const ValueKey('vip_style_bold_switch'),
+                        title: '昵称加粗',
+                        value: logic.editBold.value,
+                        onChanged: (value) => logic.editBold.value = value,
+                      ),
+                      8.verticalSpace,
+                      _buildSwitchRow(
+                        key: const ValueKey('vip_style_underline_switch'),
+                        title: '昵称下划线',
+                        value: logic.editUnderline.value,
+                        onChanged: (value) => logic.editUnderline.value = value,
+                      ),
+                      8.verticalSpace,
+                      _buildSwitchRow(
+                        key: const ValueKey('vip_style_metal_switch'),
+                        title: '显示会员勋章',
+                        value: logic.editMetal.value,
+                        onChanged: (value) => logic.editMetal.value = value,
+                      ),
+                      8.verticalSpace,
+                      _buildSwitchRow(
+                        key: const ValueKey('vip_style_auto_checkin_switch'),
+                        title: '自动签到',
+                        value: logic.editAutoCheckin.value,
+                        onChanged: (value) =>
+                            logic.editAutoCheckin.value = value,
+                      ),
+                      14.verticalSpace,
+                      _buildPrimaryButton(
+                        key: const ValueKey('vip_style_save_button'),
+                        text: logic.isSavingConfig.value ? '保存中' : '保存样式',
+                        icon: Icons.check,
+                        onTap: logic.isSavingConfig.value
+                            ? null
+                            : () async {
+                                final ok = await logic.saveMembershipConfig();
+                                if (ok && sheetContext.mounted) {
+                                  Navigator.pop(sheetContext);
+                                }
+                              },
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildSwitchRow({
+    required Key key,
+    required String title,
+    required bool value,
+    required ValueChanged<bool> onChanged,
+  }) {
+    return GestureDetector(
+      key: key,
+      behavior: HitTestBehavior.translucent,
+      onTap: () => onChanged(!value),
+      child: Container(
+        padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
+        decoration: Styles.cardDecoration(),
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(
+                title,
+                style: TextStyle(
+                  color: Styles.primaryTextColor,
+                  fontSize: 14.sp,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+            Switch(
+              value: value,
+              activeThumbColor: Styles.primaryColor,
+              onChanged: onChanged,
             ),
           ],
         ),

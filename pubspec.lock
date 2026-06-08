@@ -271,7 +271,7 @@ packages:
       path: "third_party/fishpi"
       relative: true
     source: path
-    version: "1.0.27"
+    version: "1.0.29"
   fixnum:
     dependency: transitive
     description:

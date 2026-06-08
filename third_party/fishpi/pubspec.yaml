@@ -1,6 +1,6 @@
 name: fishpi
 description: A Package to use API of fishpi. Contain a command line tool to use fishpi services.
-version: 1.0.27
+version: 1.0.29
 repository: https://github.com/FishPiOffical/fishpi.dart
 
 environment:

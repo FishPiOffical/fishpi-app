@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 
 typedef VipInfoLoader = Future<UserVipInfo> Function(String userId);
 typedef VipUserLoader = Future<UserInfo> Function(String userName);
+typedef MembershipConfigsLoader = Future<List<MembershipUserConfig>> Function();
 
 class VipProfile {
   final UserVipInfo info;
@@ -153,6 +154,7 @@ class VipNameStyle {
 class VipStyleService {
   final VipInfoLoader vipInfoLoader;
   final VipUserLoader? userLoader;
+  final MembershipConfigsLoader? membershipConfigsLoader;
   final Duration successTtl;
   final Duration failureTtl;
 
@@ -160,13 +162,17 @@ class VipStyleService {
   static VipStyleService? _shared;
 
   final Map<String, _VipCacheEntry> _userIdCache = {};
+  final Map<String, _VipCacheEntry> _membershipConfigStyleCache = {};
   final Map<String, _VipCacheEntry> _userNameCache = {};
   final Map<String, Future<VipProfile?>> _pendingByUserId = {};
   final Map<String, Future<VipProfile?>> _pendingByUserName = {};
+  Future<void>? _pendingMembershipConfigs;
+  bool _hasLoadedMembershipConfigs = false;
 
   VipStyleService({
     required this.vipInfoLoader,
     this.userLoader,
+    this.membershipConfigsLoader,
     this.successTtl = const Duration(minutes: 20),
     this.failureTtl = const Duration(minutes: 2),
   });
@@ -175,6 +181,7 @@ class VipStyleService {
     return VipStyleService(
       vipInfoLoader: fishpi.vipInfo,
       userLoader: fishpi.getUser,
+      membershipConfigsLoader: fishpi.user.getMembershipConfigs,
     );
   }
 
@@ -194,6 +201,11 @@ class VipStyleService {
     String? userId,
     String? userName,
   }) async {
+    final normalizedUserId = _normalizeUserId(userId);
+    if (normalizedUserId.isNotEmpty) {
+      return _loadStyleByUserId(normalizedUserId);
+    }
+
     return (await loadProfile(userId: userId, userName: userName))?.nameStyle;
   }
 
@@ -213,9 +225,59 @@ class VipStyleService {
 
   void clear() {
     _userIdCache.clear();
+    _membershipConfigStyleCache.clear();
     _userNameCache.clear();
     _pendingByUserId.clear();
     _pendingByUserName.clear();
+    _pendingMembershipConfigs = null;
+    _hasLoadedMembershipConfigs = false;
+  }
+
+  Future<void> prewarmMembershipConfigs({bool force = false}) {
+    final loader = membershipConfigsLoader;
+    if (loader == null) return Future.value();
+    if (_hasLoadedMembershipConfigs && !force) return Future.value();
+    final pending = _pendingMembershipConfigs;
+    if (pending != null && !force) return pending;
+
+    final request = loader().then((items) {
+      final now = DateTime.now();
+      for (final item in items) {
+        final userId = _normalizeUserId(item.userId);
+        final config = item.config;
+        if (userId.isEmpty || config == null) continue;
+        final profile = _profileFromMembershipConfig(userId, config);
+        if (profile.nameStyle.isActive) {
+          _membershipConfigStyleCache[userId] = _VipCacheEntry(
+            profile: profile,
+            expiresAt: now.add(successTtl),
+          );
+        }
+      }
+      _hasLoadedMembershipConfigs = true;
+    }).catchError((_) {
+      _hasLoadedMembershipConfigs = true;
+    }).whenComplete(() {
+      _pendingMembershipConfigs = null;
+    });
+    _pendingMembershipConfigs = request;
+    return request;
+  }
+
+  Future<VipNameStyle?> _loadStyleByUserId(String userId) async {
+    final cached = _readCache(_userIdCache, userId);
+    if (cached != null) return cached.nameStyle;
+    if (_userIdCache.containsKey(userId)) return null;
+
+    final batchCached = _readCache(_membershipConfigStyleCache, userId);
+    if (batchCached != null) return batchCached.nameStyle;
+    if (!_hasLoadedMembershipConfigs && membershipConfigsLoader != null) {
+      await prewarmMembershipConfigs();
+      final warmed = _readCache(_membershipConfigStyleCache, userId);
+      if (warmed != null) return warmed.nameStyle;
+    }
+
+    return (await _loadByUserId(userId))?.nameStyle;
   }
 
   Future<VipProfile?> _loadByUserId(String userId) {
@@ -295,6 +357,26 @@ class VipStyleService {
       _writeCache(_userNameCache, userName, null, failureTtl);
       return null;
     }
+  }
+
+  VipProfile _profileFromMembershipConfig(
+    String userId,
+    MembershipConfig config,
+  ) {
+    final info = UserVipInfo(
+      state: true,
+      userId: userId,
+      oId: userId,
+      lvCode: 'VIP',
+      expiresAt: 0,
+      color: config.color ?? '',
+      underline: config.underline ?? false,
+      metal: config.metal ?? false,
+      autoCheckin: config.autoCheckin ?? 0,
+      bold: config.bold ?? false,
+      jointVip: config.jointVip ?? false,
+    );
+    return VipProfile.fromVipInfo(info);
   }
 
   VipProfile? _readCache(

@@ -188,6 +188,39 @@ void main() {
     expect(vipRequestCount, 1);
   });
 
+  test('VIP 批量配置预热后昵称样式不再逐个查询', () async {
+    var batchRequestCount = 0;
+    var vipRequestCount = 0;
+    final service = VipStyleService(
+      membershipConfigsLoader: () async {
+        batchRequestCount++;
+        return [
+          MembershipUserConfig(
+            userId: 'u3',
+            configJson: '',
+            config: MembershipConfig(
+              color: '#123456',
+              bold: true,
+              underline: true,
+            ),
+          ),
+        ];
+      },
+      vipInfoLoader: (_) async {
+        vipRequestCount++;
+        return UserVipInfo(state: false);
+      },
+    );
+
+    final style = await service.load(userId: 'u3');
+
+    expect(style?.color, const Color(0xFF123456));
+    expect(style?.bold, isTrue);
+    expect(style?.underline, isTrue);
+    expect(batchRequestCount, 1);
+    expect(vipRequestCount, 0);
+  });
+
   test('VIP 资料会提供等级名称和到期日期', () async {
     final expiresAt = DateTime(2026, 8, 9).millisecondsSinceEpoch;
     final service = VipStyleService(
