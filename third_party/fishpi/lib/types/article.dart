@@ -4,6 +4,14 @@ import 'package:fishpi/src/utils.dart';
 
 import 'types.dart';
 
+double _safeDouble(dynamic value, {double fallback = 0.0}) {
+  if (value is double) return value;
+  if (value is int) return value.toDouble();
+  if (value is num) return value.toDouble();
+  if (value is String) return double.tryParse(value.trim()) ?? fallback;
+  return fallback;
+}
+
 /// 发帖信息
 class ArticlePost {
   /// 帖子标题
@@ -186,7 +194,7 @@ class ArticleTag {
         tagAd = data['tagAd'] ?? '',
         showSideAd = data['tagShowSideAd'] ?? 0,
         status = data['tagStatus'] ?? 0,
-        randomDouble = data['tagRandomDouble'] ?? 0.0;
+        randomDouble = _safeDouble(data['tagRandomDouble']);
 
   Map<String, dynamic> toJson() => {
         'oId': oId,
@@ -1217,7 +1225,7 @@ class ArticleDetail {
         source = data['articleOriginalContent'] ?? '',
         img1URL = data['articleImg1URL'] ?? '',
         vote = VoteStatus.values[(data['articleVote'] ?? 0) + 1],
-        randomDouble = data['articleRandomDouble'] ?? 0.0,
+        randomDouble = _safeDouble(data['articleRandomDouble']),
         authorIntro = data['articleAuthorIntro'] ?? '',
         city = data['articleCity'] ?? '',
         IP = data['articleIP'] ?? '',
