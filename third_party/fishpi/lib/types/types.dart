@@ -1,5 +1,6 @@
 // ignore_for_file: non_constant_identifier_names, constant_identifier_names
 import 'package:fishpi/src/utils.dart';
+import 'package:fishpi/src/json_safe.dart' as json_safe;
 
 export 'user.dart';
 export 'chatroom.dart';
@@ -28,9 +29,9 @@ class LoginData {
   });
 
   LoginData.from(Map<String, dynamic> data)
-      : username = data['username'] ?? '',
-        passwd = data['passwd'] ?? '',
-        mfaCode = data['mfaCode'];
+      : username = json_safe.readString(data['username']),
+        passwd = json_safe.readString(data['passwd']),
+        mfaCode = data['mfaCode']?.toString();
 
   toJson() => {
         'nameOrEmail': username,
@@ -66,10 +67,10 @@ class PreRegisterInfo {
   });
 
   PreRegisterInfo.from(Map<String, dynamic> data)
-      : username = data['username'] ?? '',
-        phone = data['phone'] ?? '',
-        invitecode = data['invitecode'] ?? '',
-        captcha = data['captcha'] ?? '';
+      : username = json_safe.readString(data['username']),
+        phone = json_safe.readString(data['phone']),
+        invitecode = data['invitecode']?.toString(),
+        captcha = json_safe.readString(data['captcha']);
 
   toJson() => {
         'userName': username,
@@ -106,10 +107,10 @@ class RegisterInfo {
   });
 
   RegisterInfo.from(Map<String, dynamic> data)
-      : role = data['role'] ?? '',
-        passwd = data['passwd'] ?? '',
-        userId = data['userId'] ?? '',
-        r = data['r'];
+      : role = json_safe.readString(data['role']),
+        passwd = json_safe.readString(data['passwd']),
+        userId = json_safe.readString(data['userId']),
+        r = data['r']?.toString();
 
   toJson() => {
         'userAppRole': role,
@@ -144,8 +145,8 @@ class ResponseResult {
   });
 
   ResponseResult.from(Map<String, dynamic> data)
-      : success = (data['code'] ?? 0) == 0,
-        msg = data['msg'] ?? '';
+      : success = json_safe.readInt(data['code']) == 0,
+        msg = json_safe.readString(data['msg']);
 
   @override
   String toString() {
@@ -164,8 +165,8 @@ class FileInfo {
   FileInfo({this.filename = '', this.url = ''});
 
   FileInfo.from(Map<String, dynamic> data)
-      : filename = data['filename'] ?? '',
-        url = data['url'] ?? '';
+      : filename = json_safe.readString(data['filename']),
+        url = json_safe.readString(data['url']);
 
   @override
   toString() {
@@ -184,10 +185,19 @@ class UploadResult {
   UploadResult({this.errs = const [], this.success = const []});
 
   UploadResult.from(Map<String, dynamic> map)
-      : errs = List<String>.from(map['errFiles'] ?? []),
-        success = ((map['succMap'] ?? {}) as Map<String, dynamic>)
+      : errs = json_safe
+            .readList(map['errFiles'])
+            .map((e) => e.toString())
+            .toList(),
+        success = json_safe
+            .readMap(map['succMap'])
             .entries
-            .map((entry) => FileInfo(filename: entry.key, url: entry.value))
+            .map(
+              (entry) => FileInfo(
+                filename: entry.key,
+                url: entry.value?.toString() ?? '',
+              ),
+            )
             .toList();
 
   toJson() => {
@@ -224,9 +234,9 @@ class AtUser {
   });
 
   AtUser.from(Map<String, dynamic> data)
-      : userName = data['userName'] ?? '',
-        userAvatarURL = data['userAvatarURL'] ?? '',
-        userNameLowerCase = data['userNameLowerCase'] ?? '';
+      : userName = json_safe.readString(data['userName']),
+        userAvatarURL = json_safe.readString(data['userAvatarURL']),
+        userNameLowerCase = json_safe.readString(data['userNameLowerCase']);
 
   toJson() => {
         'userName': userName,
@@ -254,8 +264,8 @@ class UserLite {
   });
 
   UserLite.from(Map<String, dynamic> data)
-      : userNickname = data['userNickname'] ?? '',
-        userName = data['userName'] ?? '';
+      : userNickname = json_safe.readString(data['userNickname']),
+        userName = json_safe.readString(data['userName']);
 
   toJson() => {
         'userNickname': userNickname,
@@ -307,19 +317,19 @@ class UserVipInfo {
   });
 
   UserVipInfo.from(Map<dynamic, dynamic> data)
-      : jointVip = data['jointVip'] ?? false,
-        color = data['color'] ?? '',
-        underline = data['underline'] ?? false,
-        metal = data['metal'] ?? false,
-        autoCheckin = data['autoCheckin'] ?? 0,
-        bold = data['bold'] ?? false,
-        oId = data['oId'] ?? '',
-        state = (data['state'] ?? 0) == 1,
-        userId = data['userId'] ?? '',
-        lvCode = data['lvCode'] ?? '',
-        expiresAt = data['expiresAt'] ?? 0,
-        createdAt = data['createdAt'] ?? 0,
-        updatedAt = data['updatedAt'] ?? 0;
+      : jointVip = json_safe.readBool(data['jointVip']),
+        color = json_safe.readString(data['color']),
+        underline = json_safe.readBool(data['underline']),
+        metal = json_safe.readBool(data['metal']),
+        autoCheckin = json_safe.readInt(data['autoCheckin']),
+        bold = json_safe.readBool(data['bold']),
+        oId = json_safe.readString(data['oId']),
+        state = json_safe.readInt(data['state']) == 1,
+        userId = json_safe.readString(data['userId']),
+        lvCode = json_safe.readString(data['lvCode']),
+        expiresAt = json_safe.readInt(data['expiresAt']),
+        createdAt = json_safe.readInt(data['createdAt']),
+        updatedAt = json_safe.readInt(data['updatedAt']);
 }
 
 /// 举报数据类型
@@ -389,10 +399,18 @@ class Report {
   });
 
   Report.from(Map<String, dynamic> json)
-      : reportDataId = json['reportDataId'] ?? '',
-        reportDataType = ReportDataType.values[json['reportDataType'] ?? 3],
-        reportType = ReportType.values[json['reportType'] ?? 0],
-        reportMemo = json['reportMemo'] ?? '';
+      : reportDataId = json_safe.readString(json['reportDataId']),
+        reportDataType = json_safe.readEnum(
+          ReportDataType.values,
+          json['reportDataType'],
+          fallback: ReportDataType.chatroom,
+        ),
+        reportType = json_safe.readEnum(
+          ReportType.values,
+          json['reportType'],
+          fallback: ReportType.advertise,
+        ),
+        reportMemo = json_safe.readString(json['reportMemo']);
 
   toJson() => {
         'reportDataId': reportDataId,
@@ -441,13 +459,13 @@ class Log {
   });
 
   Log.from(Map<String, dynamic> json)
-      : key1 = json['key1'] ?? '',
-        key2 = json['key2'] ?? '',
-        data = json['data'] ?? '',
-        isPublic = json['public'] ?? false,
-        key3 = json['key3'] ?? '',
-        oId = json['oId'] ?? '',
-        type = json['type'] ?? '';
+      : key1 = json_safe.readString(json['key1']),
+        key2 = json_safe.readString(json['key2']),
+        data = json_safe.readString(json['data']),
+        isPublic = json_safe.readBool(json['public']),
+        key3 = json_safe.readString(json['key3']),
+        oId = json_safe.readString(json['oId']),
+        type = json_safe.readString(json['type']);
 
   toJson() => {
         'key1': key1,

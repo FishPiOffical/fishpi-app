@@ -1,3 +1,5 @@
+import 'package:fishpi/src/json_safe.dart' as json_safe;
+
 /// 摸鱼大闯关信息
 class MoFishGame {
   String userName;
@@ -11,9 +13,9 @@ class MoFishGame {
   });
 
   MoFishGame.from(Map data)
-      : userName = data['userName'] ?? '',
-        stage = data['stage'] ?? '',
-        time = data['time'] ?? 0;
+      : userName = json_safe.readString(data['userName']),
+        stage = json_safe.readString(data['stage']),
+        time = json_safe.readInt(data['time']);
 
   toJson() => {
         'userName': userName,
@@ -38,8 +40,8 @@ class UserIP {
   });
 
   UserIP.from(Map data)
-      : latestLoginIP = data['userLatestLoginIp'] ?? '',
-        userId = data['userId'] ?? '';
+      : latestLoginIP = json_safe.readString(data['userLatestLoginIp']),
+        userId = json_safe.readString(data['userId']);
 
   toJson() => {
         'userLatestLoginIp': latestLoginIP,
@@ -82,10 +84,10 @@ class UserBag {
   });
 
   UserBag.from(Map data)
-      : checkin1day = data['checkin1day'] ?? 0,
-        checkin2days = data['checkin2days'] ?? 0,
-        patchCheckinCard = data['patchCheckinCard'] ?? 0,
-        metalTicket = data['metalTicket'] ?? 0;
+      : checkin1day = json_safe.readInt(data['checkin1day']),
+        checkin2days = json_safe.readInt(data['checkin2days']),
+        patchCheckinCard = json_safe.readInt(data['patchCheckinCard']),
+        metalTicket = json_safe.readInt(data['metalTicket']);
 
   toJson() => {
         'checkin1day': checkin1day,

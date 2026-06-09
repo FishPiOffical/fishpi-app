@@ -3,6 +3,7 @@
 import 'dart:convert';
 
 import 'package:fishpi/fishpi.dart';
+import 'package:fishpi/src/json_safe.dart' as json_safe;
 import 'package:fishpi/src/utils.dart';
 
 /// 客户端类型
@@ -75,7 +76,7 @@ class ChatSource {
   ChatSource.from(String? client) {
     if ((client ?? '').isEmpty) return;
     final via = client!.split('/');
-    if (client.length < 2) return;
+    if (via.length < 2) return;
     client = via[0];
     version = via[1];
   }
@@ -172,17 +173,17 @@ class ChatRoomMessage {
   }
 
   ChatRoomMessage.from(Map<String, dynamic> data) {
-    oId = data['oId'] ?? '';
-    userOId = data['userOId'] ?? 0;
-    userName = data['userName'] ?? '';
-    nickname = data['userNickname'] ?? '';
-    avatarURL = data['userAvatarURL'] ?? '';
+    oId = json_safe.readString(data['oId']);
+    userOId = json_safe.readInt(data['userOId']);
+    userName = json_safe.readString(data['userName']);
+    nickname = json_safe.readString(data['userNickname']);
+    avatarURL = json_safe.readString(data['userAvatarURL']);
     sysMetal = toMetal(data['sysMetal'] ?? '{"list":[]}');
-    via = ChatSource.from(data['client']);
-    content = data['content'] ?? '';
-    md = data['md'] ?? data['content'] ?? '';
+    via = ChatSource.from(json_safe.readString(data['client']));
+    content = json_safe.readString(data['content']);
+    md = data['md']?.toString() ?? content;
     try {
-      dynamic contentData = _decodeSpecialContent(data['content'] ?? '');
+      dynamic contentData = _decodeSpecialContent(content);
       if (contentData is Map) {
         type = _messageTypeFrom(contentData);
         if (type == ChatRoomMessageType.redPacket) {
@@ -197,7 +198,7 @@ class ChatRoomMessage {
       }
       // ignore: empty_catches
     } catch (e) {}
-    time = data['time'] ?? '';
+    time = json_safe.readString(data['time']);
   }
 
   static dynamic _decodeSpecialContent(String rawContent) {
@@ -433,14 +434,14 @@ class BarragerMsg {
   });
 
   BarragerMsg.from(Map data)
-      : userName = data['userName'] ?? '',
-        userNickname = data['userNickname'] ?? '',
-        barragerContent = data['barragerContent'] ?? '',
-        barragerColor = data['barragerColor'] ?? '',
-        avatarURL = data['userAvatarURL'] ?? '',
-        avatarURL20 = data['userAvatarURL20'] ?? '',
-        avatarURL48 = data['userAvatarURL48'] ?? '',
-        avatarURL210 = data['userAvatarURL210'] ?? '';
+      : userName = json_safe.readString(data['userName']),
+        userNickname = json_safe.readString(data['userNickname']),
+        barragerContent = json_safe.readString(data['barragerContent']),
+        barragerColor = json_safe.readString(data['barragerColor']),
+        avatarURL = json_safe.readString(data['userAvatarURL']),
+        avatarURL20 = json_safe.readString(data['userAvatarURL20']),
+        avatarURL48 = json_safe.readString(data['userAvatarURL48']),
+        avatarURL210 = json_safe.readString(data['userAvatarURL210']);
 
   toJson() => {
         'userName': userName,
@@ -477,9 +478,9 @@ class OnlineInfo {
   });
 
   OnlineInfo.from(Map data)
-      : homePage = data['homePage'] ?? '',
-        avatarURL = data['userAvatarURL'] ?? '',
-        userName = data['userName'] ?? '';
+      : homePage = json_safe.readString(data['homePage']),
+        avatarURL = json_safe.readString(data['userAvatarURL']),
+        userName = json_safe.readString(data['userName']);
 
   toJson() => {
         'homePage': homePage,
@@ -513,8 +514,8 @@ class BarrageCost {
   });
 
   BarrageCost.from(Map data)
-      : cost = data['cost'] ?? 20,
-        unit = data['unit'] ?? '积分';
+      : cost = json_safe.readInt(data['cost'], fallback: 20),
+        unit = json_safe.readString(data['unit'], fallback: '积分');
 
   toJson() => {
         'cost': cost,
@@ -549,10 +550,10 @@ class MuteItem {
   });
 
   MuteItem.from(Map<String, dynamic> data)
-      : time = data['time'] ?? '',
-        avatarURL = data['userAvatarURL'] ?? '',
-        userName = data['userName'] ?? '',
-        nickname = data['userNickname'] ?? '';
+      : time = json_safe.readInt(data['time']),
+        avatarURL = json_safe.readString(data['userAvatarURL']),
+        userName = json_safe.readString(data['userName']),
+        nickname = json_safe.readString(data['userNickname']);
 
   Map<String, dynamic> toJson() => {
         'time': time,
@@ -593,10 +594,7 @@ class WeatherMsgData {
         'max': max,
       };
 
-  static double _toDouble(dynamic value) {
-    if (value is num) return value.toDouble();
-    return double.tryParse(value?.toString() ?? '') ?? 0;
-  }
+  static double _toDouble(dynamic value) => json_safe.readDouble(value);
 
   @override
   String toString() {
@@ -622,7 +620,8 @@ class WeatherMsg {
 
   static List<WeatherMsgData> getData(Map data) {
     if (data['data'] is List) {
-      return List.from(data['data'])
+      return json_safe
+          .readList(data['data'])
           .whereType<Map>()
           .map((item) => WeatherMsgData.from(item))
           .toList();
@@ -687,11 +686,11 @@ class MusicMsg {
   });
 
   MusicMsg.from(Map data)
-      : type = data['type'] ?? 'music',
-        source = data['source'] ?? '',
-        coverURL = data['coverURL'] ?? '',
-        title = data['title'] ?? '',
-        from = data['from'] ?? '';
+      : type = json_safe.readString(data['type'], fallback: 'music'),
+        source = json_safe.readString(data['source']),
+        coverURL = json_safe.readString(data['coverURL']),
+        title = json_safe.readString(data['title']),
+        from = json_safe.readString(data['from']);
 
   toJson() => {
         'type': type,
@@ -719,9 +718,9 @@ class ChatRoomNode {
   });
 
   ChatRoomNode.from(Map data)
-      : node = data['node'] ?? '',
-        name = data['name'] ?? '',
-        online = data['online'] ?? 0;
+      : node = json_safe.readString(data['node']),
+        name = json_safe.readString(data['name']),
+        online = json_safe.readInt(data['online']);
 }
 
 class ChatRoomNodeInfo {
@@ -735,13 +734,24 @@ class ChatRoomNodeInfo {
 
   ChatRoomNodeInfo.from(Map data)
       : recommend = ChatRoomNode.from({
-          'node': data['data'],
-          'name': data['msg'],
-          'online': List.from(data['avaliable']).firstWhere(
-                  (element) => element['name'] == data['msg'])?['online'] ??
-              0,
+          'node': json_safe.readString(data['data']),
+          'name': json_safe.readString(data['msg']),
+          'online': _onlineOfRecommend(data),
         }),
-        avaliable = List.from(data['avaliable'])
+        avaliable = json_safe
+            .readList(data['avaliable'])
+            .whereType<Map>()
             .map((element) => ChatRoomNode.from(element))
             .toList();
+}
+
+int _onlineOfRecommend(Map data) {
+  final name = json_safe.readString(data['msg']);
+  for (final element
+      in json_safe.readList(data['avaliable']).whereType<Map>()) {
+    if (json_safe.readString(element['name']) == name) {
+      return json_safe.readInt(element['online']);
+    }
+  }
+  return 0;
 }

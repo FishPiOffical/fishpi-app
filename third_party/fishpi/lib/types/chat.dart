@@ -1,3 +1,5 @@
+import 'package:fishpi/src/json_safe.dart' as json_safe;
+
 /// 私聊数据
 class ChatData {
   /// 接收 id
@@ -60,16 +62,16 @@ class ChatData {
   });
 
   ChatData.from(Map<String, dynamic> data)
-      : toId = data['toId'] ?? '',
-        preview = data['preview'] ?? '',
-        userSession = data['user_session'] ?? '',
-        senderAvatar = data['senderAvatar'] ?? '',
-        markdown = data['markdown'] ?? '',
-        receiverAvatar = data['receiverAvatar'] ?? '',
-        oId = data['oId'] ?? '',
-        time = data['time'] ?? '',
-        fromId = data['fromId'] ?? '',
-        senderUserName = data['senderUserName'] ?? '',
+      : toId = json_safe.readString(data['toId']),
+        preview = json_safe.readString(data['preview']),
+        userSession = json_safe.readString(data['user_session']),
+        senderAvatar = json_safe.readString(data['senderAvatar']),
+        markdown = json_safe.readString(data['markdown']),
+        receiverAvatar = json_safe.readString(data['receiverAvatar']),
+        oId = json_safe.readString(data['oId']),
+        time = json_safe.readString(data['time']),
+        fromId = json_safe.readString(data['fromId']),
+        senderUserName = json_safe.readString(data['senderUserName']),
         senderNickname = _readNickname(
           data,
           const [
@@ -78,8 +80,8 @@ class ChatData {
             'senderUserNickName',
           ],
         ),
-        content = data['content'] ?? '',
-        receiverUserName = data['receiverUserName'] ?? '',
+        content = json_safe.readString(data['content']),
+        receiverUserName = json_safe.readString(data['receiverUserName']),
         receiverNickname = _readNickname(
           data,
           const [
@@ -146,11 +148,11 @@ class ChatNotice {
   });
 
   ChatNotice.from(Map<String, dynamic> data)
-      : command = data['command'] ?? '',
-        userId = data['userId'] ?? '',
-        preview = data['preview'],
-        senderAvatar = data['senderAvatar'],
-        senderUserName = data['senderUserName'];
+      : command = json_safe.readString(data['command']),
+        userId = json_safe.readString(data['userId']),
+        preview = data['preview']?.toString(),
+        senderAvatar = data['senderAvatar']?.toString(),
+        senderUserName = data['senderUserName']?.toString();
 
   Map<String, dynamic> toJson() => {
         'command': command,

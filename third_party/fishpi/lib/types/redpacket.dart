@@ -257,7 +257,8 @@ int _readInt(Map? data, String key) {
   final value = data?[key];
   if (value is int) return value;
   if (value is num) return value.toInt();
-  return int.tryParse(value?.toString() ?? '') ?? 0;
+  final text = value?.toString().trim() ?? '';
+  return int.tryParse(text) ?? double.tryParse(text)?.toInt() ?? 0;
 }
 
 String _readString(Map? data, String key) {
@@ -343,14 +344,14 @@ class RedPacketStatusMsg {
   });
 
   RedPacketStatusMsg.from(Map data)
-      : oId = data['oId'] ?? '',
-        count = data['count'] ?? 0,
-        got = data['got'] ?? 0,
-        whoGive = data['whoGive'] ?? '',
-        whoGot = data['whoGot'] ?? '',
-        avatarURL20 = data['userAvatarURL20'] ?? '',
-        avatarURL48 = data['userAvatarURL48'] ?? '',
-        avatarURL210 = data['userAvatarURL210'] ?? '';
+      : oId = _readString(data, 'oId'),
+        count = _readInt(data, 'count'),
+        got = _readInt(data, 'got'),
+        whoGive = _readString(data, 'whoGive'),
+        whoGot = _readString(data, 'whoGot'),
+        avatarURL20 = _readString(data, 'userAvatarURL20'),
+        avatarURL48 = _readString(data, 'userAvatarURL48'),
+        avatarURL210 = _readString(data, 'userAvatarURL210');
 
   toJson() => {
         'oId': oId,

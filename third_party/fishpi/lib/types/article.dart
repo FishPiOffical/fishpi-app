@@ -1,16 +1,9 @@
 // ignore_for_file: non_constant_identifier_names, constant_identifier_names
 
 import 'package:fishpi/src/utils.dart';
+import 'package:fishpi/src/json_safe.dart' as json_safe;
 
 import 'types.dart';
-
-double _safeDouble(dynamic value, {double fallback = 0.0}) {
-  if (value is double) return value;
-  if (value is int) return value.toDouble();
-  if (value is num) return value.toDouble();
-  if (value is String) return double.tryParse(value.trim()) ?? fallback;
-  return fallback;
-}
 
 /// 发帖信息
 class ArticlePost {
@@ -62,17 +55,19 @@ class ArticlePost {
   });
 
   ArticlePost.from(Map<String, dynamic> data)
-      : title = data['articleTitle'] ?? '',
-        content = data['articleContent'] ?? '',
-        tags = data['articleTags'] ?? '',
-        commentable = data['articleCommentable'] ?? false,
-        notifyFollowers = data['articleNotifyFollowers'] ?? false,
-        type = data['articleType'] ?? 0,
-        showInList = data['articleShowInList'] ?? 0,
-        rewardContent = data['articleRewardContent'],
-        rewardPoint = data['articleRewardPoint'],
-        anonymous = data['articleAnonymous'],
-        offerPoint = data['articleQnAOfferPoint'];
+      : title = json_safe.readString(data['articleTitle']),
+        content = json_safe.readString(data['articleContent']),
+        tags = json_safe.readString(data['articleTags']),
+        commentable = json_safe.readBool(data['articleCommentable']),
+        notifyFollowers = json_safe.readBool(data['articleNotifyFollowers']),
+        type = json_safe.readInt(data['articleType']),
+        showInList = json_safe.readInt(data['articleShowInList']),
+        rewardContent = data['articleRewardContent']?.toString(),
+        rewardPoint = data['articleRewardPoint']?.toString(),
+        anonymous = json_safe.readBoolOrNull(data['articleAnonymous']),
+        offerPoint = data.containsKey('articleQnAOfferPoint')
+            ? json_safe.readInt(data['articleQnAOfferPoint'])
+            : null;
 
   Map<String, dynamic> toJson() => {
         'articleTitle': title,
@@ -176,25 +171,25 @@ class ArticleTag {
   });
 
   ArticleTag.from(Map<String, dynamic> data)
-      : oId = data['oId'] ?? '',
-        title = data['tagTitle'] ?? '',
-        description = data['tagDescription'] ?? '',
-        iconPath = data['tagIconPath'] ?? '',
-        uri = data['tagURI'] ?? '',
-        diyCSS = data['tagCSS'] ?? '',
-        badCnt = data['tagBadCnt'] ?? 0,
-        commentCnt = data['tagCommentCount'] ?? 0,
-        followerCnt = data['tagFollowerCount'] ?? 0,
-        goodCnt = data['tagGoodCnt'] ?? 0,
-        referenceCnt = data['tagReferenceCount'] ?? 0,
-        linkCnt = data['tagLinkCount'] ?? 0,
-        seoDesc = data['tagSeoDesc'] ?? '',
-        seoKeywords = data['tagSeoKeywords'] ?? '',
-        seoTitle = data['tagSeoTitle'] ?? '',
-        tagAd = data['tagAd'] ?? '',
-        showSideAd = data['tagShowSideAd'] ?? 0,
-        status = data['tagStatus'] ?? 0,
-        randomDouble = _safeDouble(data['tagRandomDouble']);
+      : oId = json_safe.readString(data['oId']),
+        title = json_safe.readString(data['tagTitle']),
+        description = json_safe.readString(data['tagDescription']),
+        iconPath = json_safe.readString(data['tagIconPath']),
+        uri = json_safe.readString(data['tagURI']),
+        diyCSS = json_safe.readString(data['tagCSS']),
+        badCnt = json_safe.readInt(data['tagBadCnt']),
+        commentCnt = json_safe.readInt(data['tagCommentCount']),
+        followerCnt = json_safe.readInt(data['tagFollowerCount']),
+        goodCnt = json_safe.readInt(data['tagGoodCnt']),
+        referenceCnt = json_safe.readInt(data['tagReferenceCount']),
+        linkCnt = json_safe.readInt(data['tagLinkCount']),
+        seoDesc = json_safe.readString(data['tagSeoDesc']),
+        seoKeywords = json_safe.readString(data['tagSeoKeywords']),
+        seoTitle = json_safe.readString(data['tagSeoTitle']),
+        tagAd = json_safe.readString(data['tagAd']),
+        showSideAd = json_safe.readInt(data['tagShowSideAd']),
+        status = json_safe.readInt(data['tagStatus']),
+        randomDouble = json_safe.readDouble(data['tagRandomDouble']);
 
   Map<String, dynamic> toJson() => {
         'oId': oId,
@@ -245,6 +240,14 @@ enum ArticleStatus {
 
   /// 锁定
   Lock,
+}
+
+ArticleStatus _readArticleStatus(dynamic value) {
+  return json_safe.readEnum(
+    ArticleStatus.values,
+    value,
+    fallback: ArticleStatus.Normal,
+  );
 }
 
 /// 文章作者
@@ -509,72 +512,88 @@ class ArticleAuthor {
   });
 
   ArticleAuthor.from(Map<String, dynamic> data)
-      : isOnline = data['userOnlineFlag'] ?? false,
-        onlineMinute = data['onlineMinute'] ?? 0,
-        pointStatus = (data['userPointStatus'] ?? 0) == 0,
-        followerStatus = (data['userFollowerStatus'] ?? 0) == 0,
-        guideStep = data['userGuideStep'] ?? 0,
-        onlineStatus = (data['userOnlineStatus'] ?? 0) == 0,
-        currentCheckinStreakStart = data['userCurrentCheckinStreakStart'] ?? 0,
-        isAutoBlur = (data['chatRoomPictureStatus'] ?? 0) == 1,
-        tags = data['userTags'] ?? '',
-        commentStatus = (data['userCommentStatus'] ?? 0) == 0,
-        timezone = data['userTimezone'] ?? '',
-        homePage = data['userURL'] ?? '',
-        isEnableForwardPage = (data['userForwardPageStatus'] ?? 0) == 1,
-        userUAStatus = (data['userUAStatus'] ?? 0) == 0,
-        userIndexRedirectURL = data['userIndexRedirectURL'] ?? '',
-        latestArticleTime = data['userLatestArticleTime'] ?? 0,
-        tagCount = data['userTagCount'] ?? 0,
-        nickname = data['userNickname'] ?? '',
-        listViewMode = data['userListViewMode'] ?? 0,
-        longestCheckinStreak = data['userLongestCheckinStreak'] ?? 0,
-        avatarType = (data['userAvatarType'] ?? '0').toString(),
-        subMailSendTime = data['userSubMailSendTime'] ?? 0,
-        updateTime = data['userUpdateTime'] ?? 0,
-        subMailStatus = (data['userSubMailStatus'] ?? 0) == 0,
-        isJoinPointRank = (data['userJoinPointRank'] ?? 0) == 0,
-        latestLoginTime = data['userLatestLoginTime'] ?? 0,
-        userAppRole = data['userAppRole'] ?? 0,
-        userAvatarViewMode = data['userAvatarViewMode'] ?? 0,
-        userStatus = data['userStatus'] ?? 0,
-        longestCheckinStreakEnd = data['userLongestCheckinStreakEnd'] ?? 0,
-        watchingArticleStatus = (data['userWatchingArticleStatus'] ?? 0) == 0,
-        latestCmtTime = data['userLatestCmtTime'] ?? 0,
-        province = data['userProvince'] ?? '',
-        currentCheckinStreak = data['userCurrentCheckinStreak'] ?? 0,
-        userNo = data['userNo'] ?? 0,
-        avatarURL = data['userAvatarURL'] ?? '',
-        followingTagStatus = (data['userFollowingTagStatus'] ?? 0) == 0,
-        userLanguage = data['userLanguage'] ?? '',
-        isJoinUsedPointRank = (data['userJoinUsedPointRank'] ?? 0) == 0,
-        currentCheckinStreakEnd = data['userCurrentCheckinStreakEnd'] ?? 0,
-        followingArticleStatus = (data['userFollowingArticleStatus'] ?? 0) == 0,
+      : isOnline = json_safe.readBool(data['userOnlineFlag']),
+        onlineMinute = json_safe.readInt(data['onlineMinute']),
+        pointStatus = json_safe.readInt(data['userPointStatus']) == 0,
+        followerStatus = json_safe.readInt(data['userFollowerStatus']) == 0,
+        guideStep = json_safe.readInt(data['userGuideStep']),
+        onlineStatus = json_safe.readInt(data['userOnlineStatus']) == 0,
+        currentCheckinStreakStart =
+            json_safe.readInt(data['userCurrentCheckinStreakStart']),
+        isAutoBlur = json_safe.readInt(data['chatRoomPictureStatus']) == 1,
+        tags = json_safe.readString(data['userTags']),
+        commentStatus = json_safe.readInt(data['userCommentStatus']) == 0,
+        timezone = json_safe.readString(data['userTimezone']),
+        homePage = json_safe.readString(data['userURL']),
+        isEnableForwardPage =
+            json_safe.readInt(data['userForwardPageStatus']) == 1,
+        userUAStatus = json_safe.readInt(data['userUAStatus']) == 0,
+        userIndexRedirectURL =
+            json_safe.readString(data['userIndexRedirectURL']),
+        latestArticleTime = json_safe.readInt(data['userLatestArticleTime']),
+        tagCount = json_safe.readInt(data['userTagCount']),
+        nickname = json_safe.readString(data['userNickname']),
+        listViewMode = json_safe.readInt(data['userListViewMode']),
+        longestCheckinStreak =
+            json_safe.readInt(data['userLongestCheckinStreak']),
+        avatarType =
+            json_safe.readString(data['userAvatarType'], fallback: '0'),
+        subMailSendTime = json_safe.readInt(data['userSubMailSendTime']),
+        updateTime = json_safe.readInt(data['userUpdateTime']),
+        subMailStatus = json_safe.readInt(data['userSubMailStatus']) == 0,
+        isJoinPointRank = json_safe.readInt(data['userJoinPointRank']) == 0,
+        latestLoginTime = json_safe.readInt(data['userLatestLoginTime']),
+        userAppRole = json_safe.readInt(data['userAppRole']),
+        userAvatarViewMode = json_safe.readInt(data['userAvatarViewMode']),
+        userStatus = json_safe.readInt(data['userStatus']),
+        longestCheckinStreakEnd =
+            json_safe.readInt(data['userLongestCheckinStreakEnd']),
+        watchingArticleStatus =
+            json_safe.readInt(data['userWatchingArticleStatus']) == 0,
+        latestCmtTime = json_safe.readInt(data['userLatestCmtTime']),
+        province = json_safe.readString(data['userProvince']),
+        currentCheckinStreak =
+            json_safe.readInt(data['userCurrentCheckinStreak']),
+        userNo = json_safe.readInt(data['userNo']),
+        avatarURL = json_safe.readString(data['userAvatarURL']),
+        followingTagStatus =
+            json_safe.readInt(data['userFollowingTagStatus']) == 0,
+        userLanguage = json_safe.readString(data['userLanguage']),
+        isJoinUsedPointRank =
+            json_safe.readInt(data['userJoinUsedPointRank']) == 0,
+        currentCheckinStreakEnd =
+            json_safe.readInt(data['userCurrentCheckinStreakEnd']),
+        followingArticleStatus =
+            json_safe.readInt(data['userFollowingArticleStatus']) == 0,
         keyboardShortcutsStatus =
-            (data['userKeyboardShortcutsStatus'] ?? 0) == 0,
+            json_safe.readInt(data['userKeyboardShortcutsStatus']) == 0,
         replyWatchArticleStatus =
-            (data['userReplyWatchArticleStatus'] ?? 0) == 0,
-        commentViewMode = data['userCommentViewMode'] ?? 0,
-        breezemoonStatus = (data['userBreezemoonStatus'] ?? 0) == 0,
-        userCheckinTime = data['userCheckinTime'] ?? 0,
-        usedPoint = data['userUsedPoint'] ?? 0,
-        articleStatus = (data['userArticleStatus'] ?? 0) == 0,
-        userPoint = data['userPoint'] ?? 0,
-        commentCount = data['userCommentCount'] ?? 0,
-        userIntro = data['userIntro'] ?? '',
-        userMobileSkin = data['userMobileSkin'] ?? '',
-        listPageSize = data['userListPageSize'] ?? 0,
-        oId = data['oId'] ?? '',
-        userName = data['userName'] ?? '',
-        geoStatus = (data['userGeoStatus'] ?? 0) == 0,
-        longestCheckinStreakStart = data['userLongestCheckinStreakStart'] ?? 0,
-        userSkin = data['userSkin'] ?? '',
-        notifyStatus = (data['userNotifyStatus'] ?? 0) == 0,
-        followingUserStatus = (data['userFollowingUserStatus'] ?? 0) == 0,
-        articleCount = data['userArticleCount'] ?? 0,
-        userRole = data['userRole'] ?? '',
-        sysMetal = List.from(data['sysMetal'] ?? [])
-            .map((e) => analyzeMetalAttr(e))
+            json_safe.readInt(data['userReplyWatchArticleStatus']) == 0,
+        commentViewMode = json_safe.readInt(data['userCommentViewMode']),
+        breezemoonStatus = json_safe.readInt(data['userBreezemoonStatus']) == 0,
+        userCheckinTime = json_safe.readInt(data['userCheckinTime']),
+        usedPoint = json_safe.readInt(data['userUsedPoint']),
+        articleStatus = json_safe.readInt(data['userArticleStatus']) == 0,
+        userPoint = json_safe.readInt(data['userPoint']),
+        commentCount = json_safe.readInt(data['userCommentCount']),
+        userIntro = json_safe.readString(data['userIntro']),
+        userMobileSkin = json_safe.readString(data['userMobileSkin']),
+        listPageSize = json_safe.readInt(data['userListPageSize']),
+        oId = json_safe.readString(data['oId']),
+        userName = json_safe.readString(data['userName']),
+        geoStatus = json_safe.readInt(data['userGeoStatus']) == 0,
+        longestCheckinStreakStart =
+            json_safe.readInt(data['userLongestCheckinStreakStart']),
+        userSkin = json_safe.readString(data['userSkin']),
+        notifyStatus = json_safe.readInt(data['userNotifyStatus']) == 0,
+        followingUserStatus =
+            json_safe.readInt(data['userFollowingUserStatus']) == 0,
+        articleCount = json_safe.readInt(data['userArticleCount']),
+        userRole = json_safe.readString(data['userRole']),
+        sysMetal = json_safe
+            .readList(data['sysMetal'])
+            .whereType<Map>()
+            .map((e) => analyzeMetalAttr(Map<String, dynamic>.from(e)))
             .toList();
 
   Map<String, dynamic> toJson() => {
@@ -770,37 +789,39 @@ class ArticleComment {
   }
 
   ArticleComment.from(Map<String, dynamic> data)
-      : isNice = data['commentNice'] ?? false,
-        createTimeStr = data['commentCreateTimeStr'] ?? '',
-        authorId = data['commentAuthorId'] ?? '',
+      : isNice = json_safe.readBool(data['commentNice']),
+        createTimeStr = json_safe.readString(data['commentCreateTimeStr']),
+        authorId = json_safe.readString(data['commentAuthorId']),
         score = (data['commentScore'] ?? 0).toString(),
-        createTime = data['commentCreateTime'] ?? '',
-        authorURL = data['commentAuthorURL'] ?? '',
-        vote = VoteStatus.values[(data['commentVote'] ?? 0) + 1],
-        revisionCount = data['commentRevisionCount'] ?? 0,
-        timeAgo = data['timeAgo'] ?? '',
-        replyId = data['commentOriginalCommentId'] ?? '',
-        sysMetal = List.from(data['sysMetal'])
-            .map((e) => analyzeMetalAttr(e))
+        createTime = json_safe.readString(data['commentCreateTime']),
+        authorURL = json_safe.readString(data['commentAuthorURL']),
+        vote = _readVoteStatus(data['commentVote']),
+        revisionCount = json_safe.readInt(data['commentRevisionCount']),
+        timeAgo = json_safe.readString(data['timeAgo']),
+        replyId = json_safe.readString(data['commentOriginalCommentId']),
+        sysMetal = json_safe
+            .readList(data['sysMetal'])
+            .whereType<Map>()
+            .map((e) => analyzeMetalAttr(Map<String, dynamic>.from(e)))
             .toList(),
-        goodCnt = data['commentGoodCnt'] ?? 0,
-        visible = (data['commentVisible'] ?? 0) == 0,
-        articleId = data['commentOnArticleId'] ?? '',
-        rewardedCnt = data['rewardedCnt'] ?? 0,
-        sharpURL = data['commentSharpURL'] ?? '',
-        isAnonymous = (data['commentAnonymous'] ?? 0) == 1,
-        replyCnt = data['commentReplyCnt'] ?? 0,
-        oId = data['oId'] ?? '',
-        content = data['commentContent'] ?? '',
-        status = ArticleStatus.values[data['commentStatus'] ?? 0],
-        author = data['commentAuthorName'] ?? '',
-        thankCnt = data['commentThankCnt'] ?? 0,
-        badCnt = data['commentBadCnt'] ?? 0,
-        rewarded = data['rewarded'] ?? false,
-        thumbnailURL = data['commentAuthorThumbnailURL'] ?? '',
-        audioURL = data['commentAudioURL'] ?? '',
-        offered = data['commentQnAOffered'] ?? 0,
-        commenter = CommentAuthor.from(data['commenter'] ?? {});
+        goodCnt = json_safe.readInt(data['commentGoodCnt']),
+        visible = json_safe.readInt(data['commentVisible']) == 0,
+        articleId = json_safe.readString(data['commentOnArticleId']),
+        rewardedCnt = json_safe.readInt(data['rewardedCnt']),
+        sharpURL = json_safe.readString(data['commentSharpURL']),
+        isAnonymous = json_safe.readInt(data['commentAnonymous']) == 1,
+        replyCnt = json_safe.readInt(data['commentReplyCnt']),
+        oId = json_safe.readString(data['oId']),
+        content = json_safe.readString(data['commentContent']),
+        status = _readArticleStatus(data['commentStatus']),
+        author = json_safe.readString(data['commentAuthorName']),
+        thankCnt = json_safe.readInt(data['commentThankCnt']),
+        badCnt = json_safe.readInt(data['commentBadCnt']),
+        rewarded = json_safe.readBool(data['rewarded']),
+        thumbnailURL = json_safe.readString(data['commentAuthorThumbnailURL']),
+        audioURL = json_safe.readString(data['commentAudioURL']),
+        offered = json_safe.readInt(data['commentQnAOffered']),
+        commenter = CommentAuthor.from(json_safe.readMap(data['commenter']));
 
   Map<String, dynamic> toJson() => {
         'commentNice': isNice,
@@ -849,8 +870,11 @@ class Pagination {
   });
 
   Pagination.from(Map<String, dynamic> data)
-      : count = data['paginationPageCount'] ?? 0,
-        pageNums = List.from(data['paginationPageNums'] ?? []);
+      : count = json_safe.readInt(data['paginationPageCount']),
+        pageNums = json_safe
+            .readList(data['paginationPageNums'])
+            .map(json_safe.readInt)
+            .toList();
 
   Map<String, dynamic> toJson() => {
         'paginationPageCount': count,
@@ -866,6 +890,23 @@ enum ArticleType {
   Thought,
   Unknown,
   Question,
+}
+
+ArticleType _readArticleType(dynamic value) {
+  return json_safe.readEnum(
+    ArticleType.values,
+    value,
+    fallback: ArticleType.Normal,
+  );
+}
+
+VoteStatus _readVoteStatus(dynamic value) {
+  return json_safe.readEnum(
+    VoteStatus.values,
+    value,
+    fallback: VoteStatus.normal,
+    offset: 1,
+  );
 }
 
 /// 文章详情
@@ -1164,85 +1205,97 @@ class ArticleDetail {
   }
 
   ArticleDetail.from(Map<String, dynamic> data)
-      : showInList = (data['articleShowInList'] ?? 0) == 1,
-        createTime = data['articleCreateTime'] ?? '',
-        authorId = data['articleAuthorId'] ?? '',
-        badCnt = data['articleBadCnt'] ?? 0,
-        latestCmtTime = data['articleLatestCmtTime'] ?? '',
-        goodCnt = data['articleGoodCnt'] ?? 0,
-        offerPoint = data['articleQnAOfferPoint'] ?? 0,
-        thumbnailURL = data['articleThumbnailURL'] ?? '',
-        stickRemains = data['articleStickRemains'] ?? 0,
-        timeAgo = data['timeAgo'] ?? '',
-        updateTimeStr = data['articleUpdateTimeStr'] ?? '',
-        authorName = data['articleAuthorName'] ?? '',
-        type = ArticleType.values[data['articleType'] ?? 0],
-        offered = data['offered'] ?? false,
-        createTimeStr = data['articleCreateTimeStr'] ?? '',
-        viewCnt = data['articleViewCount'] ?? 0,
-        thumbnailURL20 = data['articleAuthorThumbnailURL20'] ?? '',
-        watchCnt = data['articleWatchCnt'] ?? 0,
-        previewContent = data['articlePreviewContent'] ?? '',
-        titleEmoj = data['articleTitleEmoj'] ?? '',
-        titleEmojUnicode = data['articleTitleEmojUnicode'] ?? '',
-        title = data['articleTitle'] ?? '',
-        thumbnailURL48 = data['articleAuthorThumbnailURL48'] ?? '',
-        commentCnt = data['articleCommentCount'] ?? 0,
-        collectCnt = data['articleCollectCnt'] ?? 0,
-        latestCmterName = data['articleLatestCmterName'] ?? '',
-        tags = data['articleTags'] ?? '',
-        oId = data['oId'] ?? '',
-        cmtTimeAgo = data['cmtTimeAgo'] ?? '',
-        stick = data['articleStick'] ?? 0,
-        tagObjs = List.from(data['articleTagObjs'] ?? [])
-            .map((e) => ArticleTag.from(e))
+      : showInList = json_safe.readInt(data['articleShowInList']) == 1,
+        createTime = json_safe.readString(data['articleCreateTime']),
+        authorId = json_safe.readString(data['articleAuthorId']),
+        badCnt = json_safe.readInt(data['articleBadCnt']),
+        latestCmtTime = json_safe.readString(data['articleLatestCmtTime']),
+        goodCnt = json_safe.readInt(data['articleGoodCnt']),
+        offerPoint = json_safe.readInt(data['articleQnAOfferPoint']),
+        thumbnailURL = json_safe.readString(data['articleThumbnailURL']),
+        stickRemains = json_safe.readInt(data['articleStickRemains']),
+        timeAgo = json_safe.readString(data['timeAgo']),
+        updateTimeStr = json_safe.readString(data['articleUpdateTimeStr']),
+        authorName = json_safe.readString(data['articleAuthorName']),
+        type = _readArticleType(data['articleType']),
+        offered = json_safe.readBool(data['offered']),
+        createTimeStr = json_safe.readString(data['articleCreateTimeStr']),
+        viewCnt = json_safe.readInt(data['articleViewCount']),
+        thumbnailURL20 =
+            json_safe.readString(data['articleAuthorThumbnailURL20']),
+        watchCnt = json_safe.readInt(data['articleWatchCnt']),
+        previewContent = json_safe.readString(data['articlePreviewContent']),
+        titleEmoj = json_safe.readString(data['articleTitleEmoj']),
+        titleEmojUnicode =
+            json_safe.readString(data['articleTitleEmojUnicode']),
+        title = json_safe.readString(data['articleTitle']),
+        thumbnailURL48 =
+            json_safe.readString(data['articleAuthorThumbnailURL48']),
+        commentCnt = json_safe.readInt(data['articleCommentCount']),
+        collectCnt = json_safe.readInt(data['articleCollectCnt']),
+        latestCmterName = json_safe.readString(data['articleLatestCmterName']),
+        tags = json_safe.readString(data['articleTags']),
+        oId = json_safe.readString(data['oId']),
+        cmtTimeAgo = json_safe.readString(data['cmtTimeAgo']),
+        stick = json_safe.readInt(data['articleStick']),
+        tagObjs = json_safe
+            .readList(data['articleTagObjs'])
+            .whereType<Map>()
+            .map((e) => ArticleTag.from(Map<String, dynamic>.from(e)))
             .toList(),
-        latestCmtTimeStr = data['articleLatestCmtTimeStr'] ?? '',
-        anonymous = (data['articleAnonymous'] ?? 0) == 1,
-        thankCnt = data['articleThankCnt'] ?? 0,
-        updateTime = data['articleUpdateTime'] ?? '',
-        status = ArticleStatus.values[data['articleStatus'] ?? 0],
-        heat = data['articleHeat'] ?? 0,
-        perfect = (data['articlePerfect'] ?? 0) == 1,
-        thumbnailURL210 = data['articleAuthorThumbnailURL210'] ?? '',
-        permalink = data['articlePermalink'] ?? '',
-        author = ArticleAuthor.from(data['articleAuthor'] ?? {}),
-        thankedCnt = data['thankedCnt'] ?? 0,
-        anonymousView = data['articleAnonymousView'] ?? 0,
-        viewCntFormat = data['articleViewCntDisplayFormat'] ?? '',
-        commentable = data['articleCommentable'] ?? false,
-        rewarded = data['rewarded'] ?? false,
-        rewardedCnt = data['rewardedCnt'] ?? 0,
-        rewardPoint = data['articleRewardPoint'] ?? 0,
-        isFollowing = data['isFollowing'] ?? false,
-        isWatching = data['isWatching'] ?? false,
-        isMyArticle = data['isMyArticle'] ?? false,
-        thanked = data['thanked'] ?? false,
-        editorType = data['articleEditorType'] ?? 0,
-        audioURL = data['articleAudioURL'] ?? '',
-        table = data['articleToC'] ?? '',
-        content = data['articleContent'] ?? '',
-        source = data['articleOriginalContent'] ?? '',
-        img1URL = data['articleImg1URL'] ?? '',
-        vote = VoteStatus.values[(data['articleVote'] ?? 0) + 1],
-        randomDouble = _safeDouble(data['articleRandomDouble']),
-        authorIntro = data['articleAuthorIntro'] ?? '',
-        city = data['articleCity'] ?? '',
-        IP = data['articleIP'] ?? '',
-        authorURL = data['articleAuthorURL'] ?? '',
-        pushOrder = data['articlePushOrder'] ?? 0,
-        rewardContent = data['articleRewardContent'] ?? '',
+        latestCmtTimeStr =
+            json_safe.readString(data['articleLatestCmtTimeStr']),
+        anonymous = json_safe.readInt(data['articleAnonymous']) == 1,
+        thankCnt = json_safe.readInt(data['articleThankCnt']),
+        updateTime = json_safe.readString(data['articleUpdateTime']),
+        status = _readArticleStatus(data['articleStatus']),
+        heat = json_safe.readInt(data['articleHeat']),
+        perfect = json_safe.readInt(data['articlePerfect']) == 1,
+        thumbnailURL210 =
+            json_safe.readString(data['articleAuthorThumbnailURL210']),
+        permalink = json_safe.readString(data['articlePermalink']),
+        author = ArticleAuthor.from(json_safe.readMap(data['articleAuthor'])),
+        thankedCnt = json_safe.readInt(data['thankedCnt']),
+        anonymousView = json_safe.readInt(data['articleAnonymousView']),
+        viewCntFormat =
+            json_safe.readString(data['articleViewCntDisplayFormat']),
+        commentable = json_safe.readBool(data['articleCommentable']),
+        rewarded = json_safe.readBool(data['rewarded']),
+        rewardedCnt = json_safe.readInt(data['rewardedCnt']),
+        rewardPoint = json_safe.readInt(data['articleRewardPoint']),
+        isFollowing = json_safe.readBool(data['isFollowing']),
+        isWatching = json_safe.readBool(data['isWatching']),
+        isMyArticle = json_safe.readBool(data['isMyArticle']),
+        thanked = json_safe.readBool(data['thanked']),
+        editorType = json_safe.readInt(data['articleEditorType']),
+        audioURL = json_safe.readString(data['articleAudioURL']),
+        table = json_safe.readString(data['articleToC']),
+        content = json_safe.readString(data['articleContent']),
+        source = json_safe.readString(data['articleOriginalContent']),
+        img1URL = json_safe.readString(data['articleImg1URL']),
+        vote = _readVoteStatus(data['articleVote']),
+        randomDouble = json_safe.readDouble(data['articleRandomDouble']),
+        authorIntro = json_safe.readString(data['articleAuthorIntro']),
+        city = json_safe.readString(data['articleCity']),
+        IP = json_safe.readString(data['articleIP']),
+        authorURL = json_safe.readString(data['articleAuthorURL']),
+        pushOrder = json_safe.readInt(data['articlePushOrder']),
+        rewardContent = json_safe.readString(data['articleRewardContent']),
         redditScore = (data['redditScore'] ?? 0).toString(),
         pagination = data['pagination'] != null
-            ? Pagination.from(data['pagination'])
+            ? Pagination.from(json_safe.readMap(data['pagination']))
             : null,
-        commentViewable = data['discussionViewable'] ?? false,
-        revisionCount = data['articleRevisionCount'] ?? 0,
-        comments = List.from(data['articleComments'] ?? [])
-            .map((e) => ArticleComment.from(e))
+        commentViewable = json_safe.readBool(data['discussionViewable']),
+        revisionCount = json_safe.readInt(data['articleRevisionCount']),
+        comments = json_safe
+            .readList(data['articleComments'])
+            .whereType<Map>()
+            .map((e) => ArticleComment.from(Map<String, dynamic>.from(e)))
             .toList(),
-        niceComments = List.from(data['articleNiceComments'] ?? [])
-            .map((e) => ArticleComment.from(e))
+        niceComments = json_safe
+            .readList(data['articleNiceComments'])
+            .whereType<Map>()
+            .map((e) => ArticleComment.from(Map<String, dynamic>.from(e)))
             .toList();
 
   Map<String, dynamic> toJson() => {
@@ -1335,16 +1388,17 @@ class ArticleList {
 
   // 从 JSON 数据构造对象
   ArticleList.from(Map<String, dynamic> data) {
-    if (data['articles'] != null) {
-      list = [];
-      data['articles'].forEach((v) {
-        list.add(ArticleDetail.from(v));
-      });
-    }
-    pagination = data['pagination'] != null
-        ? Pagination.from(data['pagination'])
+    list = json_safe
+        .readList(data['articles'])
+        .whereType<Map>()
+        .map((v) => ArticleDetail.from(Map<String, dynamic>.from(v)))
+        .toList();
+    pagination = data['pagination'] is Map
+        ? Pagination.from(json_safe.readMap(data['pagination']))
         : Pagination();
-    tag = data['tag'] != null ? ArticleTag.from(data['tag']) : null;
+    tag = data['tag'] is Map
+        ? ArticleTag.from(json_safe.readMap(data['tag']))
+        : null;
   }
 
   // 将对象转换为 JSON 数据
@@ -1419,11 +1473,11 @@ class CommentPost {
 
   // 从 JSON 数据构造对象
   CommentPost.from(Map<String, dynamic> json)
-      : articleId = json['articleId'],
-        isAnonymous = json['commentAnonymous'],
-        isVisible = json['commentVisible'],
-        content = json['commentContent'],
-        replyId = json['commentOriginalCommentId'];
+      : articleId = json_safe.readString(json['articleId']),
+        isAnonymous = json_safe.readBool(json['commentAnonymous']),
+        isVisible = json_safe.readBool(json['commentVisible']),
+        content = json_safe.readString(json['commentContent']),
+        replyId = json_safe.readString(json['commentOriginalCommentId']);
 
   // 将对象转换为 JSON 数据
   Map<String, dynamic> toJson() => {

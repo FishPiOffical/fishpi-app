@@ -1,3 +1,5 @@
+import 'package:fishpi/src/json_safe.dart' as json_safe;
+
 import 'types.dart';
 
 /// 数据类型
@@ -172,16 +174,18 @@ class NoticeCount {
   });
 
   NoticeCount.from(Map<String, dynamic> data)
-      : notifyStatus = data['userNotifyStatus'] != 0,
-        count = data['unreadNotificationCnt'] ?? 0,
-        reply = data['unreadReplyNotificationCnt'] ?? 0,
-        point = data['unreadPointNotificationCnt'] ?? 0,
-        at = data['unreadAtNotificationCnt'] ?? 0,
-        broadcast = data['unreadBroadcastNotificationCnt'] ?? 0,
-        sysAnnounce = data['unreadSysAnnounceNotificationCnt'] ?? 0,
-        newFollower = data['unreadNewFollowerNotificationCnt'] ?? 0,
-        following = data['unreadFollowingNotificationCnt'] ?? 0,
-        commented = data['unreadCommentedNotificationCnt'] ?? 0;
+      : notifyStatus = json_safe.readInt(data['userNotifyStatus']) != 0,
+        count = json_safe.readInt(data['unreadNotificationCnt']),
+        reply = json_safe.readInt(data['unreadReplyNotificationCnt']),
+        point = json_safe.readInt(data['unreadPointNotificationCnt']),
+        at = json_safe.readInt(data['unreadAtNotificationCnt']),
+        broadcast = json_safe.readInt(data['unreadBroadcastNotificationCnt']),
+        sysAnnounce =
+            json_safe.readInt(data['unreadSysAnnounceNotificationCnt']),
+        newFollower =
+            json_safe.readInt(data['unreadNewFollowerNotificationCnt']),
+        following = json_safe.readInt(data['unreadFollowingNotificationCnt']),
+        commented = json_safe.readInt(data['unreadCommentedNotificationCnt']);
 
   toJson() => {
         'userNotifyStatus': notifyStatus,
@@ -235,14 +239,13 @@ class NoticePoint {
   });
 
   NoticePoint.from(Map<String, dynamic> data)
-      : oId = data['oId'] ?? '',
-        dataId = data['dataId'] ?? '',
-        userId = data['userId'] ?? '',
-        dataType = data['dataType'] ??
-            0, // Assuming DataType is an enum and 0 is the default value
-        description = data['description'] ?? '',
-        hasRead = data['hasRead'] ?? false,
-        createTime = data['createTime'] ?? '';
+      : oId = json_safe.readString(data['oId']),
+        dataId = json_safe.readString(data['dataId']),
+        userId = json_safe.readString(data['userId']),
+        dataType = json_safe.readInt(data['dataType']),
+        description = json_safe.readString(data['description']),
+        hasRead = json_safe.readBool(data['hasRead']),
+        createTime = json_safe.readString(data['createTime']);
 
   Map<String, dynamic> toJson() => {
         'oId': oId,
@@ -306,7 +309,7 @@ class NoticeComment {
   });
 
   NoticeComment.from(Map<String, dynamic> data)
-      : oId = data['oId'] ?? '',
+      : oId = json_safe.readString(data['oId']),
         title = (data['commentArticleTitle'] ??
                 data['replyArticleTitle'] ??
                 data['articleTitle'] ??
@@ -326,7 +329,7 @@ class NoticeComment {
                 '')
             .toString(),
         type = _articleTypeFrom(data['commentArticleType']),
-        perfect = (data['commentArticlePerfect'] ?? 0) == 1,
+        perfect = json_safe.readInt(data['commentArticlePerfect']) == 1,
         content = (data['commentContent'] ??
                 data['replyContent'] ??
                 data['content'] ??
@@ -337,7 +340,7 @@ class NoticeComment {
                 data['url'] ??
                 '')
             .toString(),
-        hasRead = data['hasRead'] ?? false,
+        hasRead = json_safe.readBool(data['hasRead']),
         createTime = (data['commentCreateTime'] ??
                 data['replyCreateTime'] ??
                 data['createTime'] ??
@@ -363,11 +366,11 @@ class NoticeComment {
   }
 
   static ArticleType _articleTypeFrom(dynamic value) {
-    final index = value is int ? value : int.tryParse(value?.toString() ?? '');
-    if (index == null || index < 0 || index >= ArticleType.values.length) {
-      return ArticleType.Unknown;
-    }
-    return ArticleType.values[index];
+    return json_safe.readEnum(
+      ArticleType.values,
+      value,
+      fallback: ArticleType.Unknown,
+    );
   }
 }
 
@@ -405,13 +408,13 @@ class NoticeAt {
   });
 
   NoticeAt.from(Map<String, dynamic> data)
-      : oId = data['oId'] ?? '',
-        dataType = data['dataType'] ?? 0,
-        userName = data['userName'] ?? '',
-        avatarURL = data['userAvatarURL'] ?? '',
-        content = data['content'] ?? '',
-        hasRead = data['hasRead'] ?? false,
-        createTime = data['createTime'] ?? '';
+      : oId = json_safe.readString(data['oId']),
+        dataType = json_safe.readInt(data['dataType']),
+        userName = json_safe.readString(data['userName']),
+        avatarURL = json_safe.readString(data['userAvatarURL']),
+        content = json_safe.readString(data['content']),
+        hasRead = json_safe.readBool(data['hasRead']),
+        createTime = json_safe.readString(data['createTime']);
 
   Map<String, dynamic> toJson() => {
         'oId': oId,
@@ -495,9 +498,9 @@ class NoticeFollow {
   });
 
   NoticeFollow.from(Map<String, dynamic> data)
-      : oId = data['oId'] ?? '',
-        url = data['url'] ?? '',
-        dataType = data['dataType'] ?? 0,
+      : oId = json_safe.readString(data['oId']),
+        url = json_safe.readString(data['url']),
+        dataType = json_safe.readInt(data['dataType']),
         title = (data['articleTitle'] ??
                 data['broadcastTitle'] ??
                 data['title'] ??
@@ -510,21 +513,23 @@ class NoticeFollow {
                 data['description'] ??
                 '')
             .toString(),
-        isComment = data['isComment'] ?? false,
+        isComment = json_safe.readBool(data['isComment']),
         thumbnailURL = (data['thumbnailURL'] ??
                 data['userAvatarURL'] ??
                 data['avatarURL'] ??
                 '')
             .toString(),
-        commentCnt = data['articleCommentCount'] ?? 0,
-        perfect = (data['articlePerfect'] ?? 0) == 1,
-        tagObjs = List.from(data['articleTagObjs'] ?? [])
-            .map((i) => ArticleTag.from(i))
+        commentCnt = json_safe.readInt(data['articleCommentCount']),
+        perfect = json_safe.readInt(data['articlePerfect']) == 1,
+        tagObjs = json_safe
+            .readList(data['articleTagObjs'])
+            .whereType<Map>()
+            .map((i) => ArticleTag.from(Map<String, dynamic>.from(i)))
             .toList(),
-        tags = data['articleTags'] ?? '',
-        type = data['articleType'] ?? 0,
-        hasRead = data['hasRead'] ?? false,
-        createTime = data['createTime'] ?? '';
+        tags = json_safe.readString(data['articleTags']),
+        type = json_safe.readInt(data['articleType']),
+        hasRead = json_safe.readBool(data['hasRead']),
+        createTime = json_safe.readString(data['createTime']);
 
   Map<String, dynamic> toJson() => {
         'oId': oId,
@@ -583,13 +588,13 @@ class NoticeSystem {
   });
 
   NoticeSystem.from(Map<String, dynamic> data)
-      : oId = data['oId'] ?? '',
-        userId = data['userId'] ?? '',
-        dataId = data['dataId'] ?? '',
-        dataType = data['dataType'] ?? 0,
-        description = data['description'] ?? '',
-        hasRead = data['hasRead'] ?? false,
-        createTime = data['createTime'] ?? '';
+      : oId = json_safe.readString(data['oId']),
+        userId = json_safe.readString(data['userId']),
+        dataId = json_safe.readString(data['dataId']),
+        dataType = json_safe.readInt(data['dataType']),
+        description = json_safe.readString(data['description']),
+        hasRead = json_safe.readBool(data['hasRead']),
+        createTime = json_safe.readString(data['createTime']);
 
   Map<String, dynamic> toJson() => {
         'oId': oId,
@@ -648,7 +653,7 @@ class NoticeUnknown {
                 data['commentAuthorThumbnailURL'] ??
                 '')
             .toString(),
-        hasRead = data['hasRead'] == true,
+        hasRead = json_safe.readBool(data['hasRead']),
         createTime = (data['createTime'] ??
                 data['commentCreateTime'] ??
                 data['time'] ??
@@ -703,10 +708,13 @@ class NoticeMsg {
   });
 
   NoticeMsg.from(Map<String, dynamic> data)
-      : command = data['command'] ?? NoticeMsgType.refresh,
-        userId = data['userId'] ?? '',
-        content = data['warnBroadcastText'],
-        who = data['who'];
+      : command = json_safe.readString(
+          data['command'],
+          fallback: NoticeMsgType.refresh,
+        ),
+        userId = json_safe.readString(data['userId']),
+        content = data['warnBroadcastText']?.toString(),
+        who = data['who']?.toString();
 
   Map<String, dynamic> toJson() => {
         'command': command,

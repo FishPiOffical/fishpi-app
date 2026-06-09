@@ -4,6 +4,7 @@ import 'dart:convert';
 
 import 'package:fishpi/src/request.dart';
 import 'package:fishpi/src/utils.dart';
+import 'package:fishpi/src/json_safe.dart' as json_safe;
 
 /// 徽章属性
 class MetalAttr {
@@ -31,11 +32,11 @@ class MetalAttr {
   });
 
   MetalAttr.from(Map<String, dynamic>? attr)
-      : url = attr?['url'] ?? '',
-        backcolor = attr?['backcolor'] ?? '',
-        fontcolor = attr?['fontcolor'] ?? '',
-        scale = attr?['scale'] ?? 0.79,
-        ver = attr?['ver'] ?? 0.1;
+      : url = json_safe.readString(attr?['url']),
+        backcolor = json_safe.readString(attr?['backcolor']),
+        fontcolor = json_safe.readString(attr?['fontcolor']),
+        scale = json_safe.readDouble(attr?['scale'], fallback: 0.79),
+        ver = json_safe.readDouble(attr?['ver'], fallback: 0.1);
 
   toJson() => {
         'url': url,
@@ -73,10 +74,10 @@ class MetalBase {
   });
 
   MetalBase.from(Map<String, dynamic> metal)
-      : attr = MetalAttr.from(metal['attr']),
-        name = metal['name'] ?? '',
-        description = metal['description'] ?? '',
-        data = metal['data'] ?? '';
+      : attr = MetalAttr.from(json_safe.readMap(metal['attr'])),
+        name = json_safe.readString(metal['name']),
+        description = json_safe.readString(metal['description']),
+        data = json_safe.readString(metal['data']);
 
   toJson() => {
         'attr': attr.toJson(),
@@ -106,20 +107,16 @@ class Metal extends MetalBase {
   String? enable;
 
   Metal({
-    required MetalAttr attr,
-    required String name,
-    required String description,
-    String data = '',
+    required super.attr,
+    required super.name,
+    required super.description,
+    super.data = '',
     this.enable,
-  }) : super(
-          attr: attr,
-          name: name,
-          description: description,
-          data: data,
-        );
+  });
 
+  // ignore: use_super_parameters
   Metal.from(Map<String, dynamic> metal)
-      : enable = metal['enable'],
+      : enable = metal['enable']?.toString(),
         super.from(metal);
 
   @override
@@ -232,23 +229,27 @@ class UserInfo {
   });
 
   UserInfo.from(Map data)
-      : oId = data['oId'] ?? '',
-        userNo = data['userNo'] ?? '',
-        userName = data['userName'] ?? '',
-        nickname = data['userNickname'] ?? '',
-        userURL = data['userURL'] ?? '',
-        city = data['userCity'] ?? '',
-        intro = data['userIntro'] ?? '',
-        isOnline = data['userOnlineFlag'] ?? '',
-        point = data['userPoint'] ?? '',
-        role = data['userRole'] ?? '',
-        appRole = UserAppRole.values[int.parse(data['userAppRole'] ?? '0')],
-        avatarURL = data['userAvatarURL'] ?? '',
-        cardBg = data['cardBg'] ?? '',
-        followingCnt = data['followingUserCount'] ?? '',
-        followerCnt = data['followerCount'] ?? '',
-        onlineMinute = data['onlineMinute'] ?? '',
-        canFollow = data['canFollow'] ?? 'self',
+      : oId = json_safe.readString(data['oId']),
+        userNo = json_safe.readString(data['userNo']),
+        userName = json_safe.readString(data['userName']),
+        nickname = json_safe.readString(data['userNickname']),
+        userURL = json_safe.readString(data['userURL']),
+        city = json_safe.readString(data['userCity']),
+        intro = json_safe.readString(data['userIntro']),
+        isOnline = json_safe.readBool(data['userOnlineFlag']),
+        point = json_safe.readInt(data['userPoint']),
+        role = json_safe.readString(data['userRole']),
+        appRole = json_safe.readEnum(
+          UserAppRole.values,
+          data['userAppRole'],
+          fallback: UserAppRole.Hack,
+        ),
+        avatarURL = json_safe.readString(data['userAvatarURL']),
+        cardBg = json_safe.readString(data['cardBg']),
+        followingCnt = json_safe.readInt(data['followingUserCount']),
+        followerCnt = json_safe.readInt(data['followerCount']),
+        onlineMinute = json_safe.readInt(data['onlineMinute']),
+        canFollow = json_safe.readString(data['canFollow'], fallback: 'self'),
         allMetals = toMetal(data['allMetalOwned'] ?? '[]'),
         sysMetal = toMetal(data['sysMetal'] ?? '[]');
 
@@ -534,17 +535,9 @@ MembershipConfig? _parseMembershipConfig(dynamic value) {
 }
 
 int _readInt(dynamic value) {
-  if (value is int) return value;
-  if (value is num) return value.toInt();
-  return int.tryParse(value?.toString() ?? '') ?? 0;
+  return json_safe.readInt(value);
 }
 
 bool? _readBoolOrNull(dynamic value) {
-  if (value == null) return null;
-  if (value is bool) return value;
-  if (value is num) return value != 0;
-  final normalized = value.toString().trim().toLowerCase();
-  if (normalized == 'true' || normalized == '1') return true;
-  if (normalized == 'false' || normalized == '0') return false;
-  return null;
+  return json_safe.readBoolOrNull(value);
 }
