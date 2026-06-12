@@ -1,5 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:fishpi/fishpi.dart';
+import 'package:fishpi_app/core/network/api_config.dart';
+import 'package:fishpi_app/core/network/api_response_parser.dart';
 
 class CollectionMedal {
   final String id;
@@ -121,7 +123,7 @@ class CollectionMedal {
 class MedalService {
   MedalService({
     Dio? dio,
-    this.baseUrl = 'https://fishpi.cn',
+    this.baseUrl = ApiConfig.baseUrl,
   }) : _dio = dio ??
             Dio(
               BaseOptions(
@@ -134,21 +136,8 @@ class MedalService {
   final Dio _dio;
   final String baseUrl;
 
-  static ResponseResult parseResponse(dynamic data) {
-    if (data is! Map) {
-      throw '响应数据异常';
-    }
-    final response = Map<String, dynamic>.from(data);
-    final code = response['code'];
-    final result = ResponseResult(
-      success: code == 0 || code == '0' || code == null,
-      msg: response['msg']?.toString() ?? '',
-    );
-    if (!result.success) {
-      throw result.msg.isEmpty ? '操作失败' : result.msg;
-    }
-    return result;
-  }
+  static ResponseResult parseResponse(dynamic data) =>
+      ApiResponseParser.parse(data);
 
   Future<List<CollectionMedal>> listMyMedals({
     required String apiKey,

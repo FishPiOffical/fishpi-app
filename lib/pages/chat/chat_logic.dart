@@ -1,13 +1,11 @@
 import 'dart:async';
-import 'dart:io';
 import 'package:fishpi/fishpi.dart';
 import 'package:fishpi_app/core/chat/chat_barrager_utils.dart';
 import 'package:fishpi_app/core/chat/chat_message_utils.dart';
 import 'package:fishpi_app/core/chat/chat_quote_utils.dart';
-import 'package:fishpi_app/core/chat/chat_red_packet_utils.dart';
 import 'package:fishpi_app/core/chat/chat_room_extension_runtime.dart';
 import 'package:fishpi_app/core/chat/chat_topic_utils.dart';
-import 'package:fishpi_app/core/chat/chat_voice_message_utils.dart';
+import 'package:fishpi_app/core/debug/app_logger.dart';
 import 'package:fishpi_app/core/debug/memory_snapshot.dart';
 import 'package:fishpi_app/core/im_event.dart';
 import 'package:fishpi_app/core/manager/toast.dart';
@@ -19,6 +17,8 @@ import 'package:fishpi_app/core/sql/chat_room_block_list.dart';
 import 'package:fishpi_app/core/sql/chat_emoji_cache.dart';
 import 'package:fishpi_app/core/sql/chat_room_extension_store.dart';
 import 'package:fishpi_app/core/sql/user_remark.dart';
+import 'package:fishpi_app/pages/chat/mixins/chat_red_packet_mixin.dart';
+import 'package:fishpi_app/pages/chat/mixins/chat_voice_mixin.dart';
 import 'package:fishpi_app/pages/conversation/conversation_logic.dart';
 import 'package:fishpi_app/routers/navigator.dart';
 import 'package:fishpi_app/widgets/pi_editer.dart';
@@ -28,17 +28,17 @@ import 'package:fishpi_app/widgets/chat/chat_room_extension_trigger_sheet.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:record/record.dart';
 
 import '../../core/controller/im.dart';
 
 typedef DiyEmojiRemoteLoader = Future<List<String>> Function();
 
-class ChatLogic extends GetxController {
+class ChatLogic extends GetxController with ChatVoiceMixin, ChatRedPacketMixin {
   ChatLogic({DiyEmojiRemoteLoader? diyEmojiRemoteLoader})
       : _diyEmojiRemoteLoader = diyEmojiRemoteLoader;
 
   final DiyEmojiRemoteLoader? _diyEmojiRemoteLoader;
+  @override
   final imController = Get.find<IMController>();
   final messageList = <ChatRoomMessage>[].obs;
   final displayGroups = <ChatMessageGroup>[].obs;
@@ -54,19 +54,13 @@ class ChatLogic extends GetxController {
   final hasMoreHistory = true.obs;
   final historyPage = 0.obs;
   final remarkVersion = 0.obs;
-  final isRecordingVoice = false.obs;
-  final isSendingVoice = false.obs;
   final isSendingText = false.obs;
   final isSendingImage = false.obs;
-  final voiceRecordSeconds = 0.obs;
   final currentTopic = ''.obs;
   final onlineUsers = <OnlineInfo>[].obs;
   final isSettingTopic = false.obs;
-  final isSendingRedPacket = false.obs;
-  final isOpeningRedPacket = false.obs;
   final isSendingBarrager = false.obs;
   final quoteDraft = Rxn<ChatQuoteDraft>();
-  final autoGrabConfig = ChatRoomAutoGrabConfig.defaults().obs;
   final barrageCost = Rxn<BarrageCost>();
   final barragers = <ChatBarragerItem>[].obs;
   final extensions = <ChatRoomExtension>[].obs;
@@ -92,17 +86,7 @@ class ChatLogic extends GetxController {
   StreamSubscription<void>? _extensionSubscription;
   StreamSubscription<void>? _remarkSubscription;
   bool _scrollListenerAttached = false;
-  AudioRecorder? _voiceRecorder;
-  Timer? _voiceTimer;
   Timer? _scrollToBottomTimer;
-  final Map<String, Timer> _autoGrabTimers = {};
-  final Map<String, RedPacketInfo> _redPacketInfoCache = {};
-  final Set<String> _autoGrabScheduledIds = {};
-  final Set<String> _autoGrabOpenedIds = {};
-  final Set<String> _openingRedPacketIds = {};
-  DateTime? _voiceStartedAt;
-  String? _voiceRecordPath;
-  bool _isStoppingVoice = false;
   bool _hasLoadedRemoteEmojis = false;
   int _barragerSequence = 0;
   int _barragerTrack = 0;
@@ -112,6 +96,19 @@ class ChatLogic extends GetxController {
       Get.isRegistered<ConversationLogic>()
           ? Get.find<ConversationLogic>()
           : null;
+
+  // 供 ChatVoiceMixin / ChatRedPacketMixin 访问宿主状态的钩子。
+  @override
+  bool get isGroupChat => isGroup.value;
+  @override
+  bool get isChatClosed => isClose.value;
+  @override
+  Rx<UserInfo> get userInfoRef => userInfo;
+  @override
+  RxList<ChatRoomMessage> get messageListRef => messageList;
+  @override
+  void replaceMessages(Iterable<ChatRoomMessage> messages) =>
+      _replaceMessages(messages);
 
   @override
   void onInit() {
@@ -145,7 +142,7 @@ class ChatLogic extends GetxController {
       });
       _autoGrabSettingsSubscription ??=
           ChatRoomAutoGrabSettings.changes.listen((_) {
-        _loadAutoGrabConfig();
+        loadAutoGrabConfig();
       });
       _extensionSubscription ??= ChatRoomExtensionStore.changes.listen((_) {
         loadExtensions();
@@ -172,7 +169,7 @@ class ChatLogic extends GetxController {
     await _loadBlackUsers();
     if (isGroup.value) {
       await _loadChatRoomBlockedUsers();
-      await _loadAutoGrabConfig();
+      await loadAutoGrabConfig();
       await loadExtensions();
       _replaceMessages(_visibleMessages(messageList));
       if (messageList.isEmpty) {
@@ -209,7 +206,7 @@ class ChatLogic extends GetxController {
       return;
     }
     if (data.type == ChatRoomMessageType.redPacketStatus) {
-      _updateRedPacketStatus(data.status);
+      updateRedPacketStatus(data.status);
       return;
     }
     if (data.type == ChatRoomMessageType.barrager) {
@@ -243,7 +240,7 @@ class ChatLogic extends GetxController {
         maxLength: _messageMemoryLimit,
       ),
     );
-    _scheduleAutoGrabRedPacket(message);
+    scheduleAutoGrabRedPacket(message);
     _triggerReceiveExtensions(message);
     if (shouldScroll) {
       scrollToBottom(delay: 300);
@@ -384,6 +381,7 @@ class ChatLogic extends GetxController {
     });
   }
 
+  @override
   void scrollToBottom({int? delay}) {
     if (isClose.value || isSeeHistory.value) return;
     _scrollToBottomTimer?.cancel();
@@ -640,9 +638,11 @@ class ChatLogic extends GetxController {
     if (!canUseOtherUserActions(message)) return;
     final targetUserName = message.userName.trim();
     if (targetUserName.isEmpty) return;
+    final context = Get.context;
+    if (context == null) return;
 
     Navigator.push(
-      Get.context!,
+      context,
       PopRoute(
         child: PiEditWidget(
           title: '设置备注',
@@ -673,9 +673,11 @@ class ChatLogic extends GetxController {
     if (!canUseOtherUserActions(message)) return;
     final targetUserName = message.userName.trim();
     if (targetUserName.isEmpty) return;
+    final context = Get.context;
+    if (context == null) return;
 
     Navigator.push(
-      Get.context!,
+      context,
       PopRoute(
         child: PiTransferPage(
           user: displayNameFor(targetUserName, fallback: message.allName),
@@ -699,162 +701,6 @@ class ChatLogic extends GetxController {
         ),
       ),
     );
-  }
-
-  Future<bool> sendRedPacket(RedPacketMessage redpacket) async {
-    if (!isGroup.value || isSendingRedPacket.value) return false;
-
-    isSendingRedPacket.value = true;
-    try {
-      final result = redpacket.type == RedPacketType.RockPaperScissors &&
-              redpacket.gesture != null
-          ? await imController.fishpi.chatroom.send(
-              ChatRedPacketUtils.toSendContent(redpacket),
-            )
-          : await imController.fishpi.chatroom.redpacket.send(redpacket);
-      if (result is ResponseResult && !result.success) {
-        throw result.msg.isEmpty ? '发送红包失败' : result.msg;
-      }
-      ToastManager.showToast('红包已发送');
-      scrollToBottom(delay: 300);
-      return true;
-    } catch (e) {
-      ToastManager.showToast(
-        AppErrorMessage.friendly(e, fallback: '发送红包失败'),
-      );
-      return false;
-    } finally {
-      isSendingRedPacket.value = false;
-    }
-  }
-
-  Future<RedPacketInfo?> openRedPacket(
-    ChatRoomMessage chat, {
-    GestureType? gesture,
-  }) async {
-    if (!isGroup.value || chat.oId.isEmpty) {
-      return null;
-    }
-    final cachedInfo = _redPacketInfoCache[chat.oId];
-    if (cachedInfo != null) {
-      return cachedInfo;
-    }
-    if (_openingRedPacketIds.contains(chat.oId)) {
-      return null;
-    }
-
-    _cancelScheduledAutoGrab(chat.oId);
-    _autoGrabOpenedIds.add(chat.oId);
-    _openingRedPacketIds.add(chat.oId);
-    isOpeningRedPacket.value = true;
-    try {
-      final info = await imController.fishpi.chatroom.redpacket.open(
-        chat.oId,
-        gesture: gesture,
-      );
-      _redPacketInfoCache[chat.oId] = info;
-      return info;
-    } catch (e) {
-      if (ChatRedPacketUtils.isAlreadyOpenedError(e)) {
-        final cached = _redPacketInfoCache[chat.oId];
-        if (cached != null) return cached;
-        ToastManager.showToast('红包已领取，可稍后查看详情');
-        return null;
-      }
-      _autoGrabOpenedIds.remove(chat.oId);
-      ToastManager.showToast(ChatRedPacketUtils.openErrorMessage(e));
-      return null;
-    } finally {
-      _openingRedPacketIds.remove(chat.oId);
-      isOpeningRedPacket.value = _openingRedPacketIds.isNotEmpty;
-    }
-  }
-
-  void _cancelScheduledAutoGrab(String redPacketId) {
-    _autoGrabTimers.remove(redPacketId)?.cancel();
-    _autoGrabScheduledIds.remove(redPacketId);
-  }
-
-  void _scheduleAutoGrabRedPacket(ChatRoomMessage chat) {
-    if (!isGroup.value || !chat.isRedpacket || chat.oId.isEmpty) return;
-
-    final redpacket = chat.redpacket;
-    if (redpacket == null) return;
-
-    final config = autoGrabConfig.value;
-    if (!config.canGrabType(redpacket.type)) return;
-    if (redpacket.type == RedPacketType.RockPaperScissors &&
-        config.gesture == null) {
-      return;
-    }
-    if (_autoGrabScheduledIds.contains(chat.oId) ||
-        _autoGrabOpenedIds.contains(chat.oId)) {
-      return;
-    }
-
-    _autoGrabScheduledIds.add(chat.oId);
-    _autoGrabTimers[chat.oId] = Timer(
-      Duration(seconds: config.delaySeconds),
-      () {
-        _autoGrabTimers.remove(chat.oId);
-        _openRedPacketAutomatically(chat);
-      },
-    );
-  }
-
-  Future<void> _openRedPacketAutomatically(ChatRoomMessage chat) async {
-    if (isClose.value ||
-        !isGroup.value ||
-        chat.oId.isEmpty ||
-        _autoGrabOpenedIds.contains(chat.oId)) {
-      return;
-    }
-
-    _autoGrabOpenedIds.add(chat.oId);
-    try {
-      final redpacket = chat.redpacket;
-      final gesture = redpacket?.type == RedPacketType.RockPaperScissors
-          ? autoGrabConfig.value.gesture
-          : null;
-      final info = await imController.fishpi.chatroom.redpacket.open(
-        chat.oId,
-        gesture: gesture,
-      );
-      _redPacketInfoCache[chat.oId] = info;
-      final point = await _currentUserGotPoint(info);
-      if (point > 0) {
-        await ChatRoomAutoGrabSettings.recordSuccess(point);
-      }
-    } catch (_) {
-      // 自动抢红包不打断聊天体验，失败时保持静默。
-    }
-  }
-
-  Future<int> _currentUserGotPoint(RedPacketInfo info) async {
-    var current = userInfo.value;
-    if (current.userName.isEmpty) {
-      current = imController.fishpi.user.current;
-    }
-    if (current.userName.isEmpty) {
-      try {
-        current = await imController.fishpi.user.info();
-        userInfo.value = current;
-      } catch (_) {
-        return 0;
-      }
-    }
-
-    final currentId = current.oId.trim();
-    final currentName = current.userName.trim();
-    for (final user in info.who) {
-      final gotId = user.userId.trim();
-      final gotName = user.userName.trim();
-      if ((currentId.isNotEmpty && gotId == currentId) ||
-          (currentName.isNotEmpty && gotName == currentName)) {
-        return user.money;
-      }
-    }
-    return 0;
   }
 
   Future<bool> setTopic(String topic) async {
@@ -903,7 +749,8 @@ class ChatLogic extends GetxController {
     try {
       await ChatRoomExtensionStore.init();
       extensions.assignAll(await ChatRoomExtensionStore.getEnabled());
-    } catch (_) {
+    } catch (e, s) {
+      AppLogger.swallow('chat.loadExtensions', e, s);
       extensions.clear();
     }
   }
@@ -1066,175 +913,6 @@ class ChatLogic extends GetxController {
     barragers.removeWhere((item) => item.id == id);
   }
 
-  Future<void> startVoiceRecord() async {
-    if (!isGroup.value) {
-      ToastManager.showToast('私聊暂不支持语音消息');
-      return;
-    }
-    if (isRecordingVoice.value || isSendingVoice.value) return;
-
-    try {
-      final recorder = _voiceRecorderInstance;
-      final hasPermission = await recorder.hasPermission();
-      if (!hasPermission) {
-        ToastManager.showToast('需要麦克风权限才能发送语音消息');
-        return;
-      }
-
-      final path = _voiceTempPath();
-      await recorder.start(
-        const RecordConfig(
-          encoder: AudioEncoder.aacLc,
-          bitRate: 64000,
-          sampleRate: 44100,
-          numChannels: 1,
-          autoGain: true,
-          echoCancel: true,
-          noiseSuppress: true,
-        ),
-        path: path,
-      );
-
-      _voiceRecordPath = path;
-      _voiceStartedAt = DateTime.now();
-      voiceRecordSeconds.value = 0;
-      isRecordingVoice.value = true;
-      _startVoiceTimer();
-    } catch (e) {
-      await _resetVoiceRecordState(cancelRecorder: true);
-      ToastManager.showToast(
-        AppErrorMessage.friendly(e, fallback: '开始录音失败'),
-      );
-    }
-  }
-
-  Future<void> finishVoiceRecord() async {
-    await _stopVoiceRecord(shouldSend: true);
-  }
-
-  Future<void> cancelVoiceRecord() async {
-    await _stopVoiceRecord(shouldSend: false);
-  }
-
-  Future<void> _stopVoiceRecord({required bool shouldSend}) async {
-    if (!isRecordingVoice.value || _isStoppingVoice) return;
-    _isStoppingVoice = true;
-
-    final duration = _currentVoiceDurationSeconds();
-    try {
-      final path = await _voiceRecorder?.stop() ?? _voiceRecordPath;
-      _stopVoiceTimer();
-      isRecordingVoice.value = false;
-      voiceRecordSeconds.value = duration;
-
-      if (!shouldSend) {
-        _deleteVoiceFile(path);
-        ToastManager.showToast('已取消语音');
-        return;
-      }
-
-      if (duration < ChatVoiceMessageUtils.minRecordSeconds) {
-        _deleteVoiceFile(path);
-        ToastManager.showToast('录音时间太短');
-        return;
-      }
-
-      if (path == null || !File(path).existsSync()) {
-        ToastManager.showToast('录音文件不存在');
-        return;
-      }
-
-      await _sendVoiceRecord(path, duration);
-    } catch (e) {
-      ToastManager.showToast(
-        AppErrorMessage.friendly(e, fallback: '语音发送失败'),
-      );
-    } finally {
-      _voiceRecordPath = null;
-      _voiceStartedAt = null;
-      _isStoppingVoice = false;
-      isRecordingVoice.value = false;
-      voiceRecordSeconds.value = 0;
-    }
-  }
-
-  Future<void> _sendVoiceRecord(String path, int durationSeconds) async {
-    isSendingVoice.value = true;
-    try {
-      final result = await imController.fishpi.upload([path]);
-      if (result.success.isEmpty) {
-        throw result.errs.isEmpty ? '上传失败' : result.errs.join('，');
-      }
-      final url = result.success.first.url.trim();
-      if (url.isEmpty) throw '上传地址为空';
-
-      final message = ChatVoiceMessageUtils.buildMusicMessage(
-        url: url,
-        durationSeconds: durationSeconds,
-      );
-      await imController.fishpi.chatroom.send(message);
-      scrollToBottom(delay: 300);
-    } finally {
-      isSendingVoice.value = false;
-      _deleteVoiceFile(path);
-    }
-  }
-
-  void _startVoiceTimer() {
-    _stopVoiceTimer();
-    _voiceTimer = Timer.periodic(const Duration(seconds: 1), (_) {
-      final seconds = _currentVoiceDurationSeconds();
-      voiceRecordSeconds.value = seconds;
-      if (seconds >= ChatVoiceMessageUtils.maxRecordSeconds) {
-        finishVoiceRecord();
-      }
-    });
-  }
-
-  int _currentVoiceDurationSeconds() {
-    final startedAt = _voiceStartedAt;
-    if (startedAt == null) return 0;
-    final seconds = DateTime.now().difference(startedAt).inSeconds;
-    return seconds.clamp(0, ChatVoiceMessageUtils.maxRecordSeconds);
-  }
-
-  void _stopVoiceTimer() {
-    _voiceTimer?.cancel();
-    _voiceTimer = null;
-  }
-
-  String _voiceTempPath() {
-    final timestamp = DateTime.now().millisecondsSinceEpoch;
-    return '${Directory.systemTemp.path}/fishpi_voice_$timestamp.m4a';
-  }
-
-  void _deleteVoiceFile(String? path) {
-    if (path == null) return;
-    final file = File(path);
-    if (file.existsSync()) {
-      file.deleteSync();
-    }
-  }
-
-  Future<void> _resetVoiceRecordState({required bool cancelRecorder}) async {
-    _stopVoiceTimer();
-    if (cancelRecorder) {
-      try {
-        await _voiceRecorder?.cancel();
-      } catch (_) {}
-    }
-    _deleteVoiceFile(_voiceRecordPath);
-    _voiceRecordPath = null;
-    _voiceStartedAt = null;
-    _isStoppingVoice = false;
-    isRecordingVoice.value = false;
-    voiceRecordSeconds.value = 0;
-  }
-
-  AudioRecorder get _voiceRecorderInstance {
-    return _voiceRecorder ??= AudioRecorder();
-  }
-
   Future<void> loadEmojis() async {
     try {
       await ChatEmojiCache.init();
@@ -1265,7 +943,8 @@ class ChatLogic extends GetxController {
       _blackUsers
         ..clear()
         ..addAll(await BlackList.getAllUser());
-    } catch (_) {
+    } catch (e, s) {
+      AppLogger.swallow('chat.loadBlackUsers', e, s);
       _blackUsers.clear();
     }
   }
@@ -1375,41 +1054,11 @@ class ChatLogic extends GetxController {
 
   @visibleForTesting
   void debugUpdateRedPacketStatusForTest(RedPacketStatusMsg status) {
-    _updateRedPacketStatus(status);
+    updateRedPacketStatus(status);
   }
 
   @visibleForTesting
   Timer? get debugScrollToBottomTimer => _scrollToBottomTimer;
-
-  Future<void> _loadAutoGrabConfig() async {
-    try {
-      await ChatRoomAutoGrabSettings.init();
-      autoGrabConfig.value = await ChatRoomAutoGrabSettings.getConfig();
-      if (!autoGrabConfig.value.enabled) {
-        _cancelAutoGrabTimers();
-      }
-    } catch (_) {
-      autoGrabConfig.value = ChatRoomAutoGrabConfig.defaults();
-      _cancelAutoGrabTimers();
-    }
-  }
-
-  void _cancelAutoGrabTimers() {
-    for (final timer in _autoGrabTimers.values) {
-      timer.cancel();
-    }
-    _autoGrabTimers.clear();
-    _autoGrabScheduledIds.clear();
-  }
-
-  void _updateRedPacketStatus(RedPacketStatusMsg? status) {
-    if (status == null || status.oId.isEmpty) return;
-    _replaceMessages(
-      messageList
-          .map((message) => ChatRedPacketUtils.updateStatus(message, status))
-          .toList(),
-    );
-  }
 
   void _appendBarrager(BarragerMsg? message) {
     if (!isGroup.value || message == null) return;
@@ -1446,11 +1095,10 @@ class ChatLogic extends GetxController {
     _autoGrabSettingsSubscription?.cancel();
     _extensionSubscription?.cancel();
     _remarkSubscription?.cancel();
-    _cancelAutoGrabTimers();
+    cancelAutoGrabTimers();
     _scrollToBottomTimer?.cancel();
     barragers.clear();
-    _stopVoiceTimer();
-    _voiceRecorder?.dispose();
+    disposeVoice();
     if (!isGroup.value) {
       imController.unwatchPrivateChat(userName.value);
     }

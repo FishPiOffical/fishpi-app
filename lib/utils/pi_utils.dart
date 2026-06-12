@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math';
 
 import 'package:fishpi_app/core/chat/chat_message_utils.dart';
+import 'package:fishpi_app/core/debug/app_logger.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -168,7 +169,8 @@ class PiUtils {
   static Future<String> _safeSecureRead(String key) async {
     try {
       return await _secureStorage.read(key: key) ?? '';
-    } catch (_) {
+    } catch (e, s) {
+      AppLogger.swallow('pi_utils.secureRead[$key]', e, s);
       return '';
     }
   }
@@ -177,7 +179,8 @@ class PiUtils {
     try {
       await _secureStorage.write(key: key, value: value);
       return true;
-    } catch (_) {
+    } catch (e, s) {
+      AppLogger.swallow('pi_utils.secureWrite[$key]', e, s);
       return false;
     }
   }
@@ -186,7 +189,8 @@ class PiUtils {
     try {
       await _secureStorage.delete(key: key);
       return true;
-    } catch (_) {
+    } catch (e, s) {
+      AppLogger.swallow('pi_utils.secureDelete[$key]', e, s);
       return false;
     }
   }
@@ -210,22 +214,26 @@ class PiUtils {
 
   /// 聊天时间处理
   /// [time] 发消息时间
-  /// 5分钟以内返回:刚刚 一天内的返回:具体时间 前一天的返回:昨天 其他的返回:日期
+  /// 5分钟以内返回:刚刚 当天返回:具体时间 前一天返回:昨天 其他返回:日期
   static getChatTime(String time) {
-    // print(time);
     try {
       var chatTime = DateTime.parse(time);
       var nowTime = DateTime.now();
       var interval =
           nowTime.millisecondsSinceEpoch - chatTime.millisecondsSinceEpoch;
+      // 按日历日判断今天/昨天，避免跨零点时仅凭毫秒间隔产生歧义
+      // （例如凌晨看“昨天 23:50”仍在 24h 内却被当成今天显示时间）。
+      final today = DateTime(nowTime.year, nowTime.month, nowTime.day);
+      final chatDay = DateTime(chatTime.year, chatTime.month, chatTime.day);
+      final dayDiff = today.difference(chatDay).inDays;
       var cb =
           '${_fillZero(chatTime.month.toString(), 2)}月${_fillZero(chatTime.day.toString(), 2)}日';
-      if (interval < 5 * 60 * 1000) {
+      if (interval >= 0 && interval < 5 * 60 * 1000) {
         cb = '刚刚';
-      } else if (interval < 24 * 60 * 60 * 1000) {
+      } else if (dayDiff <= 0) {
         cb =
             '${_fillZero(chatTime.hour.toString(), 2)}:${_fillZero(chatTime.minute.toString(), 2)}';
-      } else if (interval < 48 * 60 * 60 * 1000) {
+      } else if (dayDiff == 1) {
         cb = '昨天';
       } else {
         cb =

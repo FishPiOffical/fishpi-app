@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:fishpi_app/core/network/api_config.dart';
 import 'package:fishpi_app/routers/navigator.dart';
 import 'package:fishpi_app/utils/pi_utils.dart';
 import 'package:get/get.dart';
@@ -20,7 +21,7 @@ class SplashLogic extends GetxController {
 
   void toStartApp() async {
     try {
-      await dio.getUri(Uri.parse('https://fishpi.cn/privacy'));
+      await dio.getUri(Uri.parse(ApiConfig.privacyUrl));
     } catch (_) {}
     final hasLoginToken = await PiUtils.hasToken();
     if (isClosed) return;

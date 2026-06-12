@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:fishpi/fishpi.dart';
+import 'package:fishpi_app/core/debug/app_logger.dart';
 import 'package:get/get.dart';
 
 import '../im_event.dart';
@@ -90,7 +91,8 @@ class IMController extends GetxController {
         listener,
         error: (_) {},
       );
-    } catch (_) {
+    } catch (e, s) {
+      AppLogger.swallow('im.ensureChatRoomListener', e, s);
       _chatRoomListener = null;
     }
   }
@@ -116,7 +118,8 @@ class IMController extends GetxController {
     _privateNoticeListener = listener;
     try {
       fishpi.chat.addListener(listener);
-    } catch (_) {
+    } catch (e, s) {
+      AppLogger.swallow('im.ensurePrivateNoticeListener', e, s);
       _privateNoticeListener = null;
     }
   }
@@ -144,7 +147,8 @@ class IMController extends GetxController {
     _privateUserListeners[user] = listener;
     try {
       fishpi.chat.addListener(listener, user: user);
-    } catch (_) {
+    } catch (e, s) {
+      AppLogger.swallow('im.retainPrivateChat[$user]', e, s);
       _privateUserListeners.remove(user);
       _privateUserRefs.remove(user);
     }

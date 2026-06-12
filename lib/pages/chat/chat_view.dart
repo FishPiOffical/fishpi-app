@@ -64,7 +64,9 @@ class ChatPage extends StatelessWidget {
       final currentUserName = logic.userInfo.value.userName;
       return GestureDetector(
         onTap: () {
-          FocusScope.of(Get.context!).requestFocus(FocusNode());
+          final ctx = Get.context;
+          if (ctx == null) return;
+          FocusScope.of(ctx).requestFocus(FocusNode());
         },
         child: Container(
           width: 1.sw,

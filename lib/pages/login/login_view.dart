@@ -1,3 +1,4 @@
+import 'package:fishpi_app/core/network/api_config.dart';
 import 'package:fishpi_app/res/styles.dart';
 import 'package:fishpi_app/routers/navigator.dart';
 import 'package:flutter/material.dart';
@@ -249,7 +250,7 @@ class LoginPage extends StatelessWidget {
   }
 
   Future<void> _openForgotPassword() async {
-    final uri = Uri.parse('https://fishpi.cn/login');
+    final uri = Uri.parse(ApiConfig.loginPageUrl);
     final success = await launchUrl(uri, mode: LaunchMode.externalApplication);
     if (!success) {
       ToastManager.showToast('请前往 fishpi.cn 网页端找回密码');
@@ -258,8 +259,10 @@ class LoginPage extends StatelessWidget {
 
   /// 二步验证弹窗
   void _showMfaCodeDialog() {
+    final ctx = Get.context;
+    if (ctx == null) return;
     showGeneralDialog(
-      context: Get.context!,
+      context: ctx,
       barrierColor: Colors.black.withValues(alpha: .1),
       barrierDismissible: true,
       barrierLabel: '',

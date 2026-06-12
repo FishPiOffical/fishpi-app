@@ -103,8 +103,10 @@ class ForumDetailLogic extends GetxController {
       ToastManager.showToast('该文章暂不可评论');
       return;
     }
+    final ctx = Get.context;
+    if (ctx == null) return;
     Navigator.push(
-      Get.context!,
+      ctx,
       PopRoute(
         child: PiEditWidget(
           onEditingCompleteText: (text) async {

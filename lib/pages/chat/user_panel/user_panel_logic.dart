@@ -101,8 +101,10 @@ class UserPanelLogic extends GetxController {
   }
 
   void toTransfer() {
+    final ctx = Get.context;
+    if (ctx == null) return;
     Navigator.push(
-      Get.context!,
+      ctx,
       PopRoute(
         child: PiTransferPage(
             user: displayName,
@@ -169,8 +171,10 @@ class UserPanelLogic extends GetxController {
         ? userInfo.value.userName
         : userName.value;
     final currentRemark = UserRemark.remarkOf(targetUserName);
+    final ctx = Get.context;
+    if (ctx == null) return;
     Navigator.push(
-      Get.context!,
+      ctx,
       PopRoute(
         child: PiEditWidget(
           title: '设置备注',

@@ -437,8 +437,10 @@ class ChatMessageDomNode extends StatelessWidget {
     );
     return GestureDetector(
       onTap: () {
+        final ctx = Get.context;
+        if (ctx == null) return;
         Navigator.push(
-          Get.context!,
+          ctx,
           MaterialPageRoute(
             builder: (context) => PiHero(
               arguments: {

@@ -1,11 +1,12 @@
+import 'package:fishpi_app/core/network/api_config.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 import 'package:web_socket_channel/status.dart' as status;
 
 class LoginIM {
-  static Uri wsUrl = Uri.parse('wss://fishpi.cn/login-channel');
+  static Uri wsUrl = Uri.parse(ApiConfig.loginWsUrl);
   static WebSocketChannel? _channel;
 
-  static initWS({String? domain}) async {
+  static initWS() async {
     close();
     final channel = WebSocketChannel.connect(wsUrl);
     _channel = channel;
